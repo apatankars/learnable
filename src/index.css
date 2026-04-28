@@ -164,3 +164,177 @@
 .animate-spin-slow {
   animation: spin-slow 2s linear infinite;
 }
+
+.responsive-split-shell {
+  display: flex;
+  width: 100%;
+  min-height: 100dvh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.responsive-side-panel {
+  min-height: 0;
+}
+
+.responsive-panel-body {
+  min-height: 0;
+}
+
+.home-auth-slot {
+  position: absolute;
+  top: 16px;
+  right: 24px;
+  z-index: 20;
+}
+
+.home-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.home-action-row,
+.game-action-row,
+.settings-option-row,
+.leaderboard-filter-row,
+.progress-tab-row,
+.progress-row-metrics,
+.progress-country-row,
+.progress-header-row,
+.leaderboard-header-row,
+.game-top-bar,
+.game-progress-strip,
+.home-stats-row,
+.home-footer-row {
+  display: flex;
+}
+
+@media (max-width: 1024px) {
+  .responsive-split-shell {
+    flex-direction: column;
+    height: auto;
+    overflow: auto;
+  }
+
+  .gameplay-shell {
+    height: 100dvh;
+    min-height: 100dvh;
+    overflow: hidden;
+  }
+
+  .responsive-side-panel {
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .responsive-panel-body {
+    padding: 22px 20px 18px !important;
+  }
+
+  .responsive-globe-panel {
+    flex: 0 0 38vh !important;
+    min-height: 38vh;
+    width: 100% !important;
+  }
+
+  .gameplay-shell .responsive-globe-panel {
+    flex: 1 1 0 !important;
+    min-height: 0;
+  }
+
+  .home-auth-slot {
+    top: 18px;
+    right: 20px;
+  }
+
+  .home-mode-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .home-action-row,
+  .settings-option-row,
+  .leaderboard-filter-row,
+  .progress-tab-row,
+  .progress-header-row,
+  .leaderboard-header-row,
+  .game-top-bar,
+  .game-progress-strip,
+  .home-stats-row,
+  .home-footer-row {
+    flex-wrap: wrap;
+  }
+
+  .progress-country-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .progress-row-metrics {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 640px) {
+  .home-shell {
+    min-height: 100dvh;
+    height: auto;
+    overflow: auto;
+  }
+
+  .gameplay-shell {
+    height: 100dvh;
+    min-height: 100dvh;
+    overflow: hidden;
+  }
+
+  .responsive-panel-body {
+    padding: 18px 16px 16px !important;
+  }
+
+  .responsive-globe-panel {
+    flex-basis: 34vh !important;
+    min-height: 34vh;
+  }
+
+  .home-auth-slot {
+    position: static;
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .home-mode-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .home-shell .home-globe-panel {
+    display: none !important;
+  }
+
+  .home-action-row,
+  .game-action-row,
+  .leaderboard-filter-row,
+  .progress-tab-row,
+  .settings-option-row {
+    flex-direction: column;
+  }
+
+  .game-top-bar,
+  .game-progress-strip,
+  .home-stats-row,
+  .home-footer-row,
+  .progress-header-row,
+  .leaderboard-header-row {
+    gap: 8px !important;
+  }
+
+  .progress-row-metrics {
+    gap: 12px;
+  }
+}

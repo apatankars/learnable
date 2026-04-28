@@ -29,7 +29,7 @@ export function SettingsPanel({ settings, onChange }: SettingsPanelProps) {
       {/* Time limit */}
       <div>
         <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Time Limit</div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="settings-option-row" style={{ gap: 8 }}>
           {TIME_OPTIONS.map(opt => {
             const active = opt.noLimit
               ? settings.noTimeLimit
@@ -117,7 +117,7 @@ export function SettingsPanel({ settings, onChange }: SettingsPanelProps) {
       {(settings.mode === 'practice' || settings.mode === 'learn') && (
         <div style={{ paddingTop: 8, borderTop: '1px solid var(--border)' }}>
           <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Learn Content</div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div className="settings-option-row" style={{ gap: 8 }}>
             {(['both', 'country', 'capital'] as const).map(p => (
               <button
                 key={p}

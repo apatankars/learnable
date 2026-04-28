@@ -72,13 +72,13 @@ export function GameOverModal({
       }}>
         {/* Header */}
         <div style={{
-          padding: '28px 32px 24px',
+          padding: '28px clamp(18px, 5vw, 32px) 24px',
           borderBottom: '1px solid var(--border)',
           textAlign: 'center',
           background: 'var(--bg)',
         }}>
           <div style={{
-            fontFamily: 'var(--ff-d)', fontSize: 72, fontWeight: 300,
+            fontFamily: 'var(--ff-d)', fontSize: 'clamp(3rem, 14vw, 4.5rem)', fontWeight: 300,
             lineHeight: 1, color: 'var(--gold-hi)', letterSpacing: '-0.01em',
             marginBottom: 4,
           }}>
@@ -102,10 +102,10 @@ export function GameOverModal({
           )}
         </div>
 
-        <div style={{ padding: '20px 28px 24px' }}>
+        <div style={{ padding: '20px clamp(16px, 5vw, 28px) 24px' }}>
           {/* Stats row */}
           <div style={{
-            display: 'grid', gridTemplateColumns: '1fr 1fr 1fr',
+            display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(88px, 1fr))',
             gap: 8, marginBottom: 20,
           }}>
             {[

@@ -94,22 +94,24 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
     }
   }, [session.phase, settings.noTimeLimit, startTimer]);
 
-  // Initialize Game Queue and Multiplayer Hook
+  // Initialize once a real versus queue is available.
   useEffect(() => {
-    if (versusHook.isHost) {
-      if (!versusHook.lobbyState?.queue || versusHook.lobbyState.queue.length === 0) {
-        const generatedQueue = buildQueue(settings);
-        versusHook.startGame(generatedQueue, settings);
-        engine.startGame(settings, generatedQueue);
-      } else {
-        engine.startGame(settings, versusHook.lobbyState.queue);
-      }
-    } else {
-      if (versusHook.lobbyState?.queue) {
-        engine.startGame(settings, versusHook.lobbyState.queue);
-      }
+    if (session.phase !== 'idle') {
+      return;
     }
-  }, []); // eslint-disable-line
+
+    const queue = versusHook.lobbyState?.queue;
+    if (queue && queue.length > 0) {
+      engine.startGame(settings, queue);
+      return;
+    }
+
+    if (versusHook.isHost) {
+      const generatedQueue = buildQueue(settings);
+      versusHook.startGame(generatedQueue, settings);
+      engine.startGame(settings, generatedQueue);
+    }
+  }, [engine, session.phase, settings, versusHook]);
 
   useEffect(() => {
     if (session.phase === 'playing' && !currentPrompt && !pendingPromptRef.current) {
@@ -237,10 +239,10 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
   const vineBg = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='72' viewBox='0 0 22 72'%3E%3Cpath d='M11,0 C10,18 12,36 11,54 C10,62 11,72 11,72' stroke='rgba(74,110,36,0.28)' stroke-width='0.9' fill='none'/%3E%3Cpath d='M11,18 C8,11 13,4 20,3 C13,7 9,13 11,18Z' fill='rgba(74,110,36,0.20)'/%3E%3Cpath d='M11,49 C14,42 9,35 2,34 C9,37 13,44 11,49Z' fill='rgba(74,110,36,0.18)'/%3E%3Ccircle cx='11' cy='17' r='1.6' fill='rgba(74,110,36,0.22)'/%3E%3C/svg%3E")`;
 
   return (
-    <div style={{ display: 'flex', width: '100%', height: '100vh', overflow: 'hidden' }}>
+    <div className="responsive-split-shell gameplay-shell">
       
       {/* ── LEFT PANEL ── */}
-      <div style={{
+      <div className="responsive-side-panel" style={{
         flex: '0 0 38%', minWidth: 320, maxWidth: 480,
         display: 'flex', flexDirection: 'column',
         borderRight: '1px solid var(--border)',
@@ -257,8 +259,8 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
         <BotanicalCorner />
 
         {/* Top bar */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 12,
+        <div className="game-top-bar" style={{
+          alignItems: 'center', gap: 12,
           padding: '15px 20px',
           borderBottom: '1px solid var(--border)',
           background: 'var(--bg)',
@@ -283,6 +285,7 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
             flex: 1, textAlign: 'center',
             fontFamily: 'var(--ff-d)', fontSize: 15, fontWeight: 400,
             letterSpacing: '0.09em', color: 'var(--t2)',
+            minWidth: 120,
           }}>
             VERSUS
           </div>
@@ -309,8 +312,8 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
         </div>
 
         {/* Opponent Status Overlay */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        <div className="game-progress-strip" style={{
+          alignItems: 'center', justifyContent: 'space-between',
           padding: '12px 20px', borderBottom: '1px solid var(--border)',
           background: 'rgba(135,100,24,0.05)', flexShrink: 0,
         }}>
@@ -330,7 +333,7 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
         </div>
 
         {/* Body (scrollable) */}
-        <div style={{
+        <div className="responsive-panel-body" style={{
           flex: 1, overflowY: 'auto', overflowX: 'hidden',
           padding: '28px 28px 20px',
           display: 'flex', flexDirection: 'column',
@@ -455,7 +458,7 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
               )}
 
               {isPlaying && !showFeedbackOk && !showFeedbackMiss && !showWrongFeedback && !promptLocked && (
-                <div style={{ display: 'flex', gap: 8, marginTop: 'auto', paddingTop: 22 }}>
+                <div className="game-action-row" style={{ gap: 8, marginTop: 'auto', paddingTop: 22 }}>
                   <button
                     onClick={handleSkip}
                     style={{
@@ -488,7 +491,7 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
       </div>
 
       {/* ── RIGHT PANEL — Globe ── */}
-      <div style={{
+      <div className="responsive-globe-panel" style={{
         flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
         overflow: 'hidden', position: 'relative', background: '#05080d',
       }}>
@@ -511,8 +514,8 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
         }}>
           <div style={{
             background: 'var(--bg)', border: '1px solid var(--border)',
-            borderRadius: 4, padding: '40px 50px',
-            width: 420, textAlign: 'center',
+            borderRadius: 4, padding: '40px min(50px, 7vw)',
+            width: 'min(420px, 92vw)', textAlign: 'center',
             boxShadow: '0 12px 48px rgba(0,0,0,0.25)',
           }}>
             <h2 style={{

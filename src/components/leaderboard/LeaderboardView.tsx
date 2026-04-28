@@ -38,7 +38,7 @@ export function LeaderboardView({ user, onBack }: LeaderboardViewProps) {
   return (
     <div style={{
       minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column',
-      alignItems: 'center', padding: '52px 24px', position: 'relative', overflow: 'hidden'
+      alignItems: 'center', padding: '52px clamp(16px, 4vw, 24px)', position: 'relative', overflow: 'hidden'
     }}>
       <BotanicalCorner />
       <BotanicalCorner flip />
@@ -53,7 +53,7 @@ export function LeaderboardView({ user, onBack }: LeaderboardViewProps) {
 
       <div style={{ width: '100%', maxWidth: 540, position: 'relative', zIndex: 10 }}>
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 32 }}>
+        <div className="leaderboard-header-row" style={{ alignItems: 'center', gap: 12, marginBottom: 32 }}>
           <button
             onClick={onBack}
             style={{
@@ -64,13 +64,13 @@ export function LeaderboardView({ user, onBack }: LeaderboardViewProps) {
             ← Back
           </button>
           <div style={{ flex: 1, textAlign: 'center' }}>
-            <h1 style={{ fontFamily: 'var(--ff-d)', fontWeight: 300, fontSize: 36, letterSpacing: '0.04em', color: 'var(--t1)' }}>Leaderboard</h1>
+            <h1 style={{ fontFamily: 'var(--ff-d)', fontWeight: 300, fontSize: 'clamp(2rem, 8vw, 2.25rem)', letterSpacing: '0.04em', color: 'var(--t1)' }}>Leaderboard</h1>
           </div>
           <div style={{ width: 60 }} />
         </div>
 
         {/* Mode tabs */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 12, fontFamily: 'var(--ff-u)' }}>
+        <div className="leaderboard-filter-row" style={{ gap: 8, marginBottom: 12, fontFamily: 'var(--ff-u)' }}>
           {MODES.map(m => (
             <button
               key={m.value}
@@ -89,7 +89,7 @@ export function LeaderboardView({ user, onBack }: LeaderboardViewProps) {
         </div>
 
         {/* Time mode tabs */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 24, fontFamily: 'var(--ff-u)' }}>
+        <div className="leaderboard-filter-row" style={{ gap: 8, marginBottom: 24, fontFamily: 'var(--ff-u)' }}>
           {TIME_MODES.map(tm => (
             <button
               key={tm}
@@ -108,7 +108,7 @@ export function LeaderboardView({ user, onBack }: LeaderboardViewProps) {
         </div>
 
         {/* Table */}
-        <div style={{ background: 'var(--bg)', borderRadius: 3, border: '1px solid var(--border)', overflow: 'hidden' }}>
+        <div style={{ background: 'var(--bg)', borderRadius: 3, border: '1px solid var(--border)', overflowX: 'auto', overflowY: 'hidden' }}>
           {loading ? (
             <div style={{ padding: '64px 0', textAlign: 'center', color: 'var(--t3)', fontFamily: 'var(--ff-u)', fontSize: 13 }}>Loading…</div>
           ) : entries.length === 0 ? (
@@ -117,7 +117,7 @@ export function LeaderboardView({ user, onBack }: LeaderboardViewProps) {
               No scores yet — be the first!
             </div>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'var(--ff-u)' }}>
+            <table style={{ width: '100%', minWidth: 320, borderCollapse: 'collapse', fontFamily: 'var(--ff-u)' }}>
               <thead>
                 <tr style={{ background: 'var(--s1)', borderBottom: '1px solid var(--border)' }}>
                   <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 11, fontWeight: 500, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.08em', width: 40 }}>#</th>

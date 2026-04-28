@@ -68,7 +68,7 @@ export function ProgressDashboard({ progress, globalStats, onBack, onReset }: Pr
         background: 'var(--bg)', borderBottom: '1px solid var(--border)',
         padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         position: 'sticky', top: 0, zIndex: 20
-      }}>
+      }} className="progress-header-row">
         <button
           onClick={onBack}
           style={{
@@ -94,7 +94,7 @@ export function ProgressDashboard({ progress, globalStats, onBack, onReset }: Pr
         </div>
       </div>
 
-      <div style={{ flex: 1, padding: '32px 24px', maxWidth: 840, margin: '0 auto', width: '100%' }}>
+      <div style={{ flex: 1, padding: '32px clamp(16px, 4vw, 24px)', maxWidth: 840, margin: '0 auto', width: '100%' }}>
         {/* Global stats */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 32 }}>
           <StatCard label="Sessions" value={String(globalStats.totalSessions)} />
@@ -114,7 +114,7 @@ export function ProgressDashboard({ progress, globalStats, onBack, onReset }: Pr
           </div>
         ) : (
           <>
-            <div style={{ height: '50vh', minHeight: 400, marginBottom: 32, borderRadius: 3, border: '1px solid var(--border)', overflow: 'hidden' }}>
+            <div style={{ height: 'min(50vh, 560px)', minHeight: 280, marginBottom: 32, borderRadius: 3, border: '1px solid var(--border)', overflow: 'hidden' }}>
               <ProgressMap masteryMap={masteryMap} />
             </div>
 
@@ -124,7 +124,7 @@ export function ProgressDashboard({ progress, globalStats, onBack, onReset }: Pr
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
               {/* Tabs */}
-              <div style={{ display: 'flex', background: 'var(--s1)', borderRadius: 3, border: '1px solid var(--border)', padding: 4, fontFamily: 'var(--ff-u)' }}>
+              <div className="progress-tab-row" style={{ background: 'var(--s1)', borderRadius: 3, border: '1px solid var(--border)', padding: 4, fontFamily: 'var(--ff-u)', gap: 4 }}>
                 {(['all', 'needs_improvement', 'killing_it'] as const).map(tab => (
                   <button
                     key={tab}
@@ -150,7 +150,7 @@ export function ProgressDashboard({ progress, globalStats, onBack, onReset }: Pr
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {filteredCountries.map(({ country, cm, km }) => (
-                    <div key={country.id} style={{
+                    <div key={country.id} className="progress-country-row" style={{
                       background: 'var(--bg)', borderRadius: 3, border: '1px solid var(--border)',
                       padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 16,
                       transition: 'border-color 0.14s'
@@ -163,7 +163,7 @@ export function ProgressDashboard({ progress, globalStats, onBack, onReset }: Pr
                           {country.capital} <span style={{ color: 'var(--border-hi)', margin: '0 4px' }}>·</span> {country.region}
                         </div>
                       </div>
-                      <div style={{ display: 'flex', gap: 16, alignItems: 'center', textAlign: 'right' }}>
+                      <div className="progress-row-metrics" style={{ display: 'flex', gap: 16, alignItems: 'center', textAlign: 'right' }}>
                         <MasteryPip label="Country" value={cm} color={masteryColor(cm)} />
                         <MasteryPip label="Capital" value={km} color={masteryColor(km)} />
                       </div>

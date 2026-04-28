@@ -284,10 +284,10 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
   const vineBg = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='72' viewBox='0 0 22 72'%3E%3Cpath d='M11,0 C10,18 12,36 11,54 C10,62 11,72 11,72' stroke='rgba(74,110,36,0.28)' stroke-width='0.9' fill='none'/%3E%3Cpath d='M11,18 C8,11 13,4 20,3 C13,7 9,13 11,18Z' fill='rgba(74,110,36,0.20)'/%3E%3Cpath d='M11,49 C14,42 9,35 2,34 C9,37 13,44 11,49Z' fill='rgba(74,110,36,0.18)'/%3E%3Ccircle cx='11' cy='17' r='1.6' fill='rgba(74,110,36,0.22)'/%3E%3C/svg%3E")`;
 
   return (
-    <div style={{ display: 'flex', width: '100%', height: '100vh', overflow: 'hidden' }}>
+    <div className="responsive-split-shell gameplay-shell">
 
       {/* ── LEFT PANEL ── */}
-      <div style={{
+      <div className="responsive-side-panel" style={{
         flex: '0 0 38%', minWidth: 320, maxWidth: 480,
         display: 'flex', flexDirection: 'column',
         borderRight: '1px solid var(--border)',
@@ -305,8 +305,8 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
         <BotanicalCorner />
 
         {/* Top bar */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 12,
+        <div className="game-top-bar" style={{
+          alignItems: 'center', gap: 12,
           padding: '15px 20px',
           borderBottom: '1px solid var(--border)',
           background: 'var(--bg)',
@@ -331,6 +331,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
             flex: 1, textAlign: 'center',
             fontFamily: 'var(--ff-d)', fontSize: 15, fontWeight: 400,
             letterSpacing: '0.09em', color: 'var(--t2)',
+            minWidth: 120,
           }}>
             {MODE_LABELS[settings.mode] ?? settings.mode}
           </div>
@@ -388,8 +389,8 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
 
         {/* Progress pips */}
         {session.phase !== 'gameover' && (
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 14,
+          <div className="game-progress-strip" style={{
+            alignItems: 'center', gap: 14,
             padding: '11px 20px', borderBottom: '1px solid var(--border)',
             background: 'var(--s1)', flexShrink: 0,
           }}>
@@ -413,7 +414,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
         )}
 
         {/* Body (scrollable) */}
-        <div style={{
+        <div className="responsive-panel-body" style={{
           flex: 1, overflowY: 'auto', overflowX: 'hidden',
           padding: '28px 28px 20px',
           display: 'flex', flexDirection: 'column',
@@ -579,7 +580,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
 
               {/* Hint + Skip buttons */}
               {isPlaying && !showFeedbackOk && !showFeedbackMiss && !showWrongFeedback && !promptLocked && (
-                <div style={{ display: 'flex', gap: 8, marginTop: 'auto', paddingTop: 22 }}>
+                <div className="game-action-row" style={{ gap: 8, marginTop: 'auto', paddingTop: 22 }}>
                   <button
                     onClick={handleHint}
                     disabled={hintUsed}
@@ -627,7 +628,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
       </div>
 
       {/* ── RIGHT PANEL — Globe ── */}
-      <div style={{
+      <div className="responsive-globe-panel" style={{
         flex: 1, position: 'relative', overflow: 'hidden',
         background: '#05080d',
       }}>
@@ -653,9 +654,10 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
             display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 30,
           }}>
             <div style={{
-              background: 'var(--s1)', borderRadius: 4, padding: '32px 40px',
+              background: 'var(--s1)', borderRadius: 4, padding: '32px min(40px, 7vw)',
               textAlign: 'center', border: '1px solid var(--border)',
               boxShadow: '0 8px 40px rgba(0,0,0,0.3)',
+              width: 'min(92vw, 360px)',
             }}>
               <div style={{ fontSize: 36, marginBottom: 12 }}>⏸</div>
               <h2 style={{

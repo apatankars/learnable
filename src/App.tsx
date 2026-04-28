@@ -14,6 +14,7 @@ type View = 'home' | 'game' | 'progress' | 'leaderboard' | 'versus-lobby';
 import { VersusLobby, JoinVersusModal } from './components/menus/VersusLobby';
 import { useVersusMultiplayer } from './hooks/useVersusMultiplayer';
 import { VersusGameView } from './components/game/VersusGameView';
+import { buildQueue } from './hooks/useGameEngine';
 
 const DEFAULT_SETTINGS: GameSettings = {
   mode: 'both',
@@ -155,7 +156,9 @@ export default function App() {
               isHost={versusHook.isHost}
               error={versusHook.error}
               onStartGame={() => {
-                versusHook.startGame([], versusHook.lobbyState!.settings!);
+                const settings = versusHook.lobbyState!.settings!;
+                const queue = buildQueue(settings);
+                versusHook.startGame(queue, settings);
               }}
               onLeave={() => { versusHook.leaveLobby(); navigateTo('home'); }}
             />
