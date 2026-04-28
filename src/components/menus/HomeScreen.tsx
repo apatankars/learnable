@@ -151,6 +151,12 @@ export function HomeScreen({
   const [settings, setSettings] = useState<GameSettings>(defaultSettings);
   const [showSettings, setShowSettings] = useState(false);
   const [hoveredMode, setHoveredMode] = useState<GameMode | null>(null);
+  const versusPromptLabel =
+    settings.versusPrompts === "country"
+      ? "Countries"
+      : settings.versusPrompts === "capital"
+        ? "Capitals"
+        : "Both";
 
   const currentTimeMode = getTimeMode(
     settings.timeLimitSeconds,
@@ -463,7 +469,7 @@ export function HomeScreen({
                   transition: "background 0.14s, border-color 0.14s",
                 }}
               >
-                Host Match
+                Host {versusPromptLabel} Match
               </button>
               <button
                 onClick={onVersusMode} // onVersusMode handles joining

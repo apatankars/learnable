@@ -10,8 +10,9 @@ interface VersusLobbyProps {
 }
 
 export function VersusLobby({ lobbyState, isHost, onStartGame, onLeave, error }: VersusLobbyProps) {
-  const opponent = lobbyState.players.find(p => p.userId !== lobbyState.hostId);
   const host = lobbyState.players.find(p => p.userId === lobbyState.hostId);
+  const guests = lobbyState.players.filter(p => p.userId !== lobbyState.hostId);
+  const canStart = guests.length > 0;
 
   return (
     <div style={{
@@ -46,7 +47,7 @@ export function VersusLobby({ lobbyState, isHost, onStartGame, onLeave, error }:
           color: 'var(--t3)',
           marginBottom: 32,
         }}>
-          Share this code with your opponent
+          Share this code so other players can join
         </p>
 
         <div style={{
@@ -98,26 +99,55 @@ export function VersusLobby({ lobbyState, isHost, onStartGame, onLeave, error }:
             </span>
           </div>
 
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '12px 16px',
-            background: 'var(--bg)',
-            border: '1px solid var(--border)',
-            borderRadius: 3,
-            opacity: opponent ? 1 : 0.6,
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ fontSize: 20 }}>⚔️</span>
-              <span style={{ fontSize: 14, color: 'var(--t2)' }}>
-                {opponent ? opponent.username : 'Waiting for opponent...'}
-              </span>
+          {guests.length === 0 ? (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '12px 16px',
+              background: 'var(--bg)',
+              border: '1px solid var(--border)',
+              borderRadius: 3,
+              opacity: 0.6,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ fontSize: 20 }}>⚔️</span>
+                <span style={{ fontSize: 14, color: 'var(--t2)' }}>
+                  Waiting for players...
+                </span>
+              </div>
             </div>
-            {opponent && (
-              <span style={{ fontSize: 11, color: 'var(--olive)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Ready
-              </span>
-            )}
-          </div>
+          ) : (
+            guests.map((player, index) => (
+              <div
+                key={player.userId}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '12px 16px',
+                  background: 'var(--bg)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 3,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{ fontSize: 20 }}>{index === 0 ? '⚔️' : '🌍'}</span>
+                  <span style={{ fontSize: 14, color: 'var(--t2)' }}>
+                    {player.username}
+                  </span>
+                </div>
+                <span style={{ fontSize: 11, color: 'var(--olive)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Ready
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div style={{
+          fontSize: 12,
+          color: 'var(--t3)',
+          marginBottom: 24,
+          textAlign: 'center',
+        }}>
+          {lobbyState.players.length} player{lobbyState.players.length === 1 ? '' : 's'} in lobby
         </div>
 
         <div style={{ display: 'flex', gap: 12 }}>
@@ -135,13 +165,13 @@ export function VersusLobby({ lobbyState, isHost, onStartGame, onLeave, error }:
           {isHost && (
             <button
               onClick={onStartGame}
-              disabled={!opponent}
+              disabled={!canStart}
               style={{
                 flex: 2, padding: '12px 0',
-                background: opponent ? 'rgba(135,100,24,0.12)' : 'var(--bg)',
-                border: opponent ? '1px solid rgba(135,100,24,0.32)' : '1px solid var(--border)',
-                color: opponent ? 'var(--gold-hi)' : 'var(--t3)',
-                borderRadius: 3, cursor: opponent ? 'pointer' : 'not-allowed',
+                background: canStart ? 'rgba(135,100,24,0.12)' : 'var(--bg)',
+                border: canStart ? '1px solid rgba(135,100,24,0.32)' : '1px solid var(--border)',
+                color: canStart ? 'var(--gold-hi)' : 'var(--t3)',
+                borderRadius: 3, cursor: canStart ? 'pointer' : 'not-allowed',
                 fontSize: 13, fontWeight: 500, transition: 'all 0.14s',
               }}
             >

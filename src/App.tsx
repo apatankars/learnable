@@ -24,6 +24,7 @@ const DEFAULT_SETTINGS: GameSettings = {
   regionFilter: [],
   includeDependent: false,
   practicePrompts: 'both',
+  versusPrompts: 'both',
 };
 
 function getInitialSettings(): GameSettings {
@@ -33,6 +34,8 @@ function getInitialSettings(): GameSettings {
     if (!saved.noTimeLimit && saved.timeLimitSeconds !== 60 && saved.timeLimitSeconds !== 300) {
       saved.timeLimitSeconds = 300;
     }
+    saved.practicePrompts ??= 'both';
+    saved.versusPrompts ??= 'both';
     return saved;
   }
   return DEFAULT_SETTINGS;

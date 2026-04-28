@@ -10,6 +10,22 @@ import countriesData from '../data/countries.json';
 const allCountries = countriesData as CountryEntry[];
 const countryById = new Map(allCountries.map(c => [c.id, c]));
 
+function getPromptTypes(settings: GameSettings): PromptType[] {
+  if (settings.mode === 'country') return ['country'];
+  if (settings.mode === 'capital') return ['capital'];
+  if (settings.mode === 'practice' || settings.mode === 'learn') {
+    if (settings.practicePrompts === 'country') return ['country'];
+    if (settings.practicePrompts === 'capital') return ['capital'];
+    return ['country', 'capital'];
+  }
+  if (settings.mode === 'versus') {
+    if (settings.versusPrompts === 'country') return ['country'];
+    if (settings.versusPrompts === 'capital') return ['capital'];
+    return ['country', 'capital'];
+  }
+  return ['country', 'capital'];
+}
+
 export function buildQueue(settings: GameSettings): GamePrompt[] {
   const filtered = allCountries.filter(c => {
     if (!settings.includeDependent && !c.independent) return false;
@@ -17,11 +33,7 @@ export function buildQueue(settings: GameSettings): GamePrompt[] {
     return true;
   });
 
-  const promptTypes: PromptType[] = settings.mode === 'country' ? ['country']
-    : settings.mode === 'capital' ? ['capital']
-    : (settings.mode === 'practice' && settings.practicePrompts === 'country') ? ['country']
-    : (settings.mode === 'practice' && settings.practicePrompts === 'capital') ? ['capital']
-    : ['country', 'capital'];
+  const promptTypes = getPromptTypes(settings);
 
   const prompts: GamePrompt[] = [];
   for (const c of filtered) {

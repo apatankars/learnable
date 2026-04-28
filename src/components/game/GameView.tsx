@@ -61,10 +61,10 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
   const [focusToken, setFocusToken]         = useState(0);
   const [globeBooted, setGlobeBooted]       = useState(false);
   const [isPromptRendering, setIsPromptRendering] = useState(true);
+  const [recenterToken, setRecenterToken]   = useState(0);
   const [hintUsed, setHintUsed]             = useState(false);
   const [hintMsg, setHintMsg]               = useState('');
   const [lastPoints, setLastPoints]         = useState<number | null>(null);
-  const [inputValue, setInputValue]         = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const timerStartedRef = useRef(false);
   const pendingPromptRef = useRef<GamePrompt | null>(null);
@@ -91,8 +91,17 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
   const queuePromptForRender = useCallback((nextPrompt: GamePrompt | null) => {
     pendingPromptRef.current = nextPrompt;
     setPendingPrompt(nextPrompt);
-    setCurrentPrompt(null);
+    setCurrentPrompt(nextPrompt);
     setIsPromptRendering(Boolean(nextPrompt));
+
+    if (inputRef.current) {
+      inputRef.current.blur();
+      inputRef.current.value = '';
+    }
+
+    setHintUsed(false);
+    setHintMsg('');
+    setLastPoints(null);
 
     if (!nextPrompt) {
       return;
@@ -146,6 +155,14 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
     }
   }, [currentPrompt, getFirstPrompt, queuePromptForRender, session.phase]);
 
+  useEffect(() => {
+    if (session.phase !== 'playing') return;
+    if (currentPrompt || pendingPromptRef.current || isPromptRendering) return;
+
+    timerStartedRef.current = false;
+    endGame(session.score, session.maxStreak);
+  }, [currentPrompt, endGame, isPromptRendering, session.maxStreak, session.phase, session.score]);
+
   // Compute total queue size
   useEffect(() => {
     const base = countries.filter(c => {
@@ -164,14 +181,6 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
     }
   }, [currentPrompt, inputState, isPromptRendering, session.phase]);
 
-  // Reset hint and points on new prompt
-  useEffect(() => {
-    setHintUsed(false);
-    setHintMsg('');
-    setInputValue('');
-    setLastPoints(null);
-  }, [currentPrompt]);
-
   function triggerFlash(f: FlashTrigger) {
     setFlash(null);
     requestAnimationFrame(() => setFlash(f));
@@ -187,7 +196,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
 
   const handleSubmit = useCallback(() => {
     if (!currentPrompt || session.phase !== 'playing') return;
-    const trimmed = inputValue.trim();
+    const trimmed = inputRef.current?.value.trim() ?? '';
     if (!trimmed) return;
 
     const result = submitAnswer(trimmed, currentPrompt, session.streak, hintUsed);
@@ -223,7 +232,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
         setPromptIndex(i => i + 1);
       }, FEEDBACK_DELAY_MS);
     }
-  }, [currentPrompt, session.phase, session.streak, submitAnswer, hintUsed, inputValue, queuePromptForRender]);
+  }, [currentPrompt, session.phase, session.streak, submitAnswer, hintUsed, queuePromptForRender]);
 
   function handleHint() {
     if (hintUsed || !currentPrompt || session.phase !== 'playing') return;
@@ -267,7 +276,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
   }
 
   const currentCountry   = currentPrompt ? countryMap.get(currentPrompt.countryId) : null;
-  const answered         = session.answered.size;
+  const completed        = session.totalQuestions;
   const isPlaying        = session.phase === 'playing';
   const isPaused         = session.phase === 'paused';
   const isTeaching       = session.phase === 'teaching';
@@ -278,7 +287,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
 
   // Pip progress bar (cap at 20 visible pips to avoid overflow)
   const pipTotal   = Math.min(queueTotal || 20, 20);
-  const pipsDone   = Math.min(answered, pipTotal);
+  const pipsDone   = Math.min(completed, pipTotal);
   const pipCurrent = pipsDone < pipTotal ? pipsDone : -1;
 
   const vineBg = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='72' viewBox='0 0 22 72'%3E%3Cpath d='M11,0 C10,18 12,36 11,54 C10,62 11,72 11,72' stroke='rgba(74,110,36,0.28)' stroke-width='0.9' fill='none'/%3E%3Cpath d='M11,18 C8,11 13,4 20,3 C13,7 9,13 11,18Z' fill='rgba(74,110,36,0.20)'/%3E%3Cpath d='M11,49 C14,42 9,35 2,34 C9,37 13,44 11,49Z' fill='rgba(74,110,36,0.18)'/%3E%3Ccircle cx='11' cy='17' r='1.6' fill='rgba(74,110,36,0.22)'/%3E%3C/svg%3E")`;
@@ -408,7 +417,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
               ))}
             </div>
             <div style={{ fontSize: 11, color: 'var(--t3)', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>
-              {answered}&thinsp;/&thinsp;{queueTotal || '…'}
+              {completed}&thinsp;/&thinsp;{queueTotal || '…'}
             </div>
           </div>
         )}
@@ -425,7 +434,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
               <div className="animate-spin" style={{ width: 18, height: 18, borderRadius: '50%', border: '1.5px solid var(--border-hi)', borderTopColor: 'var(--olive)' }} />
               <span>Loading…</span>
             </div>
-          ) : isPromptRendering ? (
+          ) : !currentPrompt && isPromptRendering ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--t3)', fontSize: 12, letterSpacing: '0.08em', marginTop: 36 }}>
               <div className="animate-spin" style={{ width: 18, height: 18, borderRadius: '50%', border: '1.5px solid var(--border-hi)', borderTopColor: 'var(--olive)' }} />
               <span>{globeBooted ? 'Rendering target…' : 'Rendering globe…'}</span>
@@ -488,8 +497,6 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
                   <input
                     ref={inputRef}
                     type="text"
-                    value={inputValue}
-                    onChange={e => setInputValue(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleSubmit()}
                     disabled={!isPlaying || showWrongFeedback || promptLocked}
                     placeholder="Type your answer…"
@@ -506,13 +513,13 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
                   />
                   <button
                     onClick={handleSubmit}
-                    disabled={!isPlaying || !inputValue.trim() || showWrongFeedback || promptLocked}
+                    disabled={!isPlaying || showWrongFeedback || promptLocked}
                     style={{
                       padding: '0 16px', height: 46,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       color: 'var(--olive)', borderLeft: '1px solid var(--border)',
-                      cursor: (!isPlaying || !inputValue.trim() || promptLocked) ? 'default' : 'pointer',
-                      background: 'none', opacity: (!isPlaying || !inputValue.trim() || promptLocked) ? 0.35 : 1,
+                      cursor: (!isPlaying || promptLocked) ? 'default' : 'pointer',
+                      background: 'none', opacity: (!isPlaying || promptLocked) ? 0.35 : 1,
                       transition: 'color 0.14s',
                     }}
                   >
@@ -520,6 +527,17 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
                       <path d="M4,9 L14,9 M10,5 L14,9 L10,13"/>
                     </svg>
                   </button>
+                </div>
+              )}
+
+              {isPromptRendering && currentPrompt && (
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
+                  fontSize: 11, color: 'var(--t3)', letterSpacing: '0.06em',
+                  marginBottom: 12, fontFamily: 'var(--ff-u)',
+                }}>
+                  <div className="animate-spin" style={{ width: 12, height: 12, borderRadius: '50%', border: '1.5px solid var(--border-hi)', borderTopColor: 'var(--olive)' }} />
+                  <span>{globeBooted ? 'Locating next target…' : 'Rendering globe…'}</span>
                 </div>
               )}
 
@@ -632,12 +650,33 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
         flex: 1, position: 'relative', overflow: 'hidden',
         background: '#05080d',
       }}>
+        <button
+          onClick={() => setRecenterToken((value) => value + 1)}
+          title="Recenter globe"
+          style={{
+            position: 'absolute', top: 18, right: 18, zIndex: 12,
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            padding: '8px 12px', borderRadius: 999,
+            border: '1px solid rgba(255,255,255,0.14)',
+            background: 'rgba(7,10,15,0.68)', color: 'rgba(244,231,205,0.92)',
+            backdropFilter: 'blur(10px)', cursor: 'pointer',
+            fontFamily: 'var(--ff-u)', fontSize: 11, letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+          }}
+        >
+          <svg viewBox="0 0 18 18" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <circle cx="9" cy="9" r="5.2" />
+            <path d="M9 1.8v2.2M9 14v2.2M1.8 9H4M14 9h2.2" />
+          </svg>
+          Recenter
+        </button>
         {/* Globe fills the full panel — no fixed size so zoom/pan use all the space */}
         <div style={{ position: 'absolute', inset: 0 }}>
           <OrbisGlobe
             colorMap={colorMap}
             currentId={pendingPrompt?.countryId ?? currentPrompt?.countryId ?? null}
             focusToken={focusToken}
+            recenterToken={recenterToken}
             onReady={() => setGlobeBooted(true)}
             onTargetReady={commitRenderedPrompt}
             promptIndex={promptIndex}

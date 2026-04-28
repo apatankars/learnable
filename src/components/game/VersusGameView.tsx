@@ -40,7 +40,7 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
   const [focusToken, setFocusToken]         = useState(0);
   const [globeBooted, setGlobeBooted]       = useState(false);
   const [isPromptRendering, setIsPromptRendering] = useState(true);
-  const [inputValue, setInputValue]         = useState('');
+  const [recenterToken, setRecenterToken]   = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const recordedResultRef = useRef(false);
   const timerStartedRef = useRef(false);
@@ -59,8 +59,13 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
   const queuePromptForRender = useCallback((nextPrompt: GamePrompt | null) => {
     pendingPromptRef.current = nextPrompt;
     setPendingPrompt(nextPrompt);
-    setCurrentPrompt(null);
+    setCurrentPrompt(nextPrompt);
     setIsPromptRendering(Boolean(nextPrompt));
+
+    if (inputRef.current) {
+      inputRef.current.blur();
+      inputRef.current.value = '';
+    }
 
     if (!nextPrompt) {
       return;
@@ -119,6 +124,14 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
     }
   }, [currentPrompt, getFirstPrompt, queuePromptForRender, session.phase]);
 
+  useEffect(() => {
+    if (session.phase !== 'playing') return;
+    if (currentPrompt || pendingPromptRef.current || isPromptRendering) return;
+
+    timerStartedRef.current = false;
+    endGame(session.score, session.maxStreak);
+  }, [currentPrompt, endGame, isPromptRendering, session.maxStreak, session.phase, session.score]);
+
   // Broadcast State
   useEffect(() => {
     if (!user) return;
@@ -140,10 +153,6 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
     }
   }, [currentPrompt, inputState, isPromptRendering, session.phase]);
 
-  useEffect(() => {
-    setInputValue('');
-  }, [currentPrompt]);
-
   function triggerFlash(f: FlashTrigger) {
     setFlash(null);
     requestAnimationFrame(() => setFlash(f));
@@ -151,7 +160,7 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
 
   const handleSubmit = useCallback(() => {
     if (!currentPrompt || session.phase !== 'playing') return;
-    const trimmed = inputValue.trim();
+    const trimmed = inputRef.current?.value.trim() ?? '';
     if (!trimmed) return;
 
     const result = submitAnswer(trimmed, currentPrompt, session.streak, false);
@@ -185,7 +194,7 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
         setPromptIndex(i => i + 1);
       }, FEEDBACK_DELAY_MS);
     }
-  }, [currentPrompt, session.phase, session.streak, submitAnswer, inputValue, queuePromptForRender]);
+  }, [currentPrompt, session.phase, session.streak, submitAnswer, queuePromptForRender]);
 
   function handleSkip() {
     if (!currentPrompt || session.phase !== 'playing') return;
@@ -219,22 +228,44 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
   const showFeedbackOk   = (inputState === 'correct' || inputState === 'fuzzy') && !!currentCountry;
   const showFeedbackMiss = inputState === 'wrong' && !!wrongAnswer;
   const promptLocked     = isPromptRendering || !currentPrompt;
+  const otherPlayers = useMemo(() => {
+    const players = versusHook.lobbyState?.players ?? [];
+    return players.filter(player => player.userId !== user.id);
+  }, [user.id, versusHook.lobbyState?.players]);
+  const leaderboardPlayers = useMemo(() => {
+    const selfState: VersusPlayerState = {
+      userId: user.id,
+      username: user.email?.split('@')[0] || 'Player',
+      score: session.score,
+      timeRemaining,
+      phase: session.phase,
+      streak: session.streak,
+      currentPromptIndex: promptIndex,
+    };
 
-
+    const players = [...otherPlayers, selfState];
+    return players.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      if (b.currentPromptIndex !== a.currentPromptIndex) return b.currentPromptIndex - a.currentPromptIndex;
+      return a.username.localeCompare(b.username);
+    });
+  }, [otherPlayers, promptIndex, session.phase, session.score, session.streak, timeRemaining, user.email, user.id]);
+  const topScore = leaderboardPlayers[0]?.score ?? 0;
+  const leaders = leaderboardPlayers.filter(player => player.score === topScore);
+  const isTopTie = leaders.length > 1;
+  const didUserWin = topScore > 0 && leaders.length === 1 && leaders[0]?.userId === user.id;
+  const didUserDraw = leaders.some(player => player.userId === user.id) && isTopTie;
 
   // Has the game ended?
   const isGameOver = session.phase === 'gameover' || versusHook.lobbyState?.status === 'finished';
-  const oppState = versusHook.opponentState;
 
   // Calculate winner on gameover
   useEffect(() => {
-    if (isGameOver && oppState && !recordedResultRef.current) {
+    if (isGameOver && otherPlayers.length > 0 && !recordedResultRef.current) {
       recordedResultRef.current = true;
-      // both players finish or time is up
-      const weWin = session.score > oppState.score;
-      if (recordVersusResult) recordVersusResult(weWin);
+      if (recordVersusResult) recordVersusResult(didUserWin);
     }
-  }, [isGameOver, oppState, session.score, recordVersusResult]);
+  }, [didUserWin, isGameOver, otherPlayers.length, recordVersusResult]);
 
   const vineBg = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='72' viewBox='0 0 22 72'%3E%3Cpath d='M11,0 C10,18 12,36 11,54 C10,62 11,72 11,72' stroke='rgba(74,110,36,0.28)' stroke-width='0.9' fill='none'/%3E%3Cpath d='M11,18 C8,11 13,4 20,3 C13,7 9,13 11,18Z' fill='rgba(74,110,36,0.20)'/%3E%3Cpath d='M11,49 C14,42 9,35 2,34 C9,37 13,44 11,49Z' fill='rgba(74,110,36,0.18)'/%3E%3Ccircle cx='11' cy='17' r='1.6' fill='rgba(74,110,36,0.22)'/%3E%3C/svg%3E")`;
 
@@ -311,24 +342,66 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
           )}
         </div>
 
-        {/* Opponent Status Overlay */}
+        {/* Standings Overlay */}
         <div className="game-progress-strip" style={{
-          alignItems: 'center', justifyContent: 'space-between',
+          alignItems: 'stretch', justifyContent: 'space-between',
           padding: '12px 20px', borderBottom: '1px solid var(--border)',
           background: 'rgba(135,100,24,0.05)', flexShrink: 0,
+          flexDirection: 'column', gap: 10,
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 16 }}>⚔️</span>
-            <span style={{ fontSize: 13, color: 'var(--t2)', fontFamily: 'var(--ff-u)' }}>
-              {oppState?.username || 'Opponent'}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 16 }}>⚔️</span>
+              <span style={{ fontSize: 13, color: 'var(--t2)', fontFamily: 'var(--ff-u)' }}>
+                Live standings
+              </span>
+            </div>
+            <span style={{ fontSize: 10, color: 'var(--t3)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              {leaderboardPlayers.length} players
             </span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-            <span style={{
-              fontFamily: 'var(--ff-d)', fontSize: 18, fontWeight: 300,
-              color: oppState && oppState.score > session.score ? 'var(--miss-hi)' : 'var(--t2)',
-            }}>{oppState?.score || 0}</span>
-            <span style={{ fontSize: 10, color: 'var(--t3)', letterSpacing: '0.06em' }}>pts</span>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {leaderboardPlayers.map((player, index) => {
+              const isSelf = player.userId === user.id;
+              const isLeader = player.score === topScore && topScore > 0;
+
+              return (
+                <div
+                  key={player.userId}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '8px 10px',
+                    borderRadius: 3,
+                    border: isSelf ? '1px solid rgba(135,100,24,0.32)' : '1px solid var(--border)',
+                    background: isSelf ? 'rgba(135,100,24,0.08)' : 'var(--bg)',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                    <span style={{ fontSize: 11, color: 'var(--t3)', width: 18 }}>
+                      #{index + 1}
+                    </span>
+                    <span style={{ fontSize: 13, color: 'var(--t2)', fontFamily: 'var(--ff-u)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {player.username}{isSelf ? ' (You)' : ''}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, flexShrink: 0 }}>
+                    <span style={{
+                      fontFamily: 'var(--ff-d)', fontSize: 18, fontWeight: 300,
+                      color: isLeader ? 'var(--gold-hi)' : 'var(--t2)',
+                    }}>{player.score}</span>
+                    <span style={{ fontSize: 10, color: 'var(--t3)', letterSpacing: '0.06em' }}>pts</span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -344,7 +417,7 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
               <div className="animate-spin" style={{ width: 18, height: 18, borderRadius: '50%', border: '1.5px solid var(--border-hi)', borderTopColor: 'var(--olive)' }} />
               <span>Waiting…</span>
             </div>
-          ) : isPromptRendering ? (
+          ) : !currentPrompt && isPromptRendering ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--t3)', fontSize: 12, letterSpacing: '0.08em', marginTop: 36 }}>
               <div className="animate-spin" style={{ width: 18, height: 18, borderRadius: '50%', border: '1.5px solid var(--border-hi)', borderTopColor: 'var(--olive)' }} />
               <span>{globeBooted ? 'Rendering target…' : 'Rendering globe…'}</span>
@@ -398,8 +471,6 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
                   <input
                     ref={inputRef}
                     type="text"
-                    value={inputValue}
-                    onChange={e => setInputValue(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleSubmit()}
                     disabled={!isPlaying || showWrongFeedback || promptLocked}
                     placeholder="Type your answer…"
@@ -416,19 +487,30 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
                   />
                   <button
                     onClick={handleSubmit}
-                    disabled={!isPlaying || !inputValue.trim() || showWrongFeedback || promptLocked}
+                    disabled={!isPlaying || showWrongFeedback || promptLocked}
                     style={{
                       padding: '0 16px', height: 46,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       color: 'var(--olive)', borderLeft: '1px solid var(--border)',
-                      cursor: (!isPlaying || !inputValue.trim() || promptLocked) ? 'default' : 'pointer',
-                      background: 'none', opacity: (!isPlaying || !inputValue.trim() || promptLocked) ? 0.35 : 1,
+                      cursor: (!isPlaying || promptLocked) ? 'default' : 'pointer',
+                      background: 'none', opacity: (!isPlaying || promptLocked) ? 0.35 : 1,
                     }}
                   >
                     <svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.6">
                       <path d="M4,9 L14,9 M10,5 L14,9 L10,13"/>
                     </svg>
                   </button>
+                </div>
+              )}
+
+              {isPromptRendering && currentPrompt && (
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
+                  fontSize: 11, color: 'var(--t3)', letterSpacing: '0.06em',
+                  marginBottom: 12, fontFamily: 'var(--ff-u)',
+                }}>
+                  <div className="animate-spin" style={{ width: 12, height: 12, borderRadius: '50%', border: '1.5px solid var(--border-hi)', borderTopColor: 'var(--olive)' }} />
+                  <span>{globeBooted ? 'Locating next target…' : 'Rendering globe…'}</span>
                 </div>
               )}
 
@@ -495,10 +577,31 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
         flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
         overflow: 'hidden', position: 'relative', background: '#05080d',
       }}>
+        <button
+          onClick={() => setRecenterToken((value) => value + 1)}
+          title="Recenter globe"
+          style={{
+            position: 'absolute', top: 18, right: 18, zIndex: 12,
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            padding: '8px 12px', borderRadius: 999,
+            border: '1px solid rgba(255,255,255,0.14)',
+            background: 'rgba(7,10,15,0.68)', color: 'rgba(244,231,205,0.92)',
+            backdropFilter: 'blur(10px)', cursor: 'pointer',
+            fontFamily: 'var(--ff-u)', fontSize: 11, letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+          }}
+        >
+          <svg viewBox="0 0 18 18" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <circle cx="9" cy="9" r="5.2" />
+            <path d="M9 1.8v2.2M9 14v2.2M1.8 9H4M14 9h2.2" />
+          </svg>
+          Recenter
+        </button>
         <OrbisGlobe
           colorMap={colorMap}
           currentId={pendingPrompt?.countryId ?? currentPrompt?.countryId ?? null}
           focusToken={focusToken}
+          recenterToken={recenterToken}
           onReady={() => setGlobeBooted(true)}
           onTargetReady={commitRenderedPrompt}
           promptIndex={promptIndex}
@@ -522,20 +625,38 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
               fontFamily: 'var(--ff-d)', fontSize: 36, color: 'var(--t1)', marginBottom: 8,
             }}>
               {versusHook.lobbyState?.status === 'finished' ? 'Host Disconnected' : 
-                (session.score > (oppState?.score || 0) ? 'Victory!' : session.score === (oppState?.score || 0) ? 'Draw!' : 'Defeat!')
+                (didUserWin ? 'Victory!' : didUserDraw ? 'Draw!' : 'Defeat!')
               }
             </h2>
             <div style={{ marginBottom: 30, color: 'var(--t3)', fontSize: 14 }}>
               Final Scores
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, padding: '12px', background: 'var(--s1)', borderRadius: 4 }}>
-              <span>You</span>
-              <span style={{ color: 'var(--gold-hi)' }}>{session.score}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 30, padding: '12px', background: 'var(--s1)', borderRadius: 4 }}>
-              <span>{oppState?.username || 'Opponent'}</span>
-              <span style={{ color: 'var(--gold-hi)' }}>{oppState?.score || 0}</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 30 }}>
+              {leaderboardPlayers.map((player, index) => {
+                const isSelf = player.userId === user.id;
+                const isLeader = player.score === topScore && topScore > 0;
+
+                return (
+                  <div
+                    key={player.userId}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '12px',
+                      background: 'var(--s1)',
+                      borderRadius: 4,
+                      border: isSelf ? '1px solid rgba(135,100,24,0.32)' : '1px solid transparent',
+                    }}
+                  >
+                    <span>
+                      #{index + 1} {player.username}{isSelf ? ' (You)' : ''}
+                    </span>
+                    <span style={{ color: isLeader ? 'var(--gold-hi)' : 'var(--t2)' }}>{player.score}</span>
+                  </div>
+                );
+              })}
             </div>
 
             <button

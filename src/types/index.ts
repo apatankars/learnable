@@ -58,6 +58,7 @@ export interface GameSettings {
   regionFilter: string[];
   includeDependent: boolean;
   practicePrompts?: 'country' | 'capital' | 'both';
+  versusPrompts?: 'country' | 'capital' | 'both';
 }
 
 export interface MatchResult {
@@ -98,6 +99,7 @@ export interface UserSettings {
   regionFilter: string[];
   includeDependent: boolean;
   practicePrompts?: 'country' | 'capital' | 'both';
+  versusPrompts?: 'country' | 'capital' | 'both';
 }
 
 export type TimeMode = 'blitz' | 'standard' | 'infinite';

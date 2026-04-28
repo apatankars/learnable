@@ -23,9 +23,16 @@ interface PresenceMeta {
   username?: string;
 }
 
+function sortPlayers(players: VersusPlayerState[], hostId: string) {
+  return [...players].sort((a, b) => {
+    if (a.userId === hostId) return -1;
+    if (b.userId === hostId) return 1;
+    return a.username.localeCompare(b.username);
+  });
+}
+
 export function useVersusMultiplayer(user: User | null) {
   const [lobbyState, setLobbyState] = useState<VersusLobbyState | null>(null);
-  const [opponentState, setOpponentState] = useState<VersusPlayerState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isHost, setIsHost] = useState(false);
   
@@ -38,7 +45,6 @@ export function useVersusMultiplayer(user: User | null) {
       channelRef.current = null;
     }
     setLobbyState(null);
-    setOpponentState(null);
     setError(null);
     setIsHost(false);
     isHostRef.current = false;
@@ -73,35 +79,42 @@ export function useVersusMultiplayer(user: User | null) {
     // Presence Sync
     channel.on('presence', { event: 'sync' }, () => {
       const state = channel.presenceState();
-      const players: VersusPlayerState[] = [];
-      
-      let hostId = isHost ? user.id : '';
+      setLobbyState(prev => {
+        let hostId = prev?.hostId || (isHost ? user.id : '');
+        const previousPlayers = new Map((prev?.players ?? []).map(player => [player.userId, player]));
+        const players: VersusPlayerState[] = [];
 
-      for (const [key, presenceData] of Object.entries(state)) {
-        if (Array.isArray(presenceData) && presenceData.length > 0) {
+        for (const [key, presenceData] of Object.entries(state)) {
+          if (!Array.isArray(presenceData) || presenceData.length === 0) {
+            continue;
+          }
+
           const data = presenceData[0] as PresenceMeta;
-          if (data.isHost) hostId = key;
-          
+          if (data.isHost) {
+            hostId = key;
+          }
+
+          const previous = previousPlayers.get(key);
           players.push({
             userId: key,
-            username: data.username || 'Player',
-            score: 0,
-            timeRemaining: 0,
-            phase: 'idle',
-            streak: 0,
-            currentPromptIndex: 0,
+            username: data.username || previous?.username || 'Player',
+            score: previous?.score ?? 0,
+            timeRemaining: previous?.timeRemaining ?? 0,
+            phase: previous?.phase ?? 'idle',
+            streak: previous?.streak ?? 0,
+            currentPromptIndex: previous?.currentPromptIndex ?? 0,
           });
         }
-      }
 
-      setLobbyState(prev => {
+        const sortedPlayers = sortPlayers(players, hostId);
         if (prev) {
-          return { ...prev, players, hostId };
+          return { ...prev, players: sortedPlayers, hostId };
         }
+
         return {
           roomCode,
           hostId,
-          players,
+          players: sortedPlayers,
           status: 'waiting',
           settings: isHost ? settings : undefined,
         };
@@ -136,9 +149,17 @@ export function useVersusMultiplayer(user: User | null) {
           };
         });
       } else if (msg.type === 'UPDATE_STATE') {
-        if (msg.payload.userId !== user.id) {
-          setOpponentState(msg.payload.state);
-        }
+        setLobbyState(prev => {
+          if (!prev) return prev;
+
+          const playersById = new Map(prev.players.map(player => [player.userId, player]));
+          playersById.set(msg.payload.userId, msg.payload.state);
+
+          return {
+            ...prev,
+            players: sortPlayers([...playersById.values()], prev.hostId),
+          };
+        });
       } else if (msg.type === 'GAME_OVER') {
         // Handled naturally by UPDATE_STATE phase = 'gameover'
       }
@@ -199,7 +220,6 @@ export function useVersusMultiplayer(user: User | null) {
 
   return {
     lobbyState,
-    opponentState,
     error,
     isHost,
     hostLobby,

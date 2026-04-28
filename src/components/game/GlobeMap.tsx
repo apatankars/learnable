@@ -11,6 +11,7 @@ interface GlobeMapProps {
   currentId?: string | null;
   decorative?: boolean;
   focusToken?: number;
+  recenterToken?: number;
   onReady?: () => void;
   onTargetReady?: (token: number) => void;
   promptIndex?: number;
@@ -37,10 +38,10 @@ const VIEWPOINTS = {
   overview: { altitude: 2.05, lat: 14, lng: -18 },
 };
 
-const FOCUS_TRANSITION_MS = 420;
-const OVERVIEW_TRANSITION_MS = 260;
+const FOCUS_TRANSITION_MS = 240;
+const OVERVIEW_TRANSITION_MS = 160;
 const DECORATIVE_TRANSITION_MS = 1400;
-const SETTLE_PADDING_MS = 24;
+const SETTLE_PADDING_MS = 8;
 
 const COLOR_STYLES: Record<CountryColorState, {
   altitude: number;
@@ -264,6 +265,7 @@ export const GlobeMap = memo(function GlobeMap({
   currentId = null,
   decorative = false,
   focusToken = 0,
+  recenterToken = 0,
   onReady,
   onTargetReady,
   promptIndex = 0,
@@ -416,6 +418,34 @@ export const GlobeMap = memo(function GlobeMap({
     globe.pointOfView(decorative ? VIEWPOINTS.decorative : VIEWPOINTS.overview, overviewDuration);
     scheduleSettled(focusToken, overviewDuration);
   }, [currentId, decorative, focusToken, globeGeometry]);
+
+  useEffect(() => {
+    if (!recenterToken) {
+      return;
+    }
+
+    const globe = globeRef.current;
+    if (!globe || !globeGeometry || !readyRef.current) {
+      return;
+    }
+
+    const centroid = currentId ? globeGeometry.centroids[currentId] : null;
+    const duration = decorative ? DECORATIVE_TRANSITION_MS : OVERVIEW_TRANSITION_MS;
+
+    if (centroid) {
+      globe.pointOfView(
+        {
+          altitude: VIEWPOINTS.focus.altitude,
+          lat: Math.max(-85, Math.min(85, centroid.lat)),
+          lng: normalizeLng(centroid.lng),
+        },
+        duration,
+      );
+      return;
+    }
+
+    globe.pointOfView(decorative ? VIEWPOINTS.decorative : VIEWPOINTS.overview, duration);
+  }, [currentId, decorative, globeGeometry, recenterToken]);
 
   const polygonsData = globeGeometry?.features ?? [];
 
