@@ -23,6 +23,7 @@ const searchDocs = countries.map(c => ({
 }));
 
 const searchDocById = new Map(searchDocs.map(d => [d.id, d]));
+const MIN_FUZZY_LENGTH = 3;
 
 const FUSE_OPTS_BASE = {
   threshold: 0.4,
@@ -58,9 +59,43 @@ function scoreTier(fuseScore: number): MatchTier {
   return 'wrong';
 }
 
+function exactCountryMatch(norm: string) {
+  for (const doc of searchDocs) {
+    if (doc._name === norm || doc._altNames.includes(norm)) {
+      return doc;
+    }
+  }
+  return null;
+}
+
+function exactCapitalMatch(norm: string, targetId: string) {
+  const target = searchDocById.get(targetId);
+  if (!target) return null;
+  if (target._capital === norm || target._altCapitals.includes(norm)) {
+    return target;
+  }
+  return null;
+}
+
 export function matchCountry(input: string, targetId?: string): MatchResult | null {
   const norm = normalize(input);
   if (!norm) return null;
+
+  const exact = exactCountryMatch(norm);
+  if (exact) {
+    const result: MatchResult = {
+      tier: 'correct',
+      matchedName: exact.name,
+      countryId: exact.id,
+      score: 0,
+    };
+    if (targetId && exact.id !== targetId) {
+      return { ...result, tier: 'wrong' };
+    }
+    return result;
+  }
+
+  if (norm.length < MIN_FUZZY_LENGTH) return null;
 
   const results = countryFuse.search(norm);
   if (!results.length) return null;
@@ -83,6 +118,18 @@ export function matchCapital(input: string, targetId: string): MatchResult | nul
   const target = searchDocById.get(targetId);
   if (!target) return null;
 
+  const exact = exactCapitalMatch(norm, targetId);
+  if (exact) {
+    return {
+      tier: 'correct',
+      matchedName: target.capital,
+      countryId: targetId,
+      score: 0,
+    };
+  }
+
+  if (norm.length < MIN_FUZZY_LENGTH) return null;
+
   const directFuse = capitalFuseMap.get(targetId);
   if (!directFuse) return { tier: 'wrong', matchedName: target.capital, countryId: targetId, score: 1 };
 
@@ -104,6 +151,11 @@ export function matchCapital(input: string, targetId: string): MatchResult | nul
 export function matchFreeCountry(input: string): MatchResult | null {
   const norm = normalize(input);
   if (!norm) return null;
+  const exact = exactCountryMatch(norm);
+  if (exact) {
+    return { tier: 'correct', matchedName: exact.name, countryId: exact.id, score: 0 };
+  }
+  if (norm.length < MIN_FUZZY_LENGTH) return null;
   const results = countryFuse.search(norm);
   if (!results.length) return null;
   const best = results[0];

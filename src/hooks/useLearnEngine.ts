@@ -16,6 +16,7 @@ type GameAction =
   | { type: 'TEST'; nextPrompt: GamePrompt }
   | { type: 'CORRECT'; result: AttemptResult }
   | { type: 'WRONG'; result: AttemptResult }
+  | { type: 'SKIP'; result: AttemptResult }
   | { type: 'PAUSE' }
   | { type: 'RESUME' }
   | { type: 'END' }
@@ -89,6 +90,18 @@ function gameReducer(state: GameSession, action: GameAction): GameSession {
         streak: 0,
         attempts: [...state.attempts, action.result],
         wrong: newWrong,
+        failsOnCurrentPrompt: 0,
+        totalQuestions: state.totalQuestions + 1,
+      };
+    }
+    case 'SKIP': {
+      const newSkipped = new Set(state.skipped);
+      newSkipped.add(`${action.result.countryId}:${action.result.promptType}`);
+      return {
+        ...state,
+        streak: 0,
+        attempts: [...state.attempts, action.result],
+        skipped: newSkipped,
         failsOnCurrentPrompt: 0,
         totalQuestions: state.totalQuestions + 1,
       };
@@ -337,6 +350,33 @@ export function useLearnEngine(
     return { tier: isFuzzy ? ('fuzzy' as const) : ('correct' as const), matchedName: matchResult.matchedName, points, nextPrompt };
   }, [onAttempt, advanceGame]);
 
+  const submitSkip = useCallback((currentPrompt: GamePrompt) => {
+    const country = allCountries.find(c => c.id === currentPrompt.countryId);
+    if (!country) return null;
+
+    const timeTaken = Date.now() - promptStartRef.current;
+    const result: AttemptResult = {
+      countryId: currentPrompt.countryId,
+      promptType: currentPrompt.promptType,
+      userInput: '',
+      correct: false,
+      fuzzyScore: 1,
+      timeTaken,
+      pointsAwarded: 0,
+    };
+    onAttempt(result);
+    dispatch({ type: 'SKIP', result });
+
+    const entry = activeQueue.current.find(p => p.prompt.countryId === currentPrompt.countryId && p.prompt.promptType === currentPrompt.promptType);
+    if (entry) entry.streak = 0;
+
+    const nextPrompt = advanceGame();
+    return {
+      correctAnswer: currentPrompt.promptType === 'country' ? country.name : country.capital,
+      nextPrompt,
+    };
+  }, [advanceGame, onAttempt]);
+
   const pause = useCallback(() => {
     previousPhaseRef.current = session.phase as 'playing' | 'teaching';
     dispatch({ type: 'PAUSE' });
@@ -361,6 +401,7 @@ export function useLearnEngine(
     startGame,
     getFirstPrompt,
     submitAnswer,
+    submitSkip,
     acknowledgeTeaching,
     pause,
     resume,

@@ -168,7 +168,7 @@
   { "id": "SWE", "name": "Sweden", "altNames": ["kingdom of sweden", "sverige"], "capital": "Stockholm", "altCapitals": ["stockholm"], "region": "Europe", "difficulty": 1, "independent": true },
   { "id": "CHE", "name": "Switzerland", "altNames": ["swiss confederation", "schweiz", "suisse", "svizzera", "helvetia"], "capital": "Bern", "altCapitals": ["bern", "berne"], "region": "Europe", "difficulty": 1, "independent": true },
   { "id": "SYR", "name": "Syria", "altNames": ["syrian arab republic", "suriyah"], "capital": "Damascus", "altCapitals": ["damascus", "dimashq", "ash sham"], "region": "Asia", "difficulty": 2, "independent": true },
-  { "id": "TWN", "name": "Taiwan", "altNames": ["republic of china", "roc", "formosa"], "capital": "Taipei", "altCapitals": ["taipei", "taipeh"], "region": "Asia", "difficulty": 2, "independent": true },
+  { "id": "TWN", "name": "Taiwan", "altNames": ["republic of china", "roc", "formosa"], "capital": "Taipei", "altCapitals": ["taipei", "taipeh", "taipei city"], "region": "Asia", "difficulty": 2, "independent": true },
   { "id": "TJK", "name": "Tajikistan", "altNames": ["republic of tajikistan", "tojikiston"], "capital": "Dushanbe", "altCapitals": ["dushanbe", "stalinabad"], "region": "Asia", "difficulty": 3, "independent": true },
   { "id": "TZA", "name": "Tanzania", "altNames": ["united republic of tanzania", "tanganyika"], "capital": "Dodoma", "altCapitals": ["dodoma", "dar es salaam"], "region": "Africa", "difficulty": 2, "independent": true },
   { "id": "THA", "name": "Thailand", "altNames": ["kingdom of thailand", "siam", "prathet thai"], "capital": "Bangkok", "altCapitals": ["bangkok", "krung thep", "krungthep"], "region": "Asia", "difficulty": 1, "independent": true },

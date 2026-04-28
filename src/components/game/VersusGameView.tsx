@@ -54,7 +54,7 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
   }, []);
 
   const engine = useGameEngine(recordAttempt, handleFinish);
-  const { session, getFirstPrompt, submitAnswer, endGame } = engine;
+  const { session, getFirstPrompt, submitAnswer, submitSkip, endGame } = engine;
 
   const queuePromptForRender = useCallback((nextPrompt: GamePrompt | null) => {
     pendingPromptRef.current = nextPrompt;
@@ -198,8 +198,8 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
 
   function handleSkip() {
     if (!currentPrompt || session.phase !== 'playing') return;
-    const result = submitAnswer('', currentPrompt, session.streak, false);
-    if (result?.tier === 'wrong') {
+    const result = submitSkip(currentPrompt);
+    if (result) {
       setWrongAnswer(result.correctAnswer);
       setShowWrongFeedback(true);
       triggerFlash({ type: 'skip' });

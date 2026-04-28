@@ -85,7 +85,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
   const standardEngine = useGameEngine(recordAttempt, handleFinish);
   const learnEngine     = useLearnEngine(progress.progress, recordAttempt, handleFinish);
   const engine          = isLearnMode ? learnEngine : standardEngine;
-  const { session, getFirstPrompt, submitAnswer, pause, resume, endGame, reset } = engine;
+  const { session, getFirstPrompt, submitAnswer, submitSkip, pause, resume, endGame, reset } = engine;
   const acknowledgeTeaching = isLearnMode ? learnEngine.acknowledgeTeaching : () => null;
 
   const queuePromptForRender = useCallback((nextPrompt: GamePrompt | null) => {
@@ -245,8 +245,8 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
 
   function handleSkip() {
     if (!currentPrompt || session.phase !== 'playing') return;
-    const result = submitAnswer('', currentPrompt, session.streak, false);
-    if (result?.tier === 'wrong') {
+    const result = submitSkip(currentPrompt);
+    if (result) {
       setWrongAnswer(result.correctAnswer);
       setShowWrongFeedback(true);
       triggerFlash({ type: 'skip' });

@@ -59,6 +59,7 @@ type GameAction =
   | { type: 'START'; settings: GameSettings }
   | { type: 'CORRECT'; result: AttemptResult; nextPrompt: GamePrompt | null }
   | { type: 'WRONG'; result: AttemptResult; nextPrompt: GamePrompt | null }
+  | { type: 'SKIP'; result: AttemptResult; nextPrompt: GamePrompt | null }
   | { type: 'PAUSE' }
   | { type: 'RESUME' }
   | { type: 'END' }
@@ -121,6 +122,19 @@ function gameReducer(state: GameSession, action: GameAction): GameSession {
         streak: 0,
         attempts: [...state.attempts, action.result],
         wrong: newWrong,
+        currentPrompt: action.nextPrompt,
+        failsOnCurrentPrompt: 0,
+        totalQuestions: state.totalQuestions + 1,
+      };
+    }
+    case 'SKIP': {
+      const newSkipped = new Set(state.skipped);
+      newSkipped.add(`${action.result.countryId}:${action.result.promptType}`);
+      return {
+        ...state,
+        streak: 0,
+        attempts: [...state.attempts, action.result],
+        skipped: newSkipped,
         currentPrompt: action.nextPrompt,
         failsOnCurrentPrompt: 0,
         totalQuestions: state.totalQuestions + 1,
@@ -215,6 +229,32 @@ export function useGameEngine(
     return { tier: isFuzzy ? ('fuzzy' as const) : ('correct' as const), matchedName: matchResult.matchedName, points, nextPrompt };
   }, [onAttempt]);
 
+  const submitSkip = useCallback((currentPrompt: GamePrompt) => {
+    const country = countryById.get(currentPrompt.countryId);
+    if (!country) return null;
+
+    const timeTaken = Date.now() - _promptStart;
+    const result: AttemptResult = {
+      countryId: currentPrompt.countryId,
+      promptType: currentPrompt.promptType,
+      userInput: '',
+      correct: false,
+      fuzzyScore: 1,
+      timeTaken,
+      pointsAwarded: 0,
+    };
+
+    onAttempt(result);
+    const nextPrompt = nextFromQueue();
+    _promptStart = Date.now();
+    dispatch({ type: 'SKIP', result, nextPrompt });
+
+    return {
+      correctAnswer: currentPrompt.promptType === 'country' ? country.name : country.capital,
+      nextPrompt,
+    };
+  }, [onAttempt]);
+
   const pause = useCallback(() => dispatch({ type: 'PAUSE' }), []);
   const resume = useCallback(() => dispatch({ type: 'RESUME' }), []);
 
@@ -234,6 +274,7 @@ export function useGameEngine(
     startGame,
     getFirstPrompt,
     submitAnswer,
+    submitSkip,
     pause,
     resume,
     endGame,
