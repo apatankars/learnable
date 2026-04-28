@@ -1,0 +1,166 @@
+@import "tailwindcss";
+
+/* ── ORBIS DESIGN TOKENS ──────────────────────────────────── */
+:root {
+  --bg:        #f0e9d6;
+  --s1:        #e8e0cc;
+  --s2:        #dfd7c2;
+  --s3:        #d5ccb6;
+  --s4:        #c9c0a8;
+  --border:    #bdb49e;
+  --border-hi: #9c9278;
+  --t1:        #1a1810;
+  --t2:        #46402c;
+  --t3:        #7a7260;
+  --olive:     #567428;
+  --olive-hi:  #72a034;
+  --gold:      #876418;
+  --gold-hi:   #ac8428;
+  --green-a:   #3a5c1c;
+  --ok:        #3a5c1c;
+  --ok-hi:     #568a30;
+  --miss:      #842820;
+  --miss-hi:   #a84038;
+  --ff-d:      'Cormorant Garant', Georgia, serif;
+  --ff-u:      'DM Sans', system-ui, sans-serif;
+}
+
+@theme {
+  --font-cormorant: "Cormorant Garant", Georgia, serif;
+  --font-playfair: "Playfair Display", Georgia, serif;
+  --font-dm: "DM Sans", system-ui, sans-serif;
+
+  --color-leaf-50: #f6faf3;
+  --color-leaf-100: #e8f5e1;
+  --color-leaf-200: #c8e6b8;
+  --color-leaf-300: #9fd088;
+  --color-leaf-400: #6fb55a;
+  --color-leaf-500: #4a9a36;
+  --color-leaf-600: #3a7a29;
+  --color-leaf-700: #2d5f20;
+  --color-leaf-800: #1f4316;
+  --color-leaf-900: #122a0d;
+
+  --color-bark-50: #fdf8f0;
+  --color-bark-100: #f5e9d4;
+  --color-bark-200: #e8ceaa;
+  --color-bark-300: #d4aa79;
+  --color-bark-400: #bd8850;
+  --color-bark-500: #9e6b35;
+  --color-bark-600: #7d5229;
+  --color-bark-700: #5e3d1e;
+  --color-bark-800: #402a14;
+  --color-bark-900: #261908;
+
+  --color-moss-400: #6e9b52;
+  --color-moss-500: #527f39;
+  --color-moss-600: #3e6129;
+
+  --color-petal-100: #fef3e2;
+  --color-petal-300: #f9c96b;
+  --color-petal-500: #e8a020;
+
+  --color-soil-100: #f0e8df;
+  --color-soil-300: #c9a98c;
+  --color-soil-500: #8b6347;
+  --color-soil-700: #4a3020;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html, body, #root {
+    height: 100%;
+    width: 100%;
+  }
+
+  body {
+    font-family: var(--font-dm);
+    color: var(--t1);
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@layer base {
+  body {
+    background-color: var(--bg);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240'%3E%3Cpath d='M24,216 C34,178 60,148 98,124 C62,148 36,180 24,216' fill='rgba(74,110,36,0.028)'/%3E%3Cpath d='M170,14 C184,28 190,48 182,68 C188,48 182,28 170,14' fill='rgba(74,110,36,0.020)'/%3E%3Ccircle cx='100' cy='122' r='3.5' fill='rgba(74,110,36,0.016)'/%3E%3Ccircle cx='172' cy='16' r='2.5' fill='rgba(74,110,36,0.014)'/%3E%3C/svg%3E");
+    background-size: 240px 240px;
+  }
+}
+
+@layer utilities {
+  .font-cormorant {
+    font-family: var(--font-cormorant);
+  }
+  .font-playfair {
+    font-family: var(--font-playfair);
+  }
+  .font-dm {
+    font-family: var(--font-dm);
+  }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(7px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.36s ease forwards;
+}
+
+@keyframes float-up {
+  0% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-60px); }
+}
+
+@keyframes slide-up {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-6px); }
+  30% { transform: translateX(6px); }
+  45% { transform: translateX(-4px); }
+  60% { transform: translateX(4px); }
+  75% { transform: translateX(-2px); }
+  90% { transform: translateX(2px); }
+}
+
+@keyframes bounce-subtle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+.animate-float-up {
+  animation: float-up 1.2s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+.animate-bounce-subtle {
+  animation: bounce-subtle 1s ease-in-out infinite;
+}
+
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 2s linear infinite;
+}
