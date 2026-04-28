@@ -4,6 +4,7 @@ import { ResultFlash } from './ResultFlash';
 import { GameOverModal } from './GameOverModal';
 import { TeachingPanel } from './TeachingPanel';
 import { BotanicalCorner } from '../ui/BotanicalCorner';
+import { SpaceBackdrop } from '../ui/SpaceBackdrop';
 import type { GamePrompt, GameSettings, GlobalStats } from '../../types';
 import { useGameEngine } from '../../hooks/useGameEngine';
 import { useLearnEngine } from '../../hooks/useLearnEngine';
@@ -650,6 +651,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
         flex: 1, position: 'relative', overflow: 'hidden',
         background: '#05080d',
       }}>
+        <SpaceBackdrop />
         <button
           onClick={() => setRecenterToken((value) => value + 1)}
           title="Recenter globe"

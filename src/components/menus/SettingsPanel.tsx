@@ -58,25 +58,6 @@ export function SettingsPanel({ settings, onChange }: SettingsPanelProps) {
         </div>
       </div>
 
-      {/* Blind mode */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', background: 'var(--s1)', borderRadius: 3, border: '1px solid var(--border)' }}>
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--t2)' }}>🙈 Blind Mode</div>
-          <div style={{ fontSize: 11, color: 'var(--t3)', marginTop: 2 }}>Hide the map — rely purely on memory</div>
-        </div>
-        <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
-          <input
-            type="checkbox"
-            style={{ opacity: 0, position: 'absolute', width: 0, height: 0 }}
-            checked={settings.blindMode}
-            onChange={e => update({ blindMode: e.target.checked })}
-          />
-          <div style={{ width: 44, height: 24, background: settings.blindMode ? 'var(--olive)' : 'var(--border)', borderRadius: 12, position: 'relative', transition: 'background 0.2s' }}>
-            <div style={{ width: 20, height: 20, background: '#fff', borderRadius: '50%', position: 'absolute', top: 2, left: settings.blindMode ? 22 : 2, transition: 'left 0.2s' }} />
-          </div>
-        </label>
-      </div>
-
       {/* Region filter */}
       <div>
         <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Regions</div>

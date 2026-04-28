@@ -112,14 +112,42 @@ export interface LeaderboardEntry {
   updatedAt: string;
 }
 
+export type VersusPowerup = 'scout' | 'time-bank' | 'streak-shield' | 'fog' | 'lock';
+export type VersusEffectType = VersusPowerup;
+export type VersusStreakRewardState = 'none' | 'earned3' | 'earned5';
+
+export interface VersusActiveEffect {
+  type: VersusEffectType;
+  sourceUserId: string;
+  sourceUsername: string;
+  targetUserId: string;
+  startedAt: number;
+  expiresAt?: number;
+  promptIndex?: number;
+  promptsRemaining?: number;
+  applyToNextPrompt?: boolean;
+}
+
+export interface VersusEffectLogEntry {
+  id: string;
+  message: string;
+  createdAt: number;
+  targetUserId?: string;
+}
+
 export interface VersusPlayerState {
   userId: string;
   username: string;
+  emoji: string;
   score: number;
   timeRemaining: number;
   phase: GamePhase;
   streak: number;
   currentPromptIndex: number;
+  heldPowerups: VersusPowerup[];
+  activeEffect: VersusActiveEffect | null;
+  powerupCooldownUntil: number;
+  currentCorrectStreakRewardState: VersusStreakRewardState;
 }
 
 export interface VersusLobbyState {
@@ -129,12 +157,17 @@ export interface VersusLobbyState {
   status: 'waiting' | 'starting' | 'playing' | 'finished';
   settings?: GameSettings;
   queue?: GamePrompt[];
+  effectLog?: VersusEffectLogEntry[];
 }
 
 export type RealtimeMessageType = 
   | 'START_GAME'
   | 'UPDATE_STATE'
-  | 'GAME_OVER';
+  | 'GAME_OVER'
+  | 'USE_POWERUP'
+  | 'APPLY_EFFECT'
+  | 'EXPIRE_EFFECT'
+  | 'SYNC_POWERUP_STATE';
 
 export type RealtimeMessage =
   | {
@@ -144,6 +177,22 @@ export type RealtimeMessage =
   | {
     type: 'UPDATE_STATE';
     payload: { userId: string; state: VersusPlayerState };
+  }
+  | {
+    type: 'USE_POWERUP';
+    payload: { userId: string; username: string; powerup: VersusPowerup; targetUserId?: string; message: string };
+  }
+  | {
+    type: 'APPLY_EFFECT';
+    payload: { userId: string; effect: VersusActiveEffect; message: string };
+  }
+  | {
+    type: 'EXPIRE_EFFECT';
+    payload: { userId: string; effectType: VersusEffectType };
+  }
+  | {
+    type: 'SYNC_POWERUP_STATE';
+    payload: { userId: string; patch: Partial<VersusPlayerState> };
   }
   | {
     type: 'GAME_OVER';

@@ -89,7 +89,7 @@ export function VersusLobby({ lobbyState, isHost, onStartGame, onLeave, error }:
             borderRadius: 3,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ fontSize: 20 }}>👑</span>
+              <span style={{ fontSize: 20 }}>{host?.emoji ?? '🌍'}</span>
               <span style={{ fontSize: 14, color: 'var(--t2)' }}>
                 {host ? host.username : 'Host joining...'}
               </span>
@@ -109,14 +109,13 @@ export function VersusLobby({ lobbyState, isHost, onStartGame, onLeave, error }:
               opacity: 0.6,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span style={{ fontSize: 20 }}>⚔️</span>
                 <span style={{ fontSize: 14, color: 'var(--t2)' }}>
                   Waiting for players...
                 </span>
               </div>
             </div>
           ) : (
-            guests.map((player, index) => (
+            guests.map((player) => (
               <div
                 key={player.userId}
                 style={{
@@ -128,7 +127,7 @@ export function VersusLobby({ lobbyState, isHost, onStartGame, onLeave, error }:
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ fontSize: 20 }}>{index === 0 ? '⚔️' : '🌍'}</span>
+                  <span style={{ fontSize: 20 }}>{player.emoji}</span>
                   <span style={{ fontSize: 14, color: 'var(--t2)' }}>
                     {player.username}
                   </span>
@@ -194,7 +193,19 @@ export function VersusLobby({ lobbyState, isHost, onStartGame, onLeave, error }:
   );
 }
 
-export function JoinVersusModal({ onClose, onJoin }: { onClose: () => void, onJoin: (code: string) => void }) {
+const EMOJI_OPTIONS = ['🌍', '🦊', '🐼', '🦁', '🐸', '🦉', '🐙', '🐯', '🐻', '🦄'];
+
+export function JoinVersusModal({
+  onClose,
+  onJoin,
+  emoji,
+  onEmojiChange,
+}: {
+  onClose: () => void;
+  onJoin: (code: string) => void;
+  emoji: string;
+  onEmojiChange: (emoji: string) => void;
+}) {
   const [code, setCode] = useState('');
 
   return (
@@ -213,6 +224,30 @@ export function JoinVersusModal({ onClose, onJoin }: { onClose: () => void, onJo
         fontFamily: 'var(--ff-u)',
       }}>
         <h2 style={{ fontSize: 18, color: 'var(--t1)', marginBottom: 16, textAlign: 'center' }}>Join Versus Game</h2>
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 11, color: 'var(--t3)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8, textAlign: 'center' }}>
+            Your Emoji
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+            {EMOJI_OPTIONS.map(option => (
+              <button
+                key={option}
+                onClick={() => onEmojiChange(option)}
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  border: emoji === option ? '1px solid var(--gold)' : '1px solid var(--border)',
+                  background: emoji === option ? 'rgba(135,100,24,0.08)' : 'var(--s1)',
+                  cursor: 'pointer',
+                  fontSize: 18,
+                }}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+        </div>
         <input
           autoFocus
           value={code}

@@ -165,6 +165,88 @@
   animation: spin-slow 2s linear infinite;
 }
 
+@keyframes star-twinkle {
+  0%, 100% {
+    opacity: 0.24;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 0.92;
+    transform: scale(1.18);
+  }
+}
+
+@keyframes comet-drift {
+  0% {
+    opacity: 0;
+    left: var(--comet-start-x);
+    top: var(--comet-start-y);
+  }
+  12% {
+    opacity: 1;
+  }
+  60% {
+    opacity: 0.72;
+  }
+  100% {
+    opacity: 0;
+    left: var(--comet-end-x);
+    top: var(--comet-end-y);
+  }
+}
+
+.space-backdrop-base {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 44%, rgba(44, 87, 138, 0.2) 0%, rgba(12, 23, 40, 0.08) 28%, rgba(5, 8, 13, 0) 58%),
+    radial-gradient(circle at 18% 24%, rgba(122, 170, 222, 0.1) 0%, rgba(122, 170, 222, 0) 24%),
+    radial-gradient(circle at 78% 72%, rgba(78, 108, 160, 0.1) 0%, rgba(78, 108, 160, 0) 20%),
+    linear-gradient(180deg, #04070c 0%, #060a11 38%, #03060a 100%);
+}
+
+.space-backdrop-haze {
+  position: absolute;
+  inset: -10%;
+  background:
+    radial-gradient(circle at 50% 52%, rgba(128, 179, 232, 0.08) 0%, rgba(128, 179, 232, 0) 30%),
+    radial-gradient(circle at 60% 40%, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 14%);
+  filter: blur(32px);
+}
+
+.space-star {
+  position: absolute;
+  display: block;
+  border-radius: 999px;
+  background: rgba(245, 250, 255, 0.95);
+  box-shadow: 0 0 8px rgba(197, 223, 255, 0.4);
+  animation: star-twinkle 4.2s ease-in-out infinite;
+}
+
+.space-comet-path {
+  position: absolute;
+  display: block;
+  animation: comet-drift linear infinite;
+  will-change: left, top, opacity;
+}
+
+.space-comet {
+  position: absolute;
+  display: block;
+  height: 1.5px;
+  border-radius: 999px;
+  transform-origin: left center;
+  background: linear-gradient(90deg, rgba(186, 221, 255, 0) 0%, rgba(186, 221, 255, 0.7) 72%, rgba(255, 255, 255, 0.95) 100%);
+  box-shadow: 0 0 14px rgba(175, 216, 255, 0.28);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .space-star,
+  .space-comet-path {
+    animation: none;
+  }
+}
+
 .responsive-split-shell {
   display: flex;
   width: 100%;

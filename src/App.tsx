@@ -34,6 +34,7 @@ function getInitialSettings(): GameSettings {
     if (!saved.noTimeLimit && saved.timeLimitSeconds !== 60 && saved.timeLimitSeconds !== 300) {
       saved.timeLimitSeconds = 300;
     }
+    saved.blindMode ??= false;
     saved.practicePrompts ??= 'both';
     saved.versusPrompts ??= 'both';
     return saved;
@@ -47,7 +48,7 @@ export default function App() {
   const [activeSettings, setActiveSettings] = useState<GameSettings>(getInitialSettings);
   const [showAuth, setShowAuth] = useState(false);
   const [fadedIn, setFadedIn] = useState(true);
-
+  const [versusEmoji, setVersusEmoji] = useState('🌍');
   const [showJoinModal, setShowJoinModal] = useState(false);
 
   const navigateTo = useCallback((newView: View) => {
@@ -62,7 +63,11 @@ export default function App() {
 
   const handleStart = useCallback((settings: GameSettings) => {
     if (settings.mode === 'versus') {
-      versusHook.hostLobby(settings);
+      if (!user) {
+        setShowAuth(true);
+        return;
+      }
+      versusHook.hostLobby(settings, versusEmoji);
       navigateTo('versus-lobby');
       return;
     }
@@ -71,7 +76,7 @@ export default function App() {
     setGameKey(k => k + 1);
     setFadedIn(false);
     setTimeout(() => { setView('game'); setFadedIn(true); }, 320);
-  }, [navigateTo, versusHook]);
+  }, [navigateTo, user, versusEmoji, versusHook]);
 
   const handlePractice = useCallback(() => {
     const practiceSettings: GameSettings = {
@@ -107,7 +112,15 @@ export default function App() {
           onViewLeaderboard={() => navigateTo('leaderboard')}
           onSignIn={() => setShowAuth(true)}
           onSignOut={signOut}
-          onVersusMode={() => setShowJoinModal(true)}
+          onVersusMode={() => {
+            if (!user) {
+              setShowAuth(true);
+              return;
+            }
+            setShowJoinModal(true);
+          }}
+          versusEmoji={versusEmoji}
+          onVersusEmojiChange={setVersusEmoji}
         />
       )}
 
@@ -184,9 +197,11 @@ export default function App() {
           onClose={() => setShowJoinModal(false)}
           onJoin={(code) => {
             setShowJoinModal(false);
-            versusHook.joinLobby(code);
+            versusHook.joinLobby(code, versusEmoji);
             navigateTo('versus-lobby');
           }}
+          emoji={versusEmoji}
+          onEmojiChange={setVersusEmoji}
         />
       )}
 

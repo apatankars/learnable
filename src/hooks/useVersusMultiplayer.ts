@@ -8,6 +8,7 @@ import type {
   RealtimeMessage, 
   GamePrompt 
 } from '../types';
+import type { VersusActiveEffect, VersusEffectLogEntry, VersusPowerup } from '../types';
 
 function generateRoomCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -21,6 +22,40 @@ function generateRoomCode() {
 interface PresenceMeta {
   isHost?: boolean;
   username?: string;
+  emoji?: string;
+}
+
+function getDefaultPlayerState(userId: string, username: string, emoji: string): VersusPlayerState {
+  return {
+    userId,
+    username,
+    emoji,
+    score: 0,
+    timeRemaining: 0,
+    phase: 'idle',
+    streak: 0,
+    currentPromptIndex: 0,
+    heldPowerups: [],
+    activeEffect: null,
+    powerupCooldownUntil: 0,
+    currentCorrectStreakRewardState: 'none',
+  };
+}
+
+function mergePlayerState(previous: VersusPlayerState | undefined, next: Partial<VersusPlayerState> & Pick<VersusPlayerState, 'userId' | 'username' | 'emoji'>): VersusPlayerState {
+  const base = previous ?? getDefaultPlayerState(next.userId, next.username, next.emoji);
+  return {
+    ...base,
+    ...next,
+    heldPowerups: next.heldPowerups ?? base.heldPowerups,
+    activeEffect: next.activeEffect ?? base.activeEffect,
+    powerupCooldownUntil: next.powerupCooldownUntil ?? base.powerupCooldownUntil,
+    currentCorrectStreakRewardState: next.currentCorrectStreakRewardState ?? base.currentCorrectStreakRewardState,
+  };
+}
+
+function appendEffectLog(effectLog: VersusEffectLogEntry[] | undefined, entry: VersusEffectLogEntry): VersusEffectLogEntry[] {
+  return [...(effectLog ?? []), entry].slice(-8);
 }
 
 function sortPlayers(players: VersusPlayerState[], hostId: string) {
@@ -57,7 +92,7 @@ export function useVersusMultiplayer(user: User | null) {
     };
   }, [leaveLobby]);
 
-  const initChannel = useCallback((roomCode: string, isHost: boolean, settings?: GameSettings) => {
+  const initChannel = useCallback((roomCode: string, isHost: boolean, emoji: string, settings?: GameSettings) => {
     if (!user) {
       setError('You must be signed in to play versus mode.');
       return;
@@ -95,15 +130,11 @@ export function useVersusMultiplayer(user: User | null) {
           }
 
           const previous = previousPlayers.get(key);
-          players.push({
+          players.push(mergePlayerState(previous, {
             userId: key,
             username: data.username || previous?.username || 'Player',
-            score: previous?.score ?? 0,
-            timeRemaining: previous?.timeRemaining ?? 0,
-            phase: previous?.phase ?? 'idle',
-            streak: previous?.streak ?? 0,
-            currentPromptIndex: previous?.currentPromptIndex ?? 0,
-          });
+            emoji: data.emoji || previous?.emoji || '🌍',
+          }));
         }
 
         const sortedPlayers = sortPlayers(players, hostId);
@@ -117,6 +148,7 @@ export function useVersusMultiplayer(user: User | null) {
           players: sortedPlayers,
           status: 'waiting',
           settings: isHost ? settings : undefined,
+          effectLog: [],
         };
       });
     });
@@ -153,8 +185,75 @@ export function useVersusMultiplayer(user: User | null) {
           if (!prev) return prev;
 
           const playersById = new Map(prev.players.map(player => [player.userId, player]));
-          playersById.set(msg.payload.userId, msg.payload.state);
+          const incoming = msg.payload.state;
+          playersById.set(msg.payload.userId, mergePlayerState(playersById.get(msg.payload.userId), incoming));
 
+          return {
+            ...prev,
+            players: sortPlayers([...playersById.values()], prev.hostId),
+          };
+        });
+      } else if (msg.type === 'USE_POWERUP') {
+        setLobbyState(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            effectLog: appendEffectLog(prev.effectLog, {
+              id: `${msg.payload.userId}:${Date.now()}:${msg.payload.powerup}`,
+              message: msg.payload.message,
+              createdAt: Date.now(),
+              targetUserId: msg.payload.targetUserId,
+            }),
+          };
+        });
+      } else if (msg.type === 'APPLY_EFFECT') {
+        setLobbyState(prev => {
+          if (!prev) return prev;
+          const playersById = new Map(prev.players.map(player => [player.userId, player]));
+          const existing = playersById.get(msg.payload.userId);
+          if (existing) {
+            playersById.set(msg.payload.userId, {
+              ...existing,
+              activeEffect: msg.payload.effect,
+            });
+          }
+          return {
+            ...prev,
+            players: sortPlayers([...playersById.values()], prev.hostId),
+            effectLog: appendEffectLog(prev.effectLog, {
+              id: `${msg.payload.userId}:${msg.payload.effect.type}:${msg.payload.effect.startedAt}`,
+              message: msg.payload.message,
+              createdAt: Date.now(),
+              targetUserId: msg.payload.userId,
+            }),
+          };
+        });
+      } else if (msg.type === 'EXPIRE_EFFECT') {
+        setLobbyState(prev => {
+          if (!prev) return prev;
+          const playersById = new Map(prev.players.map(player => [player.userId, player]));
+          const existing = playersById.get(msg.payload.userId);
+          if (existing?.activeEffect?.type === msg.payload.effectType) {
+            playersById.set(msg.payload.userId, {
+              ...existing,
+              activeEffect: null,
+            });
+          }
+          return {
+            ...prev,
+            players: sortPlayers([...playersById.values()], prev.hostId),
+          };
+        });
+      } else if (msg.type === 'SYNC_POWERUP_STATE') {
+        setLobbyState(prev => {
+          if (!prev) return prev;
+          const playersById = new Map(prev.players.map(player => [player.userId, player]));
+          const existing = playersById.get(msg.payload.userId);
+          if (!existing) return prev;
+          playersById.set(msg.payload.userId, {
+            ...existing,
+            ...msg.payload.patch,
+          });
           return {
             ...prev,
             players: sortPlayers([...playersById.values()], prev.hostId),
@@ -169,6 +268,7 @@ export function useVersusMultiplayer(user: User | null) {
       if (status === 'SUBSCRIBED') {
         await channel.track({
           username: user.email?.split('@')[0] || 'Player',
+          emoji,
           isHost,
         });
       } else if (status === 'CHANNEL_ERROR') {
@@ -177,13 +277,13 @@ export function useVersusMultiplayer(user: User | null) {
     });
   }, [leaveLobby, user]);
 
-  const hostLobby = useCallback((settings: GameSettings) => {
+  const hostLobby = useCallback((settings: GameSettings, emoji: string) => {
     const code = generateRoomCode();
-    initChannel(code, true, settings);
+    initChannel(code, true, emoji, settings);
   }, [initChannel]);
 
-  const joinLobby = useCallback((code: string) => {
-    initChannel(code.toUpperCase(), false);
+  const joinLobby = useCallback((code: string, emoji: string) => {
+    initChannel(code.toUpperCase(), false, emoji);
   }, [initChannel]);
 
   const startGame = useCallback((queue: GamePrompt[], settings: GameSettings) => {
@@ -218,6 +318,117 @@ export function useVersusMultiplayer(user: User | null) {
     });
   }, [user]);
 
+  const syncPowerupState = useCallback((userId: string, patch: Partial<VersusPlayerState>) => {
+    setLobbyState(prev => {
+      if (!prev) return prev;
+      const playersById = new Map(prev.players.map(player => [player.userId, player]));
+      const existing = playersById.get(userId);
+      if (!existing) return prev;
+      playersById.set(userId, {
+        ...existing,
+        ...patch,
+      });
+      return {
+        ...prev,
+        players: sortPlayers([...playersById.values()], prev.hostId),
+      };
+    });
+
+    if (!channelRef.current || !user) return;
+    const msg: RealtimeMessage = {
+      type: 'SYNC_POWERUP_STATE',
+      payload: { userId, patch },
+    };
+    channelRef.current.send({
+      type: 'broadcast',
+      event: 'message',
+      payload: msg,
+    });
+  }, [user]);
+
+  const usePowerup = useCallback((powerup: VersusPowerup, username: string, targetUserId?: string) => {
+    if (!channelRef.current || !user) return;
+    const msg: RealtimeMessage = {
+      type: 'USE_POWERUP',
+      payload: {
+        userId: user.id,
+        username,
+        powerup,
+        targetUserId,
+        message: `${username} used ${powerup.replace('-', ' ')}`,
+      },
+    };
+    channelRef.current.send({
+      type: 'broadcast',
+      event: 'message',
+      payload: msg,
+    });
+  }, [user]);
+
+  const applyEffect = useCallback((userId: string, effect: VersusActiveEffect, message: string) => {
+    setLobbyState(prev => {
+      if (!prev) return prev;
+      const playersById = new Map(prev.players.map(player => [player.userId, player]));
+      const existing = playersById.get(userId);
+      if (existing) {
+        playersById.set(userId, {
+          ...existing,
+          activeEffect: effect,
+        });
+      }
+      return {
+        ...prev,
+        players: sortPlayers([...playersById.values()], prev.hostId),
+        effectLog: appendEffectLog(prev.effectLog, {
+          id: `${userId}:${effect.type}:${effect.startedAt}`,
+          message,
+          createdAt: Date.now(),
+          targetUserId: userId,
+        }),
+      };
+    });
+
+    if (!channelRef.current || !user) return;
+    const msg: RealtimeMessage = {
+      type: 'APPLY_EFFECT',
+      payload: { userId, effect, message },
+    };
+    channelRef.current.send({
+      type: 'broadcast',
+      event: 'message',
+      payload: msg,
+    });
+  }, [user]);
+
+  const expireEffect = useCallback((userId: string, effectType: VersusActiveEffect['type']) => {
+    setLobbyState(prev => {
+      if (!prev) return prev;
+      const playersById = new Map(prev.players.map(player => [player.userId, player]));
+      const existing = playersById.get(userId);
+      if (existing?.activeEffect?.type === effectType) {
+        playersById.set(userId, {
+          ...existing,
+          activeEffect: null,
+        });
+      }
+      return {
+        ...prev,
+        players: sortPlayers([...playersById.values()], prev.hostId),
+      };
+    });
+
+    if (!channelRef.current || !user) return;
+    const msg: RealtimeMessage = {
+      type: 'EXPIRE_EFFECT',
+      payload: { userId, effectType },
+    };
+    channelRef.current.send({
+      type: 'broadcast',
+      event: 'message',
+      payload: msg,
+    });
+  }, [user]);
+
   return {
     lobbyState,
     error,
@@ -227,5 +438,9 @@ export function useVersusMultiplayer(user: User | null) {
     leaveLobby,
     startGame,
     broadcastState,
+    syncPowerupState,
+    usePowerup,
+    applyEffect,
+    expireEffect,
   };
 }

@@ -46,6 +46,14 @@ export function AuthModal({ onClose, onSignIn, onSignUp }: AuthModalProps) {
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden border border-bark-200">
         {/* Header */}
         <div className="bg-leaf-600 px-6 pt-6 pb-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="ml-auto block text-leaf-100 hover:text-white transition-colors"
+            aria-label="Close authentication dialog"
+          >
+            ×
+          </button>
           <h2 className="font-playfair font-bold text-2xl text-white text-center">
             {tab === 'signin' ? 'Welcome back' : 'Create account'}
           </h2>
@@ -116,14 +124,6 @@ export function AuthModal({ onClose, onSignIn, onSignUp }: AuthModalProps) {
             className="w-full bg-leaf-600 hover:bg-leaf-700 disabled:opacity-60 text-white font-dm font-medium py-2.5 rounded-lg transition-colors text-sm"
           >
             {loading ? 'Please wait…' : tab === 'signin' ? 'Sign In' : 'Create Account'}
-          </button>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-full text-center text-xs text-bark-400 hover:text-bark-600 font-dm transition-colors py-1"
-          >
-            Continue as guest
           </button>
         </form>
       </div>

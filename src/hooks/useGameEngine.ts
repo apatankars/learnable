@@ -58,8 +58,8 @@ export function buildQueue(settings: GameSettings): GamePrompt[] {
 type GameAction =
   | { type: 'START'; settings: GameSettings }
   | { type: 'CORRECT'; result: AttemptResult; nextPrompt: GamePrompt | null }
-  | { type: 'WRONG'; result: AttemptResult; nextPrompt: GamePrompt | null }
-  | { type: 'SKIP'; result: AttemptResult; nextPrompt: GamePrompt | null }
+  | { type: 'WRONG'; result: AttemptResult; nextPrompt: GamePrompt | null; preserveStreak?: boolean }
+  | { type: 'SKIP'; result: AttemptResult; nextPrompt: GamePrompt | null; preserveStreak?: boolean }
   | { type: 'PAUSE' }
   | { type: 'RESUME' }
   | { type: 'END' }
@@ -119,7 +119,7 @@ function gameReducer(state: GameSession, action: GameAction): GameSession {
       newWrong.add(`${action.result.countryId}:${action.result.promptType}`);
       return {
         ...state,
-        streak: 0,
+        streak: action.preserveStreak ? state.streak : 0,
         attempts: [...state.attempts, action.result],
         wrong: newWrong,
         currentPrompt: action.nextPrompt,
@@ -132,7 +132,7 @@ function gameReducer(state: GameSession, action: GameAction): GameSession {
       newSkipped.add(`${action.result.countryId}:${action.result.promptType}`);
       return {
         ...state,
-        streak: 0,
+        streak: action.preserveStreak ? state.streak : 0,
         attempts: [...state.attempts, action.result],
         skipped: newSkipped,
         currentPrompt: action.nextPrompt,
@@ -182,7 +182,7 @@ export function useGameEngine(
     return nextFromQueue();
   }, []);
 
-  const submitAnswer = useCallback((input: string, currentPrompt: GamePrompt, currentStreak: number, hintUsed = false) => {
+  const submitAnswer = useCallback((input: string, currentPrompt: GamePrompt, currentStreak: number, hintUsed = false, preserveStreakOnWrong = false) => {
     const country = countryById.get(currentPrompt.countryId);
     if (!country) return null;
     const timeTaken = Date.now() - _promptStart;
@@ -206,7 +206,7 @@ export function useGameEngine(
       onAttempt(result);
       const nextPrompt = nextFromQueue();
       _promptStart = Date.now();
-      dispatch({ type: 'WRONG', result, nextPrompt });
+      dispatch({ type: 'WRONG', result, nextPrompt, preserveStreak: preserveStreakOnWrong });
       return { tier: 'wrong' as const, correctAnswer, nextPrompt };
     }
 
@@ -229,7 +229,7 @@ export function useGameEngine(
     return { tier: isFuzzy ? ('fuzzy' as const) : ('correct' as const), matchedName: matchResult.matchedName, points, nextPrompt };
   }, [onAttempt]);
 
-  const submitSkip = useCallback((currentPrompt: GamePrompt) => {
+  const submitSkip = useCallback((currentPrompt: GamePrompt, preserveStreak = false) => {
     const country = countryById.get(currentPrompt.countryId);
     if (!country) return null;
 
@@ -247,7 +247,7 @@ export function useGameEngine(
     onAttempt(result);
     const nextPrompt = nextFromQueue();
     _promptStart = Date.now();
-    dispatch({ type: 'SKIP', result, nextPrompt });
+    dispatch({ type: 'SKIP', result, nextPrompt, preserveStreak });
 
     return {
       correctAnswer: currentPrompt.promptType === 'country' ? country.name : country.capital,

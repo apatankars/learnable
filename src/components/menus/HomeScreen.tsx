@@ -5,6 +5,7 @@ import { UserMenu } from "../auth/UserMenu";
 import { GlobeMap as OrbisGlobe } from "../game/GlobeMap";
 import { BotanicalCorner } from "../ui/BotanicalCorner";
 import { BotanicalDivider } from "../ui/BotanicalDivider";
+import { SpaceBackdrop } from "../ui/SpaceBackdrop";
 import { getTimeMode } from "../../lib/leaderboard";
 import type { GameMode, GameSettings, GlobalStats } from "../../types";
 
@@ -19,7 +20,26 @@ interface HomeScreenProps {
   onSignIn: () => void;
   onSignOut: () => void;
   onVersusMode: () => void;
+  versusEmoji: string;
+  onVersusEmojiChange: (emoji: string) => void;
 }
+
+const VERSUS_EMOJI_OPTIONS = [
+  "🌍",
+  "🦊",
+  "🐼",
+  "🦁",
+  "🐸",
+  "🦉",
+  "🐙",
+  "🐯",
+  "🐻",
+  "🦄",
+  "🐱",
+  "🐶",
+  "🦋",
+  "🐵",
+];
 
 function ModeIcon({ type }: { type: string }) {
   const s = {
@@ -147,6 +167,8 @@ export function HomeScreen({
   onSignIn,
   onSignOut,
   onVersusMode,
+  versusEmoji,
+  onVersusEmojiChange,
 }: HomeScreenProps) {
   const [settings, setSettings] = useState<GameSettings>(defaultSettings);
   const [showSettings, setShowSettings] = useState(false);
@@ -451,46 +473,111 @@ export function HomeScreen({
           style={{ gap: 8, marginTop: showSettings ? 0 : 4 }}
         >
           {settings.mode === "versus" ? (
-            <>
-              <button
-                onClick={() => onStart(settings)} // onStart handles hosting
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 10,
+                width: "100%",
+              }}
+            >
+              <div
                 style={{
-                  flex: 1,
-                  padding: "12px 20px",
-                  borderRadius: 3,
-                  background: "rgba(135,100,24,0.12)",
-                  border: "1px solid rgba(135,100,24,0.32)",
-                  color: "var(--gold-hi)",
-                  fontSize: 13,
-                  fontWeight: 500,
-                  letterSpacing: "0.06em",
-                  cursor: "pointer",
-                  fontFamily: "var(--ff-u)",
-                  transition: "background 0.14s, border-color 0.14s",
-                }}
-              >
-                Host {versusPromptLabel} Match
-              </button>
-              <button
-                onClick={onVersusMode} // onVersusMode handles joining
-                style={{
-                  flex: 1,
-                  padding: "12px 20px",
-                  borderRadius: 3,
-                  background: "var(--s1)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  padding: "10px 12px",
                   border: "1px solid var(--border)",
-                  color: "var(--t2)",
-                  fontSize: 13,
-                  fontWeight: 500,
-                  letterSpacing: "0.06em",
-                  cursor: "pointer",
-                  fontFamily: "var(--ff-u)",
-                  transition: "background 0.14s, border-color 0.14s",
+                  borderRadius: 3,
+                  background: "var(--bg)",
                 }}
               >
-                Join Match
-              </button>
-            </>
+                <span
+                  style={{
+                    fontSize: 11,
+                    color: "var(--t3)",
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Versus Emoji
+                </span>
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    justifyContent: "flex-end",
+                    gap: 6,
+                  }}
+                >
+                  {VERSUS_EMOJI_OPTIONS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      onClick={() => onVersusEmojiChange(emoji)}
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 16,
+                        border:
+                          versusEmoji === emoji
+                            ? "1px solid var(--gold)"
+                            : "1px solid var(--border)",
+                        background:
+                          versusEmoji === emoji
+                            ? "rgba(135,100,24,0.08)"
+                            : "var(--s1)",
+                        cursor: "pointer",
+                        fontSize: 16,
+                      }}
+                      title={`Choose ${emoji}`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="home-action-row" style={{ gap: 8 }}>
+                <button
+                  onClick={() => onStart(settings)} // onStart handles hosting
+                  style={{
+                    flex: 1,
+                    padding: "12px 20px",
+                    borderRadius: 3,
+                    background: "rgba(135,100,24,0.12)",
+                    border: "1px solid rgba(135,100,24,0.32)",
+                    color: "var(--gold-hi)",
+                    fontSize: 13,
+                    fontWeight: 500,
+                    letterSpacing: "0.06em",
+                    cursor: "pointer",
+                    fontFamily: "var(--ff-u)",
+                    transition: "background 0.14s, border-color 0.14s",
+                  }}
+                >
+                  Host {versusPromptLabel} Match
+                </button>
+                <button
+                  onClick={onVersusMode} // onVersusMode handles joining
+                  style={{
+                    flex: 1,
+                    padding: "12px 20px",
+                    borderRadius: 3,
+                    background: "var(--s1)",
+                    border: "1px solid var(--border)",
+                    color: "var(--t2)",
+                    fontSize: 13,
+                    fontWeight: 500,
+                    letterSpacing: "0.06em",
+                    cursor: "pointer",
+                    fontFamily: "var(--ff-u)",
+                    transition: "background 0.14s, border-color 0.14s",
+                  }}
+                >
+                  Join Match
+                </button>
+              </div>
+            </div>
           ) : (
             <button
               onClick={() => onStart(settings)}
@@ -657,6 +744,7 @@ export function HomeScreen({
           background: "#05080d",
         }}
       >
+        <SpaceBackdrop />
         <BotanicalCorner flip />
         <div
           style={{

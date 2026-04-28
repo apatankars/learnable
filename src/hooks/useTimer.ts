@@ -32,5 +32,10 @@ export function useTimer(initialSeconds: number, noLimit: boolean, onExpire: () 
     setTimeRemaining(initialSeconds);
   }, [initialSeconds]);
 
-  return { timeRemaining, running, start, pause, resume, reset };
+  const addSeconds = useCallback((seconds: number) => {
+    if (noLimit || seconds <= 0) return;
+    setTimeRemaining(t => Math.max(0, t + seconds));
+  }, [noLimit]);
+
+  return { timeRemaining, running, start, pause, resume, reset, addSeconds };
 }
