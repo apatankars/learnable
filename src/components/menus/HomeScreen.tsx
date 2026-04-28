@@ -6,13 +6,7 @@ import { GlobeMap as OrbisGlobe } from "../game/GlobeMap";
 import { BotanicalCorner } from "../ui/BotanicalCorner";
 import { BotanicalDivider } from "../ui/BotanicalDivider";
 import { getTimeMode } from "../../lib/leaderboard";
-import type {
-  CountryEntry,
-  GameMode,
-  GameSettings,
-  GlobalStats,
-} from "../../types";
-import countriesData from "../../data/countries.json";
+import type { GameMode, GameSettings, GlobalStats } from "../../types";
 
 interface HomeScreenProps {
   defaultSettings: GameSettings;
@@ -233,7 +227,11 @@ export function HomeScreen({
 
         {/* Header */}
         <header
-          style={{ marginBottom: 40, paddingRight: user ? 0 : 96, textAlign: "center" }}
+          style={{
+            marginBottom: 40,
+            paddingRight: user ? 0 : 96,
+            textAlign: "center",
+          }}
         >
           <div
             style={{
@@ -248,7 +246,13 @@ export function HomeScreen({
           >
             ORBIS
           </div>
-          <div style={{ marginBottom: 13, display: "flex", justifyContent: "center" }}>
+          <div
+            style={{
+              marginBottom: 13,
+              display: "flex",
+              justifyContent: "center",
+            }}
+          >
             <BotanicalDivider />
           </div>
           {/* <div
@@ -527,7 +531,16 @@ export function HomeScreen({
               transition: "border-color 0.14s, color 0.14s",
             }}
           >
-            <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke="currentColor" strokeWidth={1.35} strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              viewBox="0 0 24 24"
+              width={20}
+              height={20}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.35}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <path d="M7 4h10l-1 9c0 2.2-1.8 4-4 4s-4-1.8-4-4Z" />
               <path d="M7.2 7c-2.2 0-3.2 1.5-2 3" />
               <path d="M16.8 7c2.2 0 3.2 1.5 2 3" />
@@ -553,7 +566,16 @@ export function HomeScreen({
                 transition: "border-color 0.14s, color 0.14s",
               }}
             >
-              <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke="currentColor" strokeWidth={1.35} strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                viewBox="0 0 24 24"
+                width={20}
+                height={20}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.35}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="M4 18v-4h3v4Z" />
                 <path d="M9 18V8h3v10Z" />
                 <path d="M14 18v-6h3v6Z" />
