@@ -28,8 +28,8 @@ interface RingDatum {
 
 interface PathDatum {
   id: string;
-  points: Array<{ lat: number; lng: number; alt: number }>;
-  state: CountryColorState;
+  alpha3: string;
+  points: Array<{ lat: number; lng: number }>;
 }
 
 const VIEWPOINTS = {
@@ -183,16 +183,15 @@ function afterPaint(callback: () => void): void {
 
 function getFeatureBoundaryPaths(
   feature: GlobeGeometryData['features'][number],
-  altitude: number,
 ): PathDatum['points'][] {
   if (feature.geometry.type === 'Polygon') {
     return feature.geometry.coordinates.map((ring) => (
-      ring.map(([lng, lat]) => ({ lat, lng, alt: altitude }))
+      ring.map(([lng, lat]) => ({ lat, lng }))
     ));
   }
 
   return feature.geometry.coordinates.flatMap((polygon) => (
-    polygon.map((ring) => ring.map(([lng, lat]) => ({ lat, lng, alt: altitude })))
+    polygon.map((ring) => ring.map(([lng, lat]) => ({ lat, lng })))
   ));
 }
 
@@ -461,12 +460,10 @@ export const GlobeMap = memo(function GlobeMap({
         return [];
       }
 
-      const altitude = COLOR_STYLES[state].altitude + 0.0015;
-
-      return getFeatureBoundaryPaths(feature, altitude).map((points, index) => ({
+      return getFeatureBoundaryPaths(feature).map((points, index) => ({
         id: `${alpha3}:${index}`,
+        alpha3,
         points,
-        state,
       }));
     });
   }, [colorMap, decorative, globeGeometry]);
@@ -574,9 +571,21 @@ export const GlobeMap = memo(function GlobeMap({
           pathPoints="points"
           pathPointLat="lat"
           pathPointLng="lng"
-          pathPointAlt="alt"
-          pathColor={(path: object) => COLOR_STYLES[(path as PathDatum).state].border}
-          pathStroke={(path: object) => COLOR_STYLES[(path as PathDatum).state].borderWidth}
+          pathPointAlt={(path: object) => {
+            const alpha3 = (path as PathDatum).alpha3;
+            const state = colorMap[alpha3] ?? 'default';
+            return COLOR_STYLES[state].altitude + 0.0015;
+          }}
+          pathColor={(path: object) => {
+            const alpha3 = (path as PathDatum).alpha3;
+            const state = colorMap[alpha3] ?? 'default';
+            return COLOR_STYLES[state].border;
+          }}
+          pathStroke={(path: object) => {
+            const alpha3 = (path as PathDatum).alpha3;
+            const state = colorMap[alpha3] ?? 'default';
+            return COLOR_STYLES[state].borderWidth;
+          }}
           pathResolution={1}
           pathTransitionDuration={0}
           ringsData={ringsData}

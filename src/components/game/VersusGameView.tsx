@@ -212,6 +212,10 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
     }
   }, [session.phase, settings.noTimeLimit, startTimer]);
 
+  const handleGlobeReady = useCallback(() => {
+    setGlobeBooted(true);
+  }, []);
+
   useEffect(() => {
     return () => {
       if (effectBannerTimeoutRef.current) {
@@ -1148,7 +1152,7 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
           currentId={pendingPrompt?.countryId ?? currentPrompt?.countryId ?? null}
           focusToken={focusToken}
           recenterToken={recenterToken}
-          onReady={() => setGlobeBooted(true)}
+          onReady={handleGlobeReady}
           onTargetReady={commitRenderedPrompt}
           promptIndex={promptIndex}
         />

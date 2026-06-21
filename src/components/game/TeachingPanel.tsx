@@ -4,10 +4,12 @@ import type { CountryEntry } from '../../types';
 interface TeachingPanelProps {
   country: CountryEntry;
   promptType: 'country' | 'capital';
+  score: number;
+  streak: number;
   onAcknowledge: () => void;
 }
 
-export function TeachingPanel({ country, promptType, onAcknowledge }: TeachingPanelProps) {
+export function TeachingPanel({ country, promptType, score, streak, onAcknowledge }: TeachingPanelProps) {
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => { buttonRef.current?.focus(); }, [country, promptType]);
@@ -25,12 +27,26 @@ export function TeachingPanel({ country, promptType, onAcknowledge }: TeachingPa
       borderRadius: 3,
       animation: 'fade-up 0.36s ease forwards',
     }}>
-      <div style={{
-        fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase',
-        color: 'rgba(58,92,140,0.8)', marginBottom: 10, fontWeight: 500,
-        fontFamily: 'var(--ff-u)',
-      }}>
-        Learn
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 10 }}>
+        <div style={{
+          fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase',
+          color: 'rgba(58,92,140,0.8)', fontWeight: 500,
+          fontFamily: 'var(--ff-u)',
+        }}>
+          Learn
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5, flexShrink: 0, minWidth: 96, paddingTop: 2 }}>
+          <div style={{ fontSize: 12, color: 'var(--t3)', letterSpacing: '0.06em', lineHeight: 1 }}>
+            {streak >= 5 ? '🔥 ' : '✦ '}x{Math.max(streak, 1)}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: 4, lineHeight: 1 }}>
+            <span style={{
+              fontFamily: 'var(--ff-d)', fontSize: 26, fontWeight: 300,
+              color: 'var(--gold-hi)', lineHeight: 1,
+            }}>{score}</span>
+            <span style={{ fontSize: 11, color: 'var(--t3)', letterSpacing: '0.06em', lineHeight: 1 }}>pts</span>
+          </div>
+        </div>
       </div>
       <h3 style={{
         fontFamily: 'var(--ff-d)', fontSize: 24, fontWeight: 400,

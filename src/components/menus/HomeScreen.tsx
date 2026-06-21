@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { SettingsPanel } from "./SettingsPanel";
 import { UserMenu } from "../auth/UserMenu";
-import { GlobeMap as OrbisGlobe } from "../game/GlobeMap";
 import { BotanicalCorner } from "../ui/BotanicalCorner";
 import { BotanicalDivider } from "../ui/BotanicalDivider";
 import { SpaceBackdrop } from "../ui/SpaceBackdrop";
 import { getTimeMode } from "../../lib/leaderboard";
+import { loadGlobeMapModule } from "../../lib/preload";
 import type { GameMode, GameSettings, GlobalStats } from "../../types";
+
+const OrbisGlobe = lazy(() => loadGlobeMapModule().then((module) => ({ default: module.GlobeMap })));
 
 interface HomeScreenProps {
   defaultSettings: GameSettings;
@@ -173,6 +175,7 @@ export function HomeScreen({
   const [settings, setSettings] = useState<GameSettings>(defaultSettings);
   const [showSettings, setShowSettings] = useState(false);
   const [hoveredMode, setHoveredMode] = useState<GameMode | null>(null);
+  const [showDecorativeGlobe, setShowDecorativeGlobe] = useState(false);
   const versusPromptLabel =
     settings.versusPrompts === "country"
       ? "Countries"
@@ -189,6 +192,14 @@ export function HomeScreen({
     settings.mode !== "practice" && settings.mode !== "learn"
       ? (personalBests[modeKey] ?? null)
       : null;
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setShowDecorativeGlobe(true);
+    }, 180);
+
+    return () => window.clearTimeout(timeoutId);
+  }, []);
 
   const vineBg = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='72' viewBox='0 0 22 72'%3E%3Cpath d='M11,0 C10,18 12,36 11,54 C10,62 11,72 11,72' stroke='rgba(74,110,36,0.32)' stroke-width='0.9' fill='none'/%3E%3Cpath d='M11,18 C8,11 13,4 20,3 C13,7 9,13 11,18Z' fill='rgba(74,110,36,0.22)'/%3E%3Cpath d='M11,49 C14,42 9,35 2,34 C9,37 13,44 11,49Z' fill='rgba(74,110,36,0.20)'/%3E%3Ccircle cx='11' cy='17' r='1.6' fill='rgba(74,110,36,0.26)'/%3E%3Ccircle cx='11' cy='48' r='1.3' fill='rgba(74,110,36,0.20)'/%3E%3C/svg%3E")`;
 
@@ -753,7 +764,9 @@ export function HomeScreen({
             filter: "drop-shadow(0 10px 64px rgba(0,0,0,0.28))",
           }}
         >
-          <OrbisGlobe decorative />
+          <Suspense fallback={null}>
+            {showDecorativeGlobe ? <OrbisGlobe decorative /> : null}
+          </Suspense>
         </div>
         <div
           style={{
