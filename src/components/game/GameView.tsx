@@ -39,9 +39,9 @@ const MODE_LABELS: Record<string, string> = {
   practice: 'Practice', learn: 'Learn',
 };
 
-const FEEDBACK_DELAY_MS = 180;
-const SKIP_DELAY_MS = 900;
-const WRONG_DELAY_MS = 1100;
+const FEEDBACK_DELAY_MS = 90;
+const SKIP_DELAY_MS = 420;
+const WRONG_DELAY_MS = 650;
 
 function formatTime(s: number): string {
   const m = Math.floor(s / 60);
@@ -178,7 +178,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
   // Focus input when prompt changes
   useEffect(() => {
     if (inputState === 'idle' && session.phase === 'playing' && currentPrompt && !isPromptRendering) {
-      setTimeout(() => inputRef.current?.focus(), 80);
+      setTimeout(() => inputRef.current?.focus(), 24);
     }
   }, [currentPrompt, inputState, isPromptRendering, session.phase]);
 
@@ -447,7 +447,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
               onAcknowledge={handleAcknowledge}
             />
           ) : currentPrompt ? (
-            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, animation: 'fade-up 0.36s ease forwards' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, animation: 'fade-up 0.18s ease forwards' }}>
               {/* Eyebrow */}
               <div style={{
                 fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase',

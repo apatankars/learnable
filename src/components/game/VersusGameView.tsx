@@ -43,9 +43,9 @@ interface VersusGameViewProps {
 type InputState = 'idle' | 'correct' | 'fuzzy' | 'wrong';
 type FlashTrigger = { points?: number; type: 'correct' | 'wrong' | 'fuzzy' | 'skip'; label?: string } | null;
 
-const FEEDBACK_DELAY_MS = 180;
-const SKIP_DELAY_MS = 900;
-const WRONG_DELAY_MS = 1100;
+const FEEDBACK_DELAY_MS = 90;
+const SKIP_DELAY_MS = 420;
+const WRONG_DELAY_MS = 650;
 
 function getAnswerText(prompt: GamePrompt | null): string {
   if (!prompt) return '';
@@ -116,6 +116,7 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
   const [heldPowerups, setHeldPowerups] = useState<VersusPowerup[]>([]);
   const [activeEffect, setActiveEffect] = useState<VersusActiveEffect | null>(null);
   const [powerupCooldownUntil, setPowerupCooldownUntil] = useState(0);
+  const [cooldownNow, setCooldownNow] = useState(0);
   const [rewardState, setRewardState] = useState<VersusStreakRewardState>('none');
   const [effectBanner, setEffectBanner] = useState<string | null>(null);
   const [showStandings, setShowStandings] = useState(true);
@@ -129,7 +130,7 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
   const { recordAttempt, recordVersusResult } = progress;
   const currentLobbyPlayer = versusHook.lobbyState?.players.find(player => player.userId === user.id);
   const currentPlayerEmoji = currentLobbyPlayer?.emoji ?? '🌍';
-  const effectLog = versusHook.lobbyState?.effectLog ?? [];
+  const effectLog = useMemo(() => versusHook.lobbyState?.effectLog ?? [], [versusHook.lobbyState?.effectLog]);
   const otherPlayers = useMemo(() => {
     const players = versusHook.lobbyState?.players ?? [];
     return players.filter(player => player.userId !== user.id);
@@ -307,9 +308,22 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
 
   useEffect(() => {
     if (inputState === 'idle' && session.phase === 'playing' && currentPrompt && !isPromptRendering) {
-      window.setTimeout(() => inputRef.current?.focus(), 80);
+      window.setTimeout(() => inputRef.current?.focus(), 24);
     }
   }, [currentPrompt, inputState, isPromptRendering, session.phase]);
+
+  useEffect(() => {
+    if (!powerupCooldownUntil) {
+      setCooldownNow(0);
+      return;
+    }
+
+    const updateCooldownNow = () => setCooldownNow(Date.now());
+    updateCooldownNow();
+
+    const interval = window.setInterval(updateCooldownNow, 250);
+    return () => window.clearInterval(interval);
+  }, [powerupCooldownUntil]);
 
   useEffect(() => {
     if (!activeEffect?.expiresAt) return;
@@ -648,7 +662,7 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
   const isLocalGameOver = session.phase === 'gameover';
   const isMatchFinished = hostDisconnected || allPlayersFinished;
   const isWaitingForOpponent = isLocalGameOver && !isMatchFinished;
-  const cooldownMsRemaining = Math.max(0, powerupCooldownUntil - Date.now());
+  const cooldownMsRemaining = cooldownNow ? Math.max(0, powerupCooldownUntil - cooldownNow) : 0;
   const cooldownSecondsRemaining = Math.ceil(cooldownMsRemaining / 1000);
 
   useEffect(() => {
@@ -838,7 +852,7 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
               <span>{globeBooted ? 'Rendering target…' : 'Rendering globe…'}</span>
             </div>
           ) : currentPrompt ? (
-            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, animation: 'fade-up 0.36s ease forwards' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, animation: 'fade-up 0.18s ease forwards' }}>
               <div style={{
                 fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase',
                 color: 'var(--t3)', marginBottom: 10, fontWeight: 500,

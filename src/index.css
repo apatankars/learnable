@@ -111,7 +111,7 @@
 }
 
 .animate-fade-up {
-  animation: fade-up 0.36s ease forwards;
+  animation: fade-up 0.18s ease forwards;
 }
 
 @keyframes float-up {
@@ -140,7 +140,7 @@
 }
 
 .animate-float-up {
-  animation: float-up 1.2s ease-out forwards;
+  animation: float-up 0.75s ease-out forwards;
 }
 
 .animate-slide-up {
@@ -148,7 +148,7 @@
 }
 
 .animate-shake {
-  animation: shake 0.5s ease-in-out;
+  animation: shake 0.32s ease-in-out;
 }
 
 .animate-bounce-subtle {

@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { GlobeMethods } from 'react-globe.gl';
 import type { CountryColorState } from '../../types';
 import { loadGlobeGeometry } from '../../lib/globeGeometry';
@@ -38,10 +38,10 @@ const VIEWPOINTS = {
   overview: { altitude: 2.05, lat: 14, lng: -18 },
 };
 
-const FOCUS_TRANSITION_MS = 240;
-const OVERVIEW_TRANSITION_MS = 160;
+const FOCUS_TRANSITION_MS = 120;
+const OVERVIEW_TRANSITION_MS = 90;
 const DECORATIVE_TRANSITION_MS = 1400;
-const SETTLE_PADDING_MS = 8;
+const SETTLE_PADDING_MS = 0;
 
 const COLOR_STYLES: Record<CountryColorState, {
   altitude: number;
@@ -370,7 +370,7 @@ export const GlobeMap = memo(function GlobeMap({
     controls.rotateSpeed = decorative ? 0.55 : 0.95;
   }, [decorative, globeModule, globeGeometry]);
 
-  const scheduleSettled = (token: number, duration: number) => {
+  const scheduleSettled = useCallback((token: number, duration: number) => {
     if (settleTimerRef.current != null) {
       window.clearTimeout(settleTimerRef.current);
     }
@@ -388,7 +388,7 @@ export const GlobeMap = memo(function GlobeMap({
         }
       });
     }, Math.max(0, duration) + SETTLE_PADDING_MS);
-  };
+  }, [decorative]);
 
   useEffect(() => {
     const globe = globeRef.current;
@@ -417,7 +417,7 @@ export const GlobeMap = memo(function GlobeMap({
       : 0;
     globe.pointOfView(decorative ? VIEWPOINTS.decorative : VIEWPOINTS.overview, overviewDuration);
     scheduleSettled(focusToken, overviewDuration);
-  }, [currentId, decorative, focusToken, globeGeometry]);
+  }, [currentId, decorative, focusToken, globeGeometry, scheduleSettled]);
 
   useEffect(() => {
     if (!recenterToken) {
@@ -457,6 +457,10 @@ export const GlobeMap = memo(function GlobeMap({
     return globeGeometry.features.flatMap((feature) => {
       const alpha3 = feature.properties.alpha3;
       const state = colorMap[alpha3] ?? 'default';
+      if (state === 'default') {
+        return [];
+      }
+
       const altitude = COLOR_STYLES[state].altitude + 0.0015;
 
       return getFeatureBoundaryPaths(feature, altitude).map((points, index) => ({
@@ -467,13 +471,21 @@ export const GlobeMap = memo(function GlobeMap({
     });
   }, [colorMap, decorative, globeGeometry]);
 
+  const featureById = useMemo(() => {
+    if (!globeGeometry) {
+      return new Map<string, GlobeGeometryData['features'][number]>();
+    }
+
+    return new Map(globeGeometry.features.map((feature) => [feature.properties.alpha3, feature]));
+  }, [globeGeometry]);
+
   const ringsData = useMemo<RingDatum[]>(() => {
     if (!currentId || !globeGeometry) {
       return [];
     }
 
     const centroid = globeGeometry.centroids[currentId];
-    const feature = globeGeometry.features.find((candidate) => candidate.properties.alpha3 === currentId);
+    const feature = featureById.get(currentId);
     if (!centroid || !feature) {
       return [];
     }
@@ -485,7 +497,7 @@ export const GlobeMap = memo(function GlobeMap({
       state: colorMap[currentId] ?? 'current',
       overlayScale: getFeatureOverlayScale(feature),
     }];
-  }, [colorMap, currentId, focusToken, globeGeometry, promptIndex]);
+  }, [colorMap, currentId, featureById, focusToken, globeGeometry, promptIndex]);
 
   const GlobeRenderer = globeModule?.default;
   const isRenderable = Boolean(GlobeRenderer && globeGeometry && dimensions.width > 0 && dimensions.height > 0);
@@ -557,7 +569,7 @@ export const GlobeMap = memo(function GlobeMap({
             return COLOR_STYLES[state].stroke;
           }}
           polygonCapCurvatureResolution={3}
-          polygonsTransitionDuration={320}
+          polygonsTransitionDuration={120}
           pathsData={boundaryPathsData}
           pathPoints="points"
           pathPointLat="lat"
