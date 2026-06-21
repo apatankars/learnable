@@ -1,20 +1,31 @@
-import { useState, useCallback } from 'react';
+import { lazy, startTransition, Suspense, useCallback, useEffect, useState } from 'react';
 import { HomeScreen } from './components/menus/HomeScreen';
-import { GameView } from './components/game/GameView';
-import { ProgressDashboard } from './components/progress/ProgressDashboard';
-import { LeaderboardView } from './components/leaderboard/LeaderboardView';
 import { AuthModal } from './components/auth/AuthModal';
 import { useProgress } from './hooks/useProgress';
 import { useAuth } from './hooks/useAuth';
 import { useLeaderboard } from './hooks/useLeaderboard';
 import { loadSettings, saveSettings } from './lib/progressStorage';
+import {
+  loadGameViewModule,
+  loadLeaderboardViewModule,
+  loadProgressDashboardModule,
+  loadVersusGameViewModule,
+  loadVersusLobbyModule,
+  warmAppViews,
+  warmGameplayAssets,
+} from './lib/preload';
 import type { GameSettings } from './types';
 
 type View = 'home' | 'game' | 'progress' | 'leaderboard' | 'versus-lobby';
-import { VersusLobby, JoinVersusModal } from './components/menus/VersusLobby';
 import { useVersusMultiplayer } from './hooks/useVersusMultiplayer';
-import { VersusGameView } from './components/game/VersusGameView';
 import { buildQueue } from './hooks/useGameEngine';
+
+const GameView = lazy(() => loadGameViewModule().then((module) => ({ default: module.GameView })));
+const ProgressDashboard = lazy(() => loadProgressDashboardModule().then((module) => ({ default: module.ProgressDashboard })));
+const LeaderboardView = lazy(() => loadLeaderboardViewModule().then((module) => ({ default: module.LeaderboardView })));
+const VersusGameView = lazy(() => loadVersusGameViewModule().then((module) => ({ default: module.VersusGameView })));
+const VersusLobby = lazy(() => loadVersusLobbyModule().then((module) => ({ default: module.VersusLobby })));
+const JoinVersusModal = lazy(() => loadVersusLobbyModule().then((module) => ({ default: module.JoinVersusModal })));
 
 const DEFAULT_SETTINGS: GameSettings = {
   mode: 'both',
@@ -42,6 +53,33 @@ function getInitialSettings(): GameSettings {
   return DEFAULT_SETTINGS;
 }
 
+function scheduleIdleWork(task: () => void): () => void {
+  if (typeof window === 'undefined') {
+    return () => undefined;
+  }
+
+  const idleApi = window as Window & typeof globalThis & {
+    requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
+    cancelIdleCallback?: (handle: number) => void;
+  };
+
+  if (typeof idleApi.requestIdleCallback === 'function' && typeof idleApi.cancelIdleCallback === 'function') {
+    const idleId = idleApi.requestIdleCallback(task, { timeout: 1500 });
+    return () => idleApi.cancelIdleCallback?.(idleId);
+  }
+
+  const timeoutId = globalThis.setTimeout(task, 250);
+  return () => globalThis.clearTimeout(timeoutId);
+}
+
+function FullscreenFallback({ label }: { label: string }) {
+  return (
+    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
+      <div style={{ color: 'var(--t3)', fontFamily: 'var(--ff-u)', fontSize: 13 }}>{label}</div>
+    </div>
+  );
+}
+
 export default function App() {
   const [view, setView] = useState<View>('home');
   const [gameKey, setGameKey] = useState(0);
@@ -61,34 +99,61 @@ export default function App() {
   const { personalBests, submitSessionScore } = useLeaderboard(user);
   const versusHook = useVersusMultiplayer(user);
 
+  useEffect(() => {
+    if (view !== 'home') {
+      return;
+    }
+
+    return scheduleIdleWork(() => {
+      void warmAppViews();
+      void warmGameplayAssets();
+    });
+  }, [view]);
+
   const handleStart = useCallback((settings: GameSettings) => {
     if (settings.mode === 'versus') {
       if (!user) {
         setShowAuth(true);
         return;
       }
+      void loadVersusLobbyModule();
+      void loadVersusGameViewModule();
       versusHook.hostLobby(settings, versusEmoji);
       navigateTo('versus-lobby');
       return;
     }
+    void loadGameViewModule();
+    void warmGameplayAssets();
     saveSettings(settings);
-    setActiveSettings(settings);
-    setGameKey(k => k + 1);
+    startTransition(() => {
+      setActiveSettings(settings);
+      setGameKey(k => k + 1);
+    });
     setFadedIn(false);
-    setTimeout(() => { setView('game'); setFadedIn(true); }, 320);
+    setTimeout(() => {
+      startTransition(() => setView('game'));
+      setFadedIn(true);
+    }, 320);
   }, [navigateTo, user, versusEmoji, versusHook]);
 
   const handlePractice = useCallback(() => {
+    void loadGameViewModule();
+    void warmGameplayAssets();
     const practiceSettings: GameSettings = {
       ...activeSettings,
       mode: 'practice',
       noTimeLimit: true,
     };
     saveSettings(practiceSettings);
-    setActiveSettings(practiceSettings);
-    setGameKey(k => k + 1);
+    startTransition(() => {
+      setActiveSettings(practiceSettings);
+      setGameKey(k => k + 1);
+    });
     setFadedIn(false);
-    setTimeout(() => { setView('game'); setFadedIn(true); }, 320);
+    setTimeout(() => {
+      startTransition(() => setView('game'));
+      setFadedIn(true);
+    }, 320);
   }, [activeSettings]);
 
   if (authLoading) {
@@ -125,84 +190,98 @@ export default function App() {
       )}
 
       {view === 'game' && (
-        <GameView
-          key={gameKey}
-          settings={activeSettings}
-          globalStats={progress.globalStats}
-          personalBests={personalBests}
-          onBackToMenu={() => navigateTo('home')}
-          onViewProgress={() => navigateTo('progress')}
-          onViewLeaderboard={() => navigateTo('leaderboard')}
-          onPractice={handlePractice}
-          progress={progress}
-          user={user}
-          onSubmitScore={(score) => submitSessionScore(score, activeSettings)}
-        />
+        <Suspense fallback={<FullscreenFallback label="Loading game…" />}>
+          <GameView
+            key={gameKey}
+            settings={activeSettings}
+            globalStats={progress.globalStats}
+            personalBests={personalBests}
+            onBackToMenu={() => navigateTo('home')}
+            onViewProgress={() => navigateTo('progress')}
+            onViewLeaderboard={() => navigateTo('leaderboard')}
+            onPractice={handlePractice}
+            progress={progress}
+            user={user}
+            onSubmitScore={(score) => submitSessionScore(score, activeSettings)}
+          />
+        </Suspense>
       )}
 
       {view === 'progress' && (
-        <ProgressDashboard
-          progress={progress.progress}
-          globalStats={progress.globalStats}
-          onBack={() => navigateTo('home')}
-          onReset={progress.resetProgress}
-        />
+        <Suspense fallback={<FullscreenFallback label="Loading progress…" />}>
+          <ProgressDashboard
+            progress={progress.progress}
+            globalStats={progress.globalStats}
+            onBack={() => navigateTo('home')}
+            onReset={progress.resetProgress}
+          />
+        </Suspense>
       )}
 
       {view === 'leaderboard' && (
-        <LeaderboardView
-          user={user}
-          onBack={() => navigateTo('home')}
-        />
+        <Suspense fallback={<FullscreenFallback label="Loading leaderboard…" />}>
+          <LeaderboardView
+            user={user}
+            onBack={() => navigateTo('home')}
+          />
+        </Suspense>
       )}
 
       {view === 'versus-lobby' && (
-        versusHook.lobbyState ? (
-          versusHook.lobbyState.status === 'playing' ? (
-            <VersusGameView
-              settings={versusHook.lobbyState.settings || activeSettings}
-              user={user!}
-              onBackToMenu={() => { versusHook.leaveLobby(); navigateTo('home'); }}
-              versusHook={versusHook}
-              progress={progress}
-            />
+        <Suspense fallback={<FullscreenFallback label="Loading versus…" />}>
+          {versusHook.lobbyState ? (
+            versusHook.lobbyState.status === 'playing' ? (
+              <VersusGameView
+                settings={versusHook.lobbyState.settings || activeSettings}
+                user={user!}
+                onBackToMenu={() => { versusHook.leaveLobby(); navigateTo('home'); }}
+                versusHook={versusHook}
+                progress={progress}
+              />
+            ) : (
+              <VersusLobby
+                lobbyState={versusHook.lobbyState}
+                isHost={versusHook.isHost}
+                error={versusHook.error}
+                onStartGame={() => {
+                  const settings = versusHook.lobbyState!.settings!;
+                  const queue = buildQueue(settings);
+                  void loadVersusGameViewModule();
+                  void warmGameplayAssets();
+                  versusHook.startGame(queue, settings);
+                }}
+                onLeave={() => { versusHook.leaveLobby(); navigateTo('home'); }}
+              />
+            )
+          ) : versusHook.error ? (
+            <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', color: 'var(--miss-hi)', fontFamily: 'var(--ff-u)' }}>
+              <div style={{ marginBottom: 16, fontSize: 16 }}>{versusHook.error}</div>
+              <button onClick={() => { versusHook.leaveLobby(); navigateTo('home'); }} style={{ padding: '8px 16px', borderRadius: 3, border: '1px solid var(--border)', background: 'var(--s1)', color: 'var(--t2)', cursor: 'pointer' }}>Back to Home</button>
+            </div>
           ) : (
-            <VersusLobby
-              lobbyState={versusHook.lobbyState}
-              isHost={versusHook.isHost}
-              error={versusHook.error}
-              onStartGame={() => {
-                const settings = versusHook.lobbyState!.settings!;
-                const queue = buildQueue(settings);
-                versusHook.startGame(queue, settings);
-              }}
-              onLeave={() => { versusHook.leaveLobby(); navigateTo('home'); }}
-            />
-          )
-        ) : versusHook.error ? (
-          <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', color: 'var(--miss-hi)', fontFamily: 'var(--ff-u)' }}>
-            <div style={{ marginBottom: 16, fontSize: 16 }}>{versusHook.error}</div>
-            <button onClick={() => { versusHook.leaveLobby(); navigateTo('home'); }} style={{ padding: '8px 16px', borderRadius: 3, border: '1px solid var(--border)', background: 'var(--s1)', color: 'var(--t2)', cursor: 'pointer' }}>Back to Home</button>
-          </div>
-        ) : (
-          <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', color: 'var(--t3)', fontFamily: 'var(--ff-u)' }}>
-            <div className="animate-spin" style={{ width: 18, height: 18, borderRadius: '50%', border: '1.5px solid var(--border-hi)', borderTopColor: 'var(--olive)', marginRight: 10 }} />
-            Connecting to lobby...
-          </div>
-        )
+            <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', color: 'var(--t3)', fontFamily: 'var(--ff-u)' }}>
+              <div className="animate-spin" style={{ width: 18, height: 18, borderRadius: '50%', border: '1.5px solid var(--border-hi)', borderTopColor: 'var(--olive)', marginRight: 10 }} />
+              Connecting to lobby...
+            </div>
+          )}
+        </Suspense>
       )}
 
       {showJoinModal && (
-        <JoinVersusModal
-          onClose={() => setShowJoinModal(false)}
-          onJoin={(code) => {
-            setShowJoinModal(false);
-            versusHook.joinLobby(code, versusEmoji);
-            navigateTo('versus-lobby');
-          }}
-          emoji={versusEmoji}
-          onEmojiChange={setVersusEmoji}
-        />
+        <Suspense fallback={null}>
+          <JoinVersusModal
+            onClose={() => setShowJoinModal(false)}
+            onJoin={(code) => {
+              void loadVersusLobbyModule();
+              void loadVersusGameViewModule();
+              setShowJoinModal(false);
+              versusHook.joinLobby(code, versusEmoji);
+              navigateTo('versus-lobby');
+            }}
+            emoji={versusEmoji}
+            onEmojiChange={setVersusEmoji}
+          />
+        </Suspense>
       )}
 
       {showAuth && (

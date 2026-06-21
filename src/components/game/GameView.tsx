@@ -148,6 +148,10 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
     }
   }, [session.phase, settings.noTimeLimit, startTimer]);
 
+  const handleGlobeReady = useCallback(() => {
+    setGlobeBooted(true);
+  }, []);
+
   useEffect(() => { engine.startGame(settings); }, []); // eslint-disable-line
 
   useEffect(() => {
@@ -166,12 +170,25 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
 
   // Compute total queue size
   useEffect(() => {
-    const base = countries.filter(c => {
+    const filteredCountryCount = countries.filter(c => {
       if (!settings.includeDependent && !c.independent) return false;
       if (settings.regionFilter.length > 0 && !settings.regionFilter.includes(c.region)) return false;
       return true;
     }).length;
-    setQueueTotal(base * (settings.mode === 'both' ? 2 : 1));
+
+    if (settings.mode === 'learn') {
+      setQueueTotal(filteredCountryCount);
+      return;
+    }
+
+    const promptCount =
+      settings.mode === 'both'
+        ? 2
+        : settings.mode === 'practice'
+          ? (settings.practicePrompts === 'both' ? 2 : 1)
+          : 1;
+
+    setQueueTotal(filteredCountryCount * promptCount);
   }, [settings]);
 
 
@@ -277,7 +294,12 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
   }
 
   const currentCountry   = currentPrompt ? countryMap.get(currentPrompt.countryId) : null;
-  const completed        = session.totalQuestions;
+  const learnedCountries = useMemo(() => {
+    if (!isLearnMode) return 0;
+    return new Set(Array.from(session.answered, key => key.split(':')[0])).size;
+  }, [isLearnMode, session.answered]);
+
+  const completed        = isLearnMode ? learnedCountries : session.totalQuestions;
   const isPlaying        = session.phase === 'playing';
   const isPaused         = session.phase === 'paused';
   const isTeaching       = session.phase === 'teaching';
@@ -285,11 +307,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
   const showFeedbackMiss = inputState === 'wrong' && !!wrongAnswer;
   const promptLocked     = isPromptRendering || !currentPrompt;
   const streak           = session.streak;
-
-  // Pip progress bar (cap at 20 visible pips to avoid overflow)
-  const pipTotal   = Math.min(queueTotal || 20, 20);
-  const pipsDone   = Math.min(completed, pipTotal);
-  const pipCurrent = pipsDone < pipTotal ? pipsDone : -1;
+  const progressPercent = queueTotal > 0 ? Math.min((completed / queueTotal) * 100, 100) : 0;
 
   const vineBg = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='72' viewBox='0 0 22 72'%3E%3Cpath d='M11,0 C10,18 12,36 11,54 C10,62 11,72 11,72' stroke='rgba(74,110,36,0.28)' stroke-width='0.9' fill='none'/%3E%3Cpath d='M11,18 C8,11 13,4 20,3 C13,7 9,13 11,18Z' fill='rgba(74,110,36,0.20)'/%3E%3Cpath d='M11,49 C14,42 9,35 2,34 C9,37 13,44 11,49Z' fill='rgba(74,110,36,0.18)'/%3E%3Ccircle cx='11' cy='17' r='1.6' fill='rgba(74,110,36,0.22)'/%3E%3C/svg%3E")`;
 
@@ -346,22 +364,6 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
             {MODE_LABELS[settings.mode] ?? settings.mode}
           </div>
 
-          {/* Score + streak */}
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-            <span style={{
-              fontFamily: 'var(--ff-d)', fontSize: 26, fontWeight: 300,
-              color: 'var(--gold-hi)', lineHeight: 1,
-            }}>{session.score}</span>
-            <span style={{ fontSize: 11, color: 'var(--t3)', letterSpacing: '0.06em' }}>pts</span>
-            {streak >= 2 && (
-              <span style={{
-                fontSize: 11, fontWeight: 600, color: 'var(--gold)',
-                background: 'rgba(135,100,24,0.10)', border: '1px solid rgba(135,100,24,0.25)',
-                borderRadius: 3, padding: '1px 5px', marginLeft: 4,
-              }}>×{streak}</span>
-            )}
-          </div>
-
           {/* Timer */}
           {!settings.noTimeLimit && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
@@ -404,18 +406,21 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
             padding: '11px 20px', borderBottom: '1px solid var(--border)',
             background: 'var(--s1)', flexShrink: 0,
           }}>
-            <div style={{ display: 'flex', gap: 5, flex: 1 }}>
-              {Array.from({ length: pipTotal }).map((_, i) => (
-                <div key={i} style={{
-                  height: 3, flex: 1, borderRadius: 2,
-                  background: i < pipsDone
-                    ? 'var(--olive)'
-                    : i === pipCurrent
-                      ? 'var(--gold)'
-                      : 'var(--s4)',
-                  transition: 'background 0.25s',
-                }} />
-              ))}
+            <div style={{
+              position: 'relative',
+              flex: 1,
+              height: 6,
+              borderRadius: 999,
+              overflow: 'hidden',
+              background: 'rgba(86,116,40,0.14)',
+            }}>
+              <div style={{
+                width: `${progressPercent}%`,
+                height: '100%',
+                borderRadius: 999,
+                background: 'repeating-linear-gradient(90deg, var(--olive) 0 16px, rgba(86,116,40,0.45) 16px 22px)',
+                transition: 'width 0.25s ease',
+              }} />
             </div>
             <div style={{ fontSize: 11, color: 'var(--t3)', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>
               {completed}&thinsp;/&thinsp;{queueTotal || '…'}
@@ -444,6 +449,8 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
             <TeachingPanel
               country={currentCountry}
               promptType={currentPrompt.promptType}
+              score={session.score}
+              streak={session.streak}
               onAcknowledge={handleAcknowledge}
             />
           ) : currentPrompt ? (
@@ -457,14 +464,30 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
                 {currentPrompt.promptType === 'country' ? 'Identify the highlighted country' : 'Name the capital'}
               </div>
 
-              {/* Question */}
-              <div style={{
-                fontFamily: 'var(--ff-d)', fontSize: 27, fontWeight: 400,
-                color: 'var(--t1)', lineHeight: 1.25, marginBottom: 15,
-              }}>
-                {currentPrompt.promptType === 'country'
-                  ? 'Name this country'
-                  : currentCountry ? `Capital of ${currentCountry.name}?` : '…'}
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 15 }}>
+                <div style={{
+                  flex: 1,
+                  minWidth: 0,
+                  fontFamily: 'var(--ff-d)', fontSize: 27, fontWeight: 400,
+                  color: 'var(--t1)', lineHeight: 1.2,
+                  overflowWrap: 'anywhere',
+                }}>
+                  {currentPrompt.promptType === 'country'
+                    ? 'Name this country'
+                    : currentCountry ? `Capital of ${currentCountry.name}?` : '…'}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5, flexShrink: 0, minWidth: 96, paddingTop: 4 }}>
+                  <div style={{ fontSize: 12, color: 'var(--t3)', letterSpacing: '0.06em', lineHeight: 1 }}>
+                    {streak >= 5 ? '🔥 ' : '✦ '}x{Math.max(streak, 1)}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: 4, lineHeight: 1 }}>
+                    <span style={{
+                      fontFamily: 'var(--ff-d)', fontSize: 26, fontWeight: 300,
+                      color: 'var(--gold-hi)', lineHeight: 1,
+                    }}>{session.score}</span>
+                    <span style={{ fontSize: 11, color: 'var(--t3)', letterSpacing: '0.06em', lineHeight: 1 }}>pts</span>
+                  </div>
+                </div>
               </div>
 
               {/* Region tag */}
@@ -679,7 +702,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
             currentId={pendingPrompt?.countryId ?? currentPrompt?.countryId ?? null}
             focusToken={focusToken}
             recenterToken={recenterToken}
-            onReady={() => setGlobeBooted(true)}
+            onReady={handleGlobeReady}
             onTargetReady={commitRenderedPrompt}
             promptIndex={promptIndex}
           />
