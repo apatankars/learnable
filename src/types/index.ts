@@ -80,6 +80,12 @@ export interface CountryProgress {
   capitalConsecutiveCorrect: number;
 }
 
+export interface ModeStat {
+  sessions: number;
+  bestScore: number;
+  totalScore: number;
+}
+
 export interface GlobalStats {
   totalSessions: number;
   totalScore: number;
@@ -89,6 +95,7 @@ export interface GlobalStats {
   lastPlayed: number;
   versusWins: number;
   versusLosses: number;
+  modeStats: Record<string, ModeStat>;
 }
 
 export interface UserSettings {

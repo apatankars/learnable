@@ -652,41 +652,37 @@ export function HomeScreen({
               <line x1="9" y1="20" x2="15" y2="20" />
             </svg>
           </button>
-          {user && (
-            <button
-              onClick={onViewProgress}
-              title="My Progress"
-              style={{
-                padding: "12px 14px",
-                borderRadius: 3,
-                border: "1px solid var(--border-hi)",
-                color: "var(--t2)",
-                background: "transparent",
-                cursor: "pointer",
-                fontFamily: "var(--ff-u)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                transition: "border-color 0.14s, color 0.14s",
-              }}
+          <button
+            onClick={onViewProgress}
+            title="Account"
+            style={{
+              padding: "12px 14px",
+              borderRadius: 3,
+              border: "1px solid var(--border-hi)",
+              color: "var(--t2)",
+              background: "transparent",
+              cursor: "pointer",
+              fontFamily: "var(--ff-u)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "border-color 0.14s, color 0.14s",
+            }}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width={20}
+              height={20}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.35}
+              strokeLinecap="round"
+              strokeLinejoin="round"
             >
-              <svg
-                viewBox="0 0 24 24"
-                width={20}
-                height={20}
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={1.35}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M4 18v-4h3v4Z" />
-                <path d="M9 18V8h3v10Z" />
-                <path d="M14 18v-6h3v6Z" />
-                <line x1="3" y1="18" x2="19" y2="18" />
-              </svg>
-            </button>
-          )}
+              <circle cx="12" cy="8" r="3.4" />
+              <path d="M5.5 19c0-3.3 2.9-5.5 6.5-5.5s6.5 2.2 6.5 5.5" />
+            </svg>
+          </button>
         </div>
 
         {/* Settings toggle */}
