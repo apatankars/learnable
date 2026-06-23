@@ -1,14 +1,12 @@
 import { useReducer, useCallback, useRef } from 'react';
 import type {
-  GameSession, GameSettings, GamePrompt, AttemptResult, PromptType, CountryEntry, CountryProgress
+  GameSession, GameSettings, GamePrompt, AttemptResult, PromptType, CountryEntry, CountryProgress, Topic
 } from '../types';
 import { matchCountry, matchCapital } from '../lib/fuzzy';
 import { calculatePoints } from '../lib/scoring';
 import { getMastery } from '../lib/progressStorage';
 import { weightedPick } from '../lib/weightedRandom';
-import countriesData from '../data/countries.json';
-
-const allCountries = countriesData as CountryEntry[];
+import { getDataset, normalizeTopic } from '../lib/dataset';
 
 type GameAction =
   | { type: 'START'; settings: GameSettings }
@@ -158,12 +156,14 @@ export function useLearnEngine(
 
   const getFilteredCountries = useCallback(() => {
     if (!settingsRef.current) return [];
-    return allCountries.filter(c => {
+    return getDataset(settingsRef.current.topic).entries.filter(c => {
       if (!settingsRef.current!.includeDependent && !c.independent) return false;
       if (settingsRef.current!.regionFilter.length > 0 && !settingsRef.current!.regionFilter.includes(c.region)) return false;
       return true;
     });
   }, []);
+
+  const currentTopic = useCallback((): Topic => normalizeTopic(settingsRef.current?.topic), []);
 
   const getPromptTypes = useCallback((): PromptType[] => {
     if (!settingsRef.current) return ['country'];
@@ -295,13 +295,14 @@ export function useLearnEngine(
   }, [advanceGame]);
 
   const submitAnswer = useCallback((input: string, currentPrompt: GamePrompt, currentStreak: number) => {
-    const country = allCountries.find(c => c.id === currentPrompt.countryId);
+    const topic = currentTopic();
+    const country = getDataset(topic).byId.get(currentPrompt.countryId);
     if (!country) return null;
     const timeTaken = Date.now() - promptStartRef.current;
 
     const matchResult = currentPrompt.promptType === 'country'
-      ? matchCountry(input, currentPrompt.countryId)
-      : matchCapital(input, currentPrompt.countryId);
+      ? matchCountry(input, currentPrompt.countryId, topic)
+      : matchCapital(input, currentPrompt.countryId, topic);
 
     const correctAnswer = currentPrompt.promptType === 'country' ? country.name : country.capital;
 
@@ -348,10 +349,10 @@ export function useLearnEngine(
 
     const nextPrompt = advanceGame();
     return { tier: isFuzzy ? ('fuzzy' as const) : ('correct' as const), matchedName: matchResult.matchedName, points, nextPrompt };
-  }, [onAttempt, advanceGame]);
+  }, [onAttempt, advanceGame, currentTopic]);
 
   const submitSkip = useCallback((currentPrompt: GamePrompt) => {
-    const country = allCountries.find(c => c.id === currentPrompt.countryId);
+    const country = getDataset(currentTopic()).byId.get(currentPrompt.countryId);
     if (!country) return null;
 
     const timeTaken = Date.now() - promptStartRef.current;
@@ -375,7 +376,7 @@ export function useLearnEngine(
       correctAnswer: currentPrompt.promptType === 'country' ? country.name : country.capital,
       nextPrompt,
     };
-  }, [advanceGame, onAttempt]);
+  }, [advanceGame, onAttempt, currentTopic]);
 
   const pause = useCallback(() => {
     previousPhaseRef.current = session.phase as 'playing' | 'teaching';

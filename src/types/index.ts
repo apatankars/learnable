@@ -1,5 +1,6 @@
 export type GameMode = 'country' | 'capital' | 'both' | 'practice' | 'learn' | 'versus';
 export type PromptType = 'country' | 'capital';
+export type Topic = 'world' | 'us-states';
 export type GamePhase = 'idle' | 'playing' | 'paused' | 'gameover' | 'teaching';
 export type CountryColorState = 'default' | 'current' | 'correct' | 'skipped' | 'wrong' | 'teaching';
 export type MatchTier = 'correct' | 'fuzzy' | 'wrong';
@@ -52,6 +53,7 @@ export interface GameSession {
 
 export interface GameSettings {
   mode: GameMode;
+  topic?: Topic;
   timeLimitSeconds: number;
   noTimeLimit: boolean;
   blindMode: boolean;
@@ -93,6 +95,7 @@ export interface GlobalStats {
 
 export interface UserSettings {
   mode: GameMode;
+  topic?: Topic;
   timeLimitSeconds: number;
   noTimeLimit: boolean;
   blindMode: boolean;

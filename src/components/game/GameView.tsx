@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { GlobeMap as OrbisGlobe } from './GlobeMap';
+import { UsStatesMap } from './UsStatesMap';
 import { ResultFlash } from './ResultFlash';
 import { GameOverModal } from './GameOverModal';
 import { TeachingPanel } from './TeachingPanel';
@@ -12,11 +13,7 @@ import { useTimer } from '../../hooks/useTimer';
 import { useProgress } from '../../hooks/useProgress';
 import { getTimeMode } from '../../lib/leaderboard';
 import type { User } from '@supabase/supabase-js';
-import countriesData from '../../data/countries.json';
-import type { CountryEntry } from '../../types';
-
-const countries = countriesData as CountryEntry[];
-const countryMap = new Map(countries.map(c => [c.id, c]));
+import { getDataset, normalizeTopic } from '../../lib/dataset';
 
 interface GameViewProps {
   settings: GameSettings;
@@ -72,6 +69,13 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
   const focusTokenRef = useRef(0);
 
   const { recordAttempt, finishSession } = progress;
+
+  const topic = normalizeTopic(settings.topic);
+  const isUsStates = topic === 'us-states';
+  const dataset = getDataset(topic);
+  const countryMap = dataset.byId;
+  const countries = dataset.entries;
+  const placeNoun = isUsStates ? 'state' : 'country';
 
   const timeMode = getTimeMode(settings.timeLimitSeconds, settings.noTimeLimit);
   const modeKey  = `${settings.mode}_${timeMode}`;
@@ -443,7 +447,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
           ) : !currentPrompt && isPromptRendering ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--t3)', fontSize: 12, letterSpacing: '0.08em', marginTop: 36 }}>
               <div className="animate-spin" style={{ width: 18, height: 18, borderRadius: '50%', border: '1.5px solid var(--border-hi)', borderTopColor: 'var(--olive)' }} />
-              <span>{globeBooted ? 'Rendering target…' : 'Rendering globe…'}</span>
+              <span>{globeBooted ? 'Rendering target…' : isUsStates ? 'Rendering map…' : 'Rendering globe…'}</span>
             </div>
           ) : isTeaching && currentCountry && currentPrompt && !showFeedbackOk && !showFeedbackMiss && !showWrongFeedback ? (
             <TeachingPanel
@@ -461,7 +465,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
                 color: 'var(--t3)', marginBottom: 10, fontWeight: 500,
                 fontFamily: 'var(--ff-u)',
               }}>
-                {currentPrompt.promptType === 'country' ? 'Identify the highlighted country' : 'Name the capital'}
+                {currentPrompt.promptType === 'country' ? `Identify the highlighted ${placeNoun}` : 'Name the capital'}
               </div>
 
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 15 }}>
@@ -473,7 +477,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
                   overflowWrap: 'anywhere',
                 }}>
                   {currentPrompt.promptType === 'country'
-                    ? 'Name this country'
+                    ? `Name this ${placeNoun}`
                     : currentCountry ? `Capital of ${currentCountry.name}?` : '…'}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5, flexShrink: 0, minWidth: 96, paddingTop: 4 }}>
@@ -561,7 +565,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
                   marginBottom: 12, fontFamily: 'var(--ff-u)',
                 }}>
                   <div className="animate-spin" style={{ width: 12, height: 12, borderRadius: '50%', border: '1.5px solid var(--border-hi)', borderTopColor: 'var(--olive)' }} />
-                  <span>{globeBooted ? 'Locating next target…' : 'Rendering globe…'}</span>
+                  <span>{globeBooted ? 'Locating next target…' : isUsStates ? 'Rendering map…' : 'Rendering globe…'}</span>
                 </div>
               )}
 
@@ -675,6 +679,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
         background: '#05080d',
       }}>
         <SpaceBackdrop />
+        {!isUsStates && (
         <button
           onClick={() => setRecenterToken((value) => value + 1)}
           title="Recenter globe"
@@ -695,17 +700,30 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
           </svg>
           Recenter
         </button>
-        {/* Globe fills the full panel — no fixed size so zoom/pan use all the space */}
+        )}
+        {/* Map fills the full panel — no fixed size so zoom/pan use all the space */}
         <div style={{ position: 'absolute', inset: 0 }}>
-          <OrbisGlobe
-            colorMap={colorMap}
-            currentId={pendingPrompt?.countryId ?? currentPrompt?.countryId ?? null}
-            focusToken={focusToken}
-            recenterToken={recenterToken}
-            onReady={handleGlobeReady}
-            onTargetReady={commitRenderedPrompt}
-            promptIndex={promptIndex}
-          />
+          {isUsStates ? (
+            <UsStatesMap
+              colorMap={colorMap}
+              currentId={pendingPrompt?.countryId ?? currentPrompt?.countryId ?? null}
+              focusToken={focusToken}
+              recenterToken={recenterToken}
+              onReady={handleGlobeReady}
+              onTargetReady={commitRenderedPrompt}
+              promptIndex={promptIndex}
+            />
+          ) : (
+            <OrbisGlobe
+              colorMap={colorMap}
+              currentId={pendingPrompt?.countryId ?? currentPrompt?.countryId ?? null}
+              focusToken={focusToken}
+              recenterToken={recenterToken}
+              onReady={handleGlobeReady}
+              onTargetReady={commitRenderedPrompt}
+              promptIndex={promptIndex}
+            />
+          )}
         </div>
 
         <ResultFlash trigger={flash} />
@@ -749,7 +767,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
           color: 'rgba(255,255,255,0.25)', pointerEvents: 'none',
           fontFamily: 'var(--ff-u)',
         }}>
-          Drag to rotate · Scroll to zoom
+          {isUsStates ? 'Identify the highlighted state' : 'Drag to rotate · Scroll to zoom'}
         </div>
       </div>
 
