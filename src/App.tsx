@@ -212,6 +212,8 @@ export default function App() {
           <ProgressDashboard
             progress={progress.progress}
             globalStats={progress.globalStats}
+            confusions={progress.confusions}
+            comiss={progress.comiss}
             onBack={() => navigateTo('home')}
             onReset={progress.resetProgress}
           />

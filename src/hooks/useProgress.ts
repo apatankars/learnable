@@ -1,10 +1,11 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import type { User } from '@supabase/supabase-js';
-import type { CountryProgress, AttemptResult, GlobalStats } from '../types';
+import type { CountryProgress, AttemptResult, GlobalStats, ConfusionEdge, ComissPair } from '../types';
 import {
   loadProgress, saveProgress, loadGlobalStats, saveGlobalStats,
   defaultProgress, getMastery,
 } from '../lib/progressStorage';
+import { updateRatings } from '../lib/adaptive';
 import { supabase } from '../lib/supabase';
 
 // ── Supabase helpers ──────────────────────────────────────────────────────────
@@ -29,9 +30,35 @@ async function fetchServerProgress(userId: string): Promise<Record<string, Count
       capitalCorrect: row.capital_correct,
       capitalLastSeen: row.capital_last_seen,
       capitalConsecutiveCorrect: row.capital_consecutive_correct,
+      countryRating: row.country_rating ?? 1500,
+      capitalRating: row.capital_rating ?? 1500,
     };
   }
   return result;
+}
+
+async function fetchConfusions(userId: string): Promise<ConfusionEdge[]> {
+  const { data, error } = await supabase
+    .from('user_confusions')
+    .select('*')
+    .eq('user_id', userId);
+  if (error || !data) return [];
+  return data.map(row => ({
+    shownId: row.shown_id,
+    answeredId: row.answered_id,
+    promptType: row.prompt_type,
+    count: row.count,
+    lastSeen: row.last_seen,
+  }));
+}
+
+async function fetchComiss(userId: string): Promise<ComissPair[]> {
+  const { data, error } = await supabase
+    .from('user_comiss')
+    .select('*')
+    .eq('user_id', userId);
+  if (error || !data) return [];
+  return data.map(row => ({ aId: row.item_a, bId: row.item_b, count: row.count }));
 }
 
 async function fetchServerStats(userId: string): Promise<GlobalStats | null> {
@@ -50,6 +77,8 @@ async function fetchServerStats(userId: string): Promise<GlobalStats | null> {
     lastPlayed: data.last_played,
     versusWins: data.versus_wins ?? 0,
     versusLosses: data.versus_losses ?? 0,
+    countryAbility: data.country_ability ?? 1500,
+    capitalAbility: data.capital_ability ?? 1500,
   };
 }
 
@@ -65,8 +94,25 @@ async function upsertProgress(userId: string, p: CountryProgress) {
     capital_correct: p.capitalCorrect,
     capital_last_seen: p.capitalLastSeen,
     capital_consecutive_correct: p.capitalConsecutiveCorrect,
+    country_rating: p.countryRating,
+    capital_rating: p.capitalRating,
     updated_at: new Date().toISOString(),
   }, { onConflict: 'user_id,country_id' });
+}
+
+async function incrementConfusion(userId: string, e: ConfusionEdge) {
+  await supabase.rpc('increment_confusion', {
+    p_user: userId,
+    p_shown: e.shownId,
+    p_answered: e.answeredId,
+    p_prompt_type: e.promptType,
+    p_now: e.lastSeen,
+  });
+}
+
+async function incrementComiss(userId: string, aId: string, bId: string) {
+  const [a, b] = aId < bId ? [aId, bId] : [bId, aId];
+  await supabase.rpc('increment_comiss', { p_user: userId, p_a: a, p_b: b });
 }
 
 async function upsertStats(userId: string, stats: GlobalStats) {
@@ -80,6 +126,8 @@ async function upsertStats(userId: string, stats: GlobalStats) {
     last_played: stats.lastPlayed,
     versus_wins: stats.versusWins,
     versus_losses: stats.versusLosses,
+    country_ability: stats.countryAbility,
+    capital_ability: stats.capitalAbility,
   }, { onConflict: 'user_id' });
 }
 
@@ -95,8 +143,16 @@ async function migrateLocalToServer(userId: string, local: Record<string, Countr
 export function useProgress(user: User | null = null) {
   const [progress, setProgress] = useState<Record<string, CountryProgress>>(() => loadProgress());
   const [globalStats, setGlobalStats] = useState<GlobalStats>(() => loadGlobalStats());
+  const [confusions, setConfusions] = useState<ConfusionEdge[]>([]);
+  const [comiss, setComiss] = useState<ComissPair[]>([]);
   const userRef = useRef<User | null>(user);
   userRef.current = user;
+  // Mirrors of state so the (stable) callbacks can read the latest values
+  // without re-creating — Elo updates need both the item rating and the ability.
+  const statsRef = useRef<GlobalStats>(globalStats);
+  statsRef.current = globalStats;
+  const progressRef = useRef<Record<string, CountryProgress>>(progress);
+  progressRef.current = progress;
 
   // Load server data when user logs in
   useEffect(() => {
@@ -114,33 +170,41 @@ export function useProgress(user: User | null = null) {
         setProgress(serverProgress);
         if (serverStats) setGlobalStats(serverStats);
       }
+      setConfusions(await fetchConfusions(user.id));
+      setComiss(await fetchComiss(user.id));
     })();
   }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const recordAttempt = useCallback((result: AttemptResult) => {
+    const now = Date.now();
+    const isCountry = result.promptType === 'country';
+    const abilityKey = isCountry ? 'countryAbility' : 'capitalAbility';
+
+    // ── Per-user Elo: compute once from pre-update values so the item rating and
+    //    the matching ability move by the same (opposite-signed) delta. ──
+    const prevEntry = progressRef.current[result.countryId] ?? defaultProgress(result.countryId);
+    const ability = statsRef.current[abilityKey];
+    const itemRating = isCountry ? prevEntry.countryRating : prevEntry.capitalRating;
+    const attemptsBefore = isCountry ? prevEntry.countryAttempts : prevEntry.capitalAttempts;
+    const { ability: newAbility, itemRating: newItemRating } =
+      updateRatings(ability, itemRating, result.correct, attemptsBefore);
+
     setProgress(prev => {
       const existing = prev[result.countryId] ?? defaultProgress(result.countryId);
       const updated = { ...existing };
-      const now = Date.now();
 
-      if (result.promptType === 'country') {
+      if (isCountry) {
         updated.countryAttempts++;
         updated.countryLastSeen = now;
-        if (result.correct) {
-          updated.countryCorrect++;
-          updated.countryConsecutiveCorrect++;
-        } else {
-          updated.countryConsecutiveCorrect = 0;
-        }
+        updated.countryRating = newItemRating;
+        if (result.correct) { updated.countryCorrect++; updated.countryConsecutiveCorrect++; }
+        else updated.countryConsecutiveCorrect = 0;
       } else {
         updated.capitalAttempts++;
         updated.capitalLastSeen = now;
-        if (result.correct) {
-          updated.capitalCorrect++;
-          updated.capitalConsecutiveCorrect++;
-        } else {
-          updated.capitalConsecutiveCorrect = 0;
-        }
+        updated.capitalRating = newItemRating;
+        if (result.correct) { updated.capitalCorrect++; updated.capitalConsecutiveCorrect++; }
+        else updated.capitalConsecutiveCorrect = 0;
       }
 
       const next = { ...prev, [result.countryId]: updated };
@@ -149,6 +213,64 @@ export function useProgress(user: User | null = null) {
       if (uid) upsertProgress(uid, updated);
       return next;
     });
+
+    setGlobalStats(prev => {
+      const nextStats: GlobalStats = { ...prev, [abilityKey]: newAbility };
+      saveGlobalStats(nextStats);
+      const uid = userRef.current?.id;
+      if (uid) upsertStats(uid, nextStats);
+      return nextStats;
+    });
+
+    // ── Confusion graph: record which country the wrong answer was mistaken for ──
+    if (result.confusedWithId) {
+      const edge: ConfusionEdge = {
+        shownId: result.countryId,
+        answeredId: result.confusedWithId,
+        promptType: result.promptType,
+        count: 1,
+        lastSeen: now,
+      };
+      setConfusions(prev => {
+        const idx = prev.findIndex(e =>
+          e.shownId === edge.shownId && e.answeredId === edge.answeredId && e.promptType === edge.promptType);
+        if (idx === -1) return [...prev, edge];
+        const next = [...prev];
+        next[idx] = { ...next[idx], count: next[idx].count + 1, lastSeen: now };
+        return next;
+      });
+      const uid = userRef.current?.id;
+      if (uid) incrementConfusion(uid, edge);
+    }
+  }, []);
+
+  // Record items missed together in one session ("correlated mistakes").
+  // Caps the work at the top ~150 unordered pairs to bound the table.
+  const recordSessionMisses = useCallback((missedIds: string[]) => {
+    const unique = [...new Set(missedIds)];
+    if (unique.length < 2) return;
+    const pairs: [string, string][] = [];
+    for (let i = 0; i < unique.length; i++) {
+      for (let j = i + 1; j < unique.length; j++) {
+        const [a, b] = unique[i] < unique[j] ? [unique[i], unique[j]] : [unique[j], unique[i]];
+        pairs.push([a, b]);
+      }
+    }
+    const capped = pairs.slice(0, 150);
+
+    setComiss(prev => {
+      const map = new Map(prev.map(p => [`${p.aId}|${p.bId}`, { ...p }]));
+      for (const [a, b] of capped) {
+        const key = `${a}|${b}`;
+        const ex = map.get(key);
+        if (ex) ex.count++;
+        else map.set(key, { aId: a, bId: b, count: 1 });
+      }
+      return [...map.values()];
+    });
+
+    const uid = userRef.current?.id;
+    if (uid) capped.forEach(([a, b]) => incrementComiss(uid, a, b));
   }, []);
 
   const finishSession = useCallback((score: number, streak: number) => {
@@ -158,14 +280,13 @@ export function useProgress(user: User | null = null) {
         ? prev.daysPlayed
         : [...prev.daysPlayed, today];
       const next: GlobalStats = {
+        ...prev,
         totalSessions: prev.totalSessions + 1,
         totalScore: prev.totalScore + score,
         bestScore: Math.max(prev.bestScore, score),
         bestStreak: Math.max(prev.bestStreak, streak),
         daysPlayed: days,
         lastPlayed: Date.now(),
-        versusWins: prev.versusWins,
-        versusLosses: prev.versusLosses,
       };
       saveGlobalStats(next);
       const uid = userRef.current?.id;
@@ -203,5 +324,9 @@ export function useProgress(user: User | null = null) {
       });
   }, [progress]);
 
-  return { progress, globalStats, recordAttempt, finishSession, resetProgress, getWeakCountries, recordVersusResult };
+  return {
+    progress, globalStats, confusions, comiss,
+    recordAttempt, finishSession, resetProgress, getWeakCountries,
+    recordVersusResult, recordSessionMisses,
+  };
 }

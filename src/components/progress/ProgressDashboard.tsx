@@ -1,21 +1,27 @@
 import { useState, useMemo } from 'react';
-import type { CountryProgress, GlobalStats } from '../../types';
+import type { ReactNode } from 'react';
+import type { CountryProgress, GlobalStats, ConfusionEdge, ComissPair } from '../../types';
 import { getMastery } from '../../lib/progressStorage';
+import { topConfusionPairs, topComissPairs } from '../../lib/adaptive';
 import countriesData from '../../data/countries.json';
 import type { CountryEntry } from '../../types';
 import { ProgressMap } from './ProgressMap';
+import { ConfusionGraph } from './ConfusionGraph';
 import { BotanicalDivider } from '../ui/BotanicalDivider';
 
 const countries = countriesData as CountryEntry[];
+const nameById = new Map(countries.map(c => [c.id, c.name]));
 
 interface ProgressDashboardProps {
   progress: Record<string, CountryProgress>;
   globalStats: GlobalStats;
+  confusions: ConfusionEdge[];
+  comiss: ComissPair[];
   onBack: () => void;
   onReset: () => void;
 }
 
-export function ProgressDashboard({ progress, globalStats, onBack, onReset }: ProgressDashboardProps) {
+export function ProgressDashboard({ progress, globalStats, confusions, comiss, onBack, onReset }: ProgressDashboardProps) {
   const studied = countries.filter(c => {
     const p = progress[c.id];
     return p && (p.countryAttempts + p.capitalAttempts) > 0;
@@ -52,6 +58,25 @@ export function ProgressDashboard({ progress, globalStats, onBack, onReset }: Pr
     }
     return filtered;
   }, [withMastery, activeTab]);
+
+  // ── Adaptive insights ──
+  const mixedUp = useMemo(() => topConfusionPairs(confusions, 8), [confusions]);
+  const oftenMissed = useMemo(() => topComissPairs(comiss, 8), [comiss]);
+  const hardestForYou = useMemo(() => {
+    return withMastery
+      .map(({ country, progress: p }) => {
+        // Highest per-user Elo rating among the prompt types actually attempted.
+        const ratings: number[] = [];
+        if (p.countryAttempts > 0) ratings.push(p.countryRating);
+        if (p.capitalAttempts > 0) ratings.push(p.capitalRating);
+        return { country, rating: ratings.length ? Math.max(...ratings) : 0 };
+      })
+      .filter(x => x.rating > 0)
+      .sort((a, b) => b.rating - a.rating)
+      .slice(0, 8);
+  }, [withMastery]);
+
+  const hasInsights = mixedUp.length > 0 || oftenMissed.length > 0 || hardestForYou.length > 0;
 
   function masteryColor(m: number): string {
     if (m >= 0.8) return 'var(--olive-hi)';
@@ -122,6 +147,48 @@ export function ProgressDashboard({ progress, globalStats, onBack, onReset }: Pr
               <BotanicalDivider />
             </div>
 
+            {hasInsights && (
+              <>
+                <ConfusionGraph confusions={confusions} />
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16, marginBottom: 32 }}>
+                  {mixedUp.length > 0 && (
+                    <InsightCard title="Most mixed up" hint="Pairs you confuse for each other">
+                      {mixedUp.map((p, i) => (
+                        <InsightRow
+                          key={i}
+                          left={`${nameById.get(p.aId) ?? p.aId} ↔ ${nameById.get(p.bId) ?? p.bId}`}
+                          right={`${p.count}×`}
+                          tag={p.promptType}
+                        />
+                      ))}
+                    </InsightCard>
+                  )}
+                  {hardestForYou.length > 0 && (
+                    <InsightCard title="Hardest for you" hint="By how often you trip on them">
+                      {hardestForYou.map(({ country }, i) => (
+                        <InsightRow key={i} left={country.name} right={country.region} />
+                      ))}
+                    </InsightCard>
+                  )}
+                  {oftenMissed.length > 0 && (
+                    <InsightCard title="Often missed together" hint="Weak spots that cluster">
+                      {oftenMissed.map((p, i) => (
+                        <InsightRow
+                          key={i}
+                          left={`${nameById.get(p.aId) ?? p.aId} + ${nameById.get(p.bId) ?? p.bId}`}
+                          right={`${p.count}×`}
+                        />
+                      ))}
+                    </InsightCard>
+                  )}
+                </div>
+
+                <div style={{ marginBottom: 32, display: 'flex', justifyContent: 'center' }}>
+                  <BotanicalDivider />
+                </div>
+              </>
+            )}
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
               {/* Tabs */}
               <div className="progress-tab-row" style={{ background: 'var(--s1)', borderRadius: 3, border: '1px solid var(--border)', padding: 4, fontFamily: 'var(--ff-u)', gap: 4 }}>
@@ -191,6 +258,33 @@ function StatCard({ label, value }: { label: string; value: string }) {
       <div style={{ fontSize: 11, color: 'var(--t3)', fontFamily: 'var(--ff-u)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
         {label}
       </div>
+    </div>
+  );
+}
+
+function InsightCard({ title, hint, children }: { title: string; hint: string; children: ReactNode }) {
+  return (
+    <div style={{
+      background: 'var(--bg)', borderRadius: 3, border: '1px solid var(--border)', padding: '16px 18px',
+    }}>
+      <div style={{ fontFamily: 'var(--ff-d)', fontSize: 16, color: 'var(--t1)', marginBottom: 2 }}>{title}</div>
+      <div style={{ fontSize: 11, color: 'var(--t3)', fontFamily: 'var(--ff-u)', marginBottom: 12 }}>{hint}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>{children}</div>
+    </div>
+  );
+}
+
+function InsightRow({ left, right, tag }: { left: string; right: string; tag?: string }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+      fontFamily: 'var(--ff-u)', fontSize: 13, color: 'var(--t1)',
+    }}>
+      <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {left}
+        {tag && <span style={{ color: 'var(--t3)', fontSize: 10, marginLeft: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{tag}</span>}
+      </span>
+      <span style={{ color: 'var(--t3)', fontSize: 12, flexShrink: 0 }}>{right}</span>
     </div>
   );
 }

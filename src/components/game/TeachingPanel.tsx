@@ -6,10 +6,11 @@ interface TeachingPanelProps {
   promptType: 'country' | 'capital';
   score: number;
   streak: number;
+  confusedWith?: string; // name of the country this is most often mixed up with
   onAcknowledge: () => void;
 }
 
-export function TeachingPanel({ country, promptType, score, streak, onAcknowledge }: TeachingPanelProps) {
+export function TeachingPanel({ country, promptType, score, streak, confusedWith, onAcknowledge }: TeachingPanelProps) {
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => { buttonRef.current?.focus(); }, [country, promptType]);
@@ -64,6 +65,14 @@ export function TeachingPanel({ country, promptType, score, streak, onAcknowledg
           ? `Located in ${country.region}. Study its position on the globe.`
           : `Take a moment to memorize it.`}
       </p>
+      {confusedWith && (
+        <p style={{
+          fontSize: 12.5, color: 'var(--miss)', marginTop: -12, marginBottom: 22,
+          fontFamily: 'var(--ff-u)', lineHeight: 1.5, opacity: 0.9,
+        }}>
+          ⚠ You often mix this up with <strong>{confusedWith}</strong> — look closely.
+        </p>
+      )}
       <button
         ref={buttonRef}
         onClick={onAcknowledge}

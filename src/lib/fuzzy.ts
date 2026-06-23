@@ -1,5 +1,5 @@
 import Fuse from 'fuse.js';
-import type { CountryEntry, MatchResult, MatchTier } from '../types';
+import type { CountryEntry, MatchResult, MatchTier, PromptType } from '../types';
 import countriesData from '../data/countries.json';
 
 const countries = countriesData as CountryEntry[];
@@ -46,6 +46,16 @@ const countryFuse = new Fuse(searchDocs, {
   keys: [
     { name: '_name', weight: 0.7 },
     { name: '_altNames', weight: 0.3 },
+  ],
+});
+
+// Global capital index — searches every country's capital, used to attribute a
+// wrong capital answer to the country the user was probably thinking of.
+const capitalFuse = new Fuse(searchDocs, {
+  ...FUSE_OPTS_BASE,
+  keys: [
+    { name: '_capital', weight: 0.7 },
+    { name: '_altCapitals', weight: 0.3 },
   ],
 });
 
@@ -161,4 +171,35 @@ export function matchFreeCountry(input: string): MatchResult | null {
   const best = results[0];
   const score = best.score ?? 1;
   return { tier: scoreTier(score), matchedName: best.item.name, countryId: best.item.id, score };
+}
+
+// Given a wrong answer, returns the country the user most likely confused the
+// target with (or undefined if the answer matches nothing / matches the target).
+export function attributeConfusion(
+  input: string,
+  promptType: PromptType,
+  targetId: string,
+): string | undefined {
+  const m = promptType === 'country' ? matchFreeCountry(input) : matchFreeCapital(input);
+  if (!m || m.tier === 'wrong') return undefined;
+  if (m.countryId === targetId) return undefined;
+  return m.countryId;
+}
+
+// Attributes a free-form capital answer to whichever country owns that capital.
+// `countryId` is the matched country; `matchedName` is that country's capital.
+export function matchFreeCapital(input: string): MatchResult | null {
+  const norm = normalize(input);
+  if (!norm) return null;
+  for (const doc of searchDocs) {
+    if (doc._capital === norm || doc._altCapitals.includes(norm)) {
+      return { tier: 'correct', matchedName: doc.capital, countryId: doc.id, score: 0 };
+    }
+  }
+  if (norm.length < MIN_FUZZY_LENGTH) return null;
+  const results = capitalFuse.search(norm);
+  if (!results.length) return null;
+  const best = results[0];
+  const score = best.score ?? 1;
+  return { tier: scoreTier(score), matchedName: best.item.capital, countryId: best.item.id, score };
 }

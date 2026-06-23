@@ -1,10 +1,12 @@
 import { useReducer, useCallback } from 'react';
 import type {
-  GameSession, GameSettings, GamePrompt, AttemptResult, PromptType
+  GameSession, GameSettings, GamePrompt, AttemptResult, PromptType,
+  CountryProgress, GlobalStats, ConfusionEdge,
 } from '../types';
 import type { CountryEntry } from '../types';
-import { matchCountry, matchCapital } from '../lib/fuzzy';
+import { matchCountry, matchCapital, attributeConfusion } from '../lib/fuzzy';
 import { calculatePoints } from '../lib/scoring';
+import { itemPriority, confusionWeightFor, confusionPartners } from '../lib/adaptive';
 import countriesData from '../data/countries.json';
 
 const allCountries = countriesData as CountryEntry[];
@@ -53,6 +55,85 @@ export function buildQueue(settings: GameSettings): GamePrompt[] {
     [prompts[i], prompts[j]] = [prompts[j], prompts[i]];
   }
   return prompts;
+}
+
+// Adaptive Practice queue: orders the same full set of prompts so weak / hard /
+// recently-confused items surface earlier (priority-biased sampling without
+// replacement), then interleaves each item's strongest confusion partner right
+// after it so the user is forced to discriminate the two back-to-back.
+export function buildAdaptiveQueue(
+  settings: GameSettings,
+  progress: Record<string, CountryProgress>,
+  confusions: ConfusionEdge[],
+  stats: Pick<GlobalStats, 'countryAbility' | 'capitalAbility'>,
+): GamePrompt[] {
+  const filtered = allCountries.filter(c => {
+    if (!settings.includeDependent && !c.independent) return false;
+    if (settings.regionFilter.length > 0 && !settings.regionFilter.includes(c.region)) return false;
+    return true;
+  });
+  const promptTypes = getPromptTypes(settings);
+
+  type Cand = { prompt: GamePrompt; weight: number };
+  const cands: Cand[] = [];
+  for (const c of filtered) {
+    for (const pt of promptTypes) {
+      const ability = pt === 'country' ? stats.countryAbility : stats.capitalAbility;
+      const weight = itemPriority({
+        progress: progress[c.id],
+        promptType: pt,
+        ability,
+        confusionWeight: confusionWeightFor(confusions, c.id, pt),
+      });
+      cands.push({
+        prompt: {
+          countryId: c.id,
+          promptType: pt,
+          displayText: pt === 'country'
+            ? 'Name the highlighted country'
+            : `What is the capital of ${c.name}?`,
+        },
+        weight,
+      });
+    }
+  }
+
+  // Priority-biased order: weighted sampling without replacement.
+  const pool = [...cands];
+  const ordered: GamePrompt[] = [];
+  while (pool.length) {
+    const total = pool.reduce((s, c) => s + c.weight, 0);
+    let r = Math.random() * total;
+    let idx = pool.length - 1;
+    for (let i = 0; i < pool.length; i++) {
+      r -= pool[i].weight;
+      if (r <= 0) { idx = i; break; }
+    }
+    ordered.push(pool[idx].prompt);
+    pool.splice(idx, 1);
+  }
+
+  // Interleave: pull each item's strongest still-pending confusion partner of the
+  // same prompt type to the slot immediately after it.
+  const placed = new Set<string>();
+  const keyOf = (p: GamePrompt) => `${p.countryId}:${p.promptType}`;
+  for (let i = 0; i < ordered.length; i++) {
+    placed.add(keyOf(ordered[i]));
+    const partners = confusionPartners(confusions, ordered[i].countryId, ordered[i].promptType);
+    for (const { id } of partners) {
+      const partnerKey = `${id}:${ordered[i].promptType}`;
+      if (placed.has(partnerKey)) continue;
+      const j = ordered.findIndex((p, k) => k > i + 1 && keyOf(p) === partnerKey);
+      if (j !== -1) {
+        const [partner] = ordered.splice(j, 1);
+        ordered.splice(i + 1, 0, partner);
+        placed.add(partnerKey);
+        break; // one partner per item is enough to force discrimination
+      }
+    }
+  }
+
+  return ordered;
 }
 
 type GameAction =
@@ -202,6 +283,7 @@ export function useGameEngine(
         fuzzyScore: matchResult?.score ?? 1,
         timeTaken,
         pointsAwarded: 0,
+        confusedWithId: attributeConfusion(input, currentPrompt.promptType, currentPrompt.countryId),
       };
       onAttempt(result);
       const nextPrompt = nextFromQueue();

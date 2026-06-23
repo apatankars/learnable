@@ -29,6 +29,7 @@ export interface AttemptResult {
   fuzzyScore: number;
   timeTaken: number;
   pointsAwarded: number;
+  confusedWithId?: string; // the country whose name/capital the wrong answer matched
 }
 
 export interface GameSession {
@@ -78,6 +79,8 @@ export interface CountryProgress {
   capitalCorrect: number;
   capitalLastSeen: number;
   capitalConsecutiveCorrect: number;
+  countryRating: number; // per-user Elo difficulty, seeded from static difficulty
+  capitalRating: number;
 }
 
 export interface GlobalStats {
@@ -89,6 +92,32 @@ export interface GlobalStats {
   lastPlayed: number;
   versusWins: number;
   versusLosses: number;
+  countryAbility: number; // per-user Elo ability, default 1500
+  capitalAbility: number;
+}
+
+// A directed confusion edge: shown `shownId`, the user answered with `answeredId`.
+export interface ConfusionEdge {
+  shownId: string;
+  answeredId: string;
+  promptType: PromptType;
+  count: number;
+  lastSeen: number;
+}
+
+// A symmetric confusion pair for display ("Slovenia ↔ Slovakia · 7 times").
+export interface ConfusionPair {
+  aId: string;
+  bId: string;
+  promptType: PromptType;
+  count: number;
+}
+
+// Two items frequently missed in the same session ("correlated mistakes").
+export interface ComissPair {
+  aId: string;
+  bId: string;
+  count: number;
 }
 
 export interface UserSettings {

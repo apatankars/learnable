@@ -6,8 +6,9 @@ import { TeachingPanel } from './TeachingPanel';
 import { BotanicalCorner } from '../ui/BotanicalCorner';
 import { SpaceBackdrop } from '../ui/SpaceBackdrop';
 import type { GamePrompt, GameSettings, GlobalStats } from '../../types';
-import { useGameEngine } from '../../hooks/useGameEngine';
+import { useGameEngine, buildAdaptiveQueue } from '../../hooks/useGameEngine';
 import { useLearnEngine } from '../../hooks/useLearnEngine';
+import { confusionPartners } from '../../lib/adaptive';
 import { useTimer } from '../../hooks/useTimer';
 import { useProgress } from '../../hooks/useProgress';
 import { getTimeMode } from '../../lib/leaderboard';
@@ -71,22 +72,32 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
   const pendingPromptRef = useRef<GamePrompt | null>(null);
   const focusTokenRef = useRef(0);
 
-  const { recordAttempt, finishSession } = progress;
+  const { recordAttempt, finishSession, recordSessionMisses } = progress;
+  const sessionRef = useRef<import('../../types').GameSession | null>(null);
 
   const timeMode = getTimeMode(settings.timeLimitSeconds, settings.noTimeLimit);
   const modeKey  = `${settings.mode}_${timeMode}`;
 
   const handleFinish = useCallback((score: number, streak: number) => {
     finishSession(score, streak);
+    // Items missed (wrong or skipped) together this session feed the co-miss graph.
+    const s = sessionRef.current;
+    if (s) {
+      const missed = new Set<string>();
+      for (const key of s.wrong) missed.add(key.split(':')[0]);
+      for (const key of s.skipped) missed.add(key.split(':')[0]);
+      recordSessionMisses([...missed]);
+    }
     onSubmitScore(score);
     setIsNewBest(score > (personalBests[modeKey] ?? globalStats.bestScore));
-  }, [finishSession, onSubmitScore, personalBests, modeKey, globalStats.bestScore]);
+  }, [finishSession, recordSessionMisses, onSubmitScore, personalBests, modeKey, globalStats.bestScore]);
 
   const isLearnMode     = settings.mode === 'learn';
   const standardEngine = useGameEngine(recordAttempt, handleFinish);
-  const learnEngine     = useLearnEngine(progress.progress, recordAttempt, handleFinish);
+  const learnEngine     = useLearnEngine(progress.progress, progress.confusions, globalStats, recordAttempt, handleFinish);
   const engine          = isLearnMode ? learnEngine : standardEngine;
   const { session, getFirstPrompt, submitAnswer, submitSkip, pause, resume, endGame, reset } = engine;
+  sessionRef.current = session;
   const acknowledgeTeaching = isLearnMode ? learnEngine.acknowledgeTeaching : () => null;
 
   const queuePromptForRender = useCallback((nextPrompt: GamePrompt | null) => {
@@ -152,7 +163,18 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
     setGlobeBooted(true);
   }, []);
 
-  useEffect(() => { engine.startGame(settings); }, []); // eslint-disable-line
+  useEffect(() => {
+    if (isLearnMode) {
+      learnEngine.startGame(settings);
+    } else if (settings.mode === 'practice') {
+      // Adaptive Practice: order the queue by weakness / desirable difficulty /
+      // confusion, with confusable pairs interleaved.
+      const queue = buildAdaptiveQueue(settings, progress.progress, progress.confusions, globalStats);
+      standardEngine.startGame(settings, queue);
+    } else {
+      standardEngine.startGame(settings);
+    }
+  }, []); // eslint-disable-line
 
   useEffect(() => {
     if (session.phase === 'playing' && !currentPrompt && !pendingPromptRef.current) {
@@ -294,6 +316,11 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
   }
 
   const currentCountry   = currentPrompt ? countryMap.get(currentPrompt.countryId) : null;
+  const teachingConfusedWith = useMemo(() => {
+    if (!isLearnMode || !currentPrompt) return undefined;
+    const [top] = confusionPartners(progress.confusions, currentPrompt.countryId, currentPrompt.promptType);
+    return top && top.count >= 2 ? countryMap.get(top.id)?.name : undefined;
+  }, [isLearnMode, currentPrompt, progress.confusions]);
   const learnedCountries = useMemo(() => {
     if (!isLearnMode) return 0;
     return new Set(Array.from(session.answered, key => key.split(':')[0])).size;
@@ -451,6 +478,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
               promptType={currentPrompt.promptType}
               score={session.score}
               streak={session.streak}
+              confusedWith={teachingConfusedWith}
               onAcknowledge={handleAcknowledge}
             />
           ) : currentPrompt ? (

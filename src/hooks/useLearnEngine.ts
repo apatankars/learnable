@@ -1,14 +1,55 @@
 import { useReducer, useCallback, useRef } from 'react';
 import type {
-  GameSession, GameSettings, GamePrompt, AttemptResult, PromptType, CountryEntry, CountryProgress
+  GameSession, GameSettings, GamePrompt, AttemptResult, PromptType, CountryEntry,
+  CountryProgress, GlobalStats, ConfusionEdge,
 } from '../types';
-import { matchCountry, matchCapital } from '../lib/fuzzy';
+import { matchCountry, matchCapital, attributeConfusion } from '../lib/fuzzy';
 import { calculatePoints } from '../lib/scoring';
-import { getMastery } from '../lib/progressStorage';
+import { itemPriority, confusionWeightFor } from '../lib/adaptive';
 import { weightedPick } from '../lib/weightedRandom';
 import countriesData from '../data/countries.json';
 
 const allCountries = countriesData as CountryEntry[];
+
+// ── Learn-mode tuning ────────────────────────────────────────────────────────
+// Working-set model (Leitner / "7±2"): keep a small set of items in active
+// rotation, graduate each out once it's been answered correctly enough times,
+// and only introduce new material when the current set is healthy. This balances
+// learning new items against drilling the hard/confused ones.
+const MAX_ACTIVE = 7;            // cap on items in rotation at once
+const MIN_REVIEWS_BETWEEN_NEW = 2; // min tests before another item is introduced
+const WARMUP_SET_SIZE = 3;       // ramp the set up quickly at the start
+
+// How hard an item is for this user (0 easy … 1 hard), combining Elo difficulty
+// and how often it's confused with something else.
+function hardnessOf(
+  p: CountryProgress | undefined, promptType: PromptType, ability: number, confusionWeight: number,
+): number {
+  const rating = p ? (promptType === 'country' ? p.countryRating : p.capitalRating) : ability;
+  const elo = 1 / (1 + Math.pow(10, (ability - rating) / 400)); // high when item rating > ability
+  const conf = Math.min(confusionWeight, 10) / 10;
+  return Math.max(elo, conf);
+}
+
+// Consecutive-correct answers needed before an item graduates out of the set.
+// Easy items leave after 2; hard/confused/previously-lapsed items take up to 5,
+// so they get hammered until they truly stick.
+function graduationTarget(hardness: number, lapses: number): number {
+  return Math.min(5, 2 + Math.round(2 * hardness) + Math.min(lapses, 1));
+}
+
+// In-session re-test weight decays as an item's streak grows; harder items decay
+// slower (base closer to 1) so they keep coming back within the working set.
+function testDecayBase(hardness: number): number {
+  return 0.4 + 0.35 * hardness; // 0.40 (easy) … 0.75 (hard/confused)
+}
+
+interface ActiveItem {
+  prompt: GamePrompt;
+  streak: number;   // consecutive correct since last lapse
+  lapses: number;   // times missed this session
+  target: number;   // consecutive-correct needed to graduate
+}
 
 type GameAction =
   | { type: 'START'; settings: GameSettings }
@@ -127,34 +168,26 @@ function gameReducer(state: GameSession, action: GameAction): GameSession {
   }
 }
 
-function computeWeight(p: CountryProgress | undefined, promptType: PromptType): number {
-  if (!p) return 3.0; // Unseen
-  const attempts = promptType === 'country' ? p.countryAttempts : p.capitalAttempts;
-  if (attempts === 0) return 3.0; // Unseen
-  const mastery = getMastery(p, promptType);
-  const consecutive = promptType === 'country' ? p.countryConsecutiveCorrect : p.capitalConsecutiveCorrect;
-  const lastSeen = promptType === 'country' ? p.countryLastSeen : p.capitalLastSeen;
-  const recencyBoost = Math.max(0, 1 - (Date.now() - lastSeen) / (7 * 24 * 3600 * 1000));
-  const weaknessWeight = (1 - mastery) * 5;
-  const consecutivePenalty = Math.min(consecutive * 0.3, 2.0);
-  return Math.max(0.1, weaknessWeight - consecutivePenalty + recencyBoost * 0.5);
-}
-
 export function useLearnEngine(
   progressData: Record<string, CountryProgress>,
+  confusions: ConfusionEdge[],
+  stats: Pick<GlobalStats, 'countryAbility' | 'capitalAbility'>,
   onAttempt: (result: AttemptResult) => void,
   onFinish: (score: number, streak: number) => void
 ) {
+  const abilityFor = (pt: PromptType) =>
+    pt === 'country' ? stats.countryAbility : stats.capitalAbility;
   const [session, dispatch] = useReducer(gameReducer, undefined, initialSession);
 
   // Per-session mutable state
-  const activeQueue = useRef<{ prompt: GamePrompt; streak: number }[]>([]); // Items we are currently testing
+  const activeQueue = useRef<ActiveItem[]>([]); // Items currently in rotation
   const settingsRef = useRef<GameSettings | null>(null);
   const promptStartRef = useRef<number>(0);
   const questionsSinceTeachRef = useRef<number>(0);
   const lastPhaseRef = useRef<'playing' | 'teaching'>('playing');
   const lastPromptRef = useRef<GamePrompt | null>(null);
   const previousPhaseRef = useRef<'playing' | 'teaching'>('playing');
+  const lastCorrectRef = useRef<boolean>(true); // was the previous answer correct? gates new items
 
   const getFilteredCountries = useCallback(() => {
     if (!settingsRef.current) return [];
@@ -187,7 +220,12 @@ export function useLearnEngine(
       for (const pt of promptTypes) {
         if (activeKeys.has(`${country.id}:${pt}`)) continue;
         items.push({ country, promptType: pt });
-        weights.push(computeWeight(progressData[country.id], pt));
+        weights.push(itemPriority({
+          progress: progressData[country.id],
+          promptType: pt,
+          ability: abilityFor(pt),
+          confusionWeight: confusionWeightFor(confusions, country.id, pt),
+        }));
       }
     }
 
@@ -202,16 +240,40 @@ export function useLearnEngine(
         ? 'Name the highlighted country'
         : `What is the capital of ${picked.country.name}?`,
     };
-  }, [getFilteredCountries, getPromptTypes, progressData]);
+  }, [getFilteredCountries, getPromptTypes, progressData, confusions, stats]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const advanceGame = useCallback((): GamePrompt | null => {
-    // Logic: Teach 1, then Test 1-3 times from the active queue.
-    if (activeQueue.current.length === 0 || questionsSinceTeachRef.current >= Math.min(3, activeQueue.current.length)) {
-      // Time to teach a new item
+    // Graduate any item that has been answered correctly enough times — it leaves
+    // the working set so focus shifts to items not yet learned.
+    activeQueue.current = activeQueue.current.filter(it => it.streak < it.target);
+
+    const set = activeQueue.current;
+    const avgStreak = set.length ? set.reduce((s, it) => s + it.streak, 0) / set.length : 0;
+    const room = set.length < MAX_ACTIVE;
+    const warmingUp = set.length < WARMUP_SET_SIZE;
+    const spacingOk = questionsSinceTeachRef.current >= MIN_REVIEWS_BETWEEN_NEW;
+    // After teaching an item we must test it first (immediate retrieval practice),
+    // so never introduce another new item straight out of the teaching phase.
+    const justTaught = lastPhaseRef.current === 'teaching';
+    // Otherwise introduce a new item when the set is empty, still warming up, or
+    // the user is doing well (last answer correct AND set is being learned). Never
+    // pile on new material right after a miss or while the set is full.
+    const readyForNew =
+      set.length === 0 ||
+      (!justTaught && room && (warmingUp || (lastCorrectRef.current && avgStreak >= 1 && spacingOk)));
+
+    if (readyForNew) {
       const toTeach = selectNextToTeach();
       if (toTeach) {
         questionsSinceTeachRef.current = 0;
-        activeQueue.current.push({ prompt: toTeach, streak: 0 });
+        const pt = toTeach.promptType;
+        const hardness = hardnessOf(
+          progressData[toTeach.countryId], pt, abilityFor(pt),
+          confusionWeightFor(confusions, toTeach.countryId, pt),
+        );
+        activeQueue.current.push({
+          prompt: toTeach, streak: 0, lapses: 0, target: graduationTarget(hardness, 0),
+        });
         promptStartRef.current = Date.now();
         lastPhaseRef.current = 'teaching';
         lastPromptRef.current = toTeach;
@@ -223,17 +285,25 @@ export function useLearnEngine(
     // Time to test an item from the active queue
     if (activeQueue.current.length > 0) {
       questionsSinceTeachRef.current++;
-      
+
       let index = -1;
       // Force test the one we just taught if we are coming straight from the teaching phase
       if (lastPhaseRef.current === 'teaching' && lastPromptRef.current) {
         index = activeQueue.current.findIndex(p => p.prompt.countryId === lastPromptRef.current!.countryId && p.prompt.promptType === lastPromptRef.current!.promptType);
       }
-      
+
       if (index === -1) {
-        // Weighted selection: exponentially decay weight based on streak
-        // streak 0 = 1.0, streak 1 = 0.5, streak 2 = 0.25, streak 3 = 0.125
-        const weights = activeQueue.current.map(p => Math.pow(0.5, p.streak));
+        // Weighted selection: weight decays as an item's streak grows, but the
+        // decay base is per-item — hard/confused items decay slower so they stay
+        // in rotation and get hammered until they truly stick.
+        const weights = activeQueue.current.map(p => {
+          const hardness = hardnessOf(
+            progressData[p.prompt.countryId], p.prompt.promptType,
+            abilityFor(p.prompt.promptType),
+            confusionWeightFor(confusions, p.prompt.countryId, p.prompt.promptType),
+          );
+          return Math.pow(testDecayBase(hardness), p.streak);
+        });
 
         // Avoid asking the exact same question twice in a row during testing if there are other options
         if (activeQueue.current.length > 1 && lastPhaseRef.current === 'playing' && lastPromptRef.current) {
@@ -274,7 +344,7 @@ export function useLearnEngine(
       onFinish(session.score, session.maxStreak);
       return null;
     }
-  }, [selectNextToTeach, onFinish, session.score, session.maxStreak]);
+  }, [selectNextToTeach, onFinish, session.score, session.maxStreak, progressData, confusions, stats]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const startGame = useCallback((settings: GameSettings) => {
     settingsRef.current = settings;
@@ -282,6 +352,7 @@ export function useLearnEngine(
     questionsSinceTeachRef.current = 0;
     lastPhaseRef.current = 'playing';
     lastPromptRef.current = null;
+    lastCorrectRef.current = true;
     dispatch({ type: 'START', settings });
   }, []);
 
@@ -314,14 +385,25 @@ export function useLearnEngine(
         fuzzyScore: matchResult?.score ?? 1,
         timeTaken,
         pointsAwarded: 0,
+        confusedWithId: attributeConfusion(input, currentPrompt.promptType, currentPrompt.countryId),
       };
       onAttempt(result);
       dispatch({ type: 'WRONG', result });
-      
-      // Keep it in active queue, reset streak
+      lastCorrectRef.current = false;
+
+      // Lapse: reset streak, raise the bar to graduate so it gets drilled more.
       const entry = activeQueue.current.find(p => p.prompt.countryId === currentPrompt.countryId && p.prompt.promptType === currentPrompt.promptType);
-      if (entry) entry.streak = 0;
-      
+      if (entry) {
+        entry.streak = 0;
+        entry.lapses++;
+        const pt = currentPrompt.promptType;
+        const hardness = hardnessOf(
+          progressData[currentPrompt.countryId], pt, abilityFor(pt),
+          confusionWeightFor(confusions, currentPrompt.countryId, pt),
+        );
+        entry.target = graduationTarget(hardness, entry.lapses);
+      }
+
       const nextPrompt = advanceGame();
       return { tier: 'wrong' as const, correctAnswer, nextPrompt };
     }
@@ -339,8 +421,9 @@ export function useLearnEngine(
     };
     onAttempt(result);
     dispatch({ type: 'CORRECT', result });
-    
-    // Increment streak, keep in queue indefinitely for spaced repetition
+    lastCorrectRef.current = true;
+
+    // Increment streak toward graduation (handled in advanceGame).
     const entryIndex = activeQueue.current.findIndex(p => p.prompt.countryId === currentPrompt.countryId && p.prompt.promptType === currentPrompt.promptType);
     if (entryIndex !== -1) {
       activeQueue.current[entryIndex].streak++;
@@ -348,7 +431,7 @@ export function useLearnEngine(
 
     const nextPrompt = advanceGame();
     return { tier: isFuzzy ? ('fuzzy' as const) : ('correct' as const), matchedName: matchResult.matchedName, points, nextPrompt };
-  }, [onAttempt, advanceGame]);
+  }, [onAttempt, advanceGame, progressData, confusions, stats]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const submitSkip = useCallback((currentPrompt: GamePrompt) => {
     const country = allCountries.find(c => c.id === currentPrompt.countryId);
@@ -366,16 +449,27 @@ export function useLearnEngine(
     };
     onAttempt(result);
     dispatch({ type: 'SKIP', result });
+    lastCorrectRef.current = false;
 
+    // A skip counts as a lapse — keep it in rotation and raise its bar.
     const entry = activeQueue.current.find(p => p.prompt.countryId === currentPrompt.countryId && p.prompt.promptType === currentPrompt.promptType);
-    if (entry) entry.streak = 0;
+    if (entry) {
+      entry.streak = 0;
+      entry.lapses++;
+      const pt = currentPrompt.promptType;
+      const hardness = hardnessOf(
+        progressData[currentPrompt.countryId], pt, abilityFor(pt),
+        confusionWeightFor(confusions, currentPrompt.countryId, pt),
+      );
+      entry.target = graduationTarget(hardness, entry.lapses);
+    }
 
     const nextPrompt = advanceGame();
     return {
       correctAnswer: currentPrompt.promptType === 'country' ? country.name : country.capital,
       nextPrompt,
     };
-  }, [advanceGame, onAttempt]);
+  }, [advanceGame, onAttempt, progressData, confusions, stats]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const pause = useCallback(() => {
     previousPhaseRef.current = session.phase as 'playing' | 'teaching';

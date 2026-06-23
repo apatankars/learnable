@@ -1,6 +1,12 @@
-import type { CountryProgress, GlobalStats, UserSettings } from '../types';
+import type { CountryProgress, GlobalStats, UserSettings, CountryEntry } from '../types';
+import { DEFAULT_ABILITY, seedRating } from './adaptive';
+import countriesData from '../data/countries.json';
 
 const SETTINGS_KEY = 'learnable_settings';
+
+const difficultyById = new Map(
+  (countriesData as CountryEntry[]).map(c => [c.id, c.difficulty as number]),
+);
 
 export function getMastery(p: CountryProgress, type: 'country' | 'capital'): number {
   const attempts = type === 'country' ? p.countryAttempts : p.capitalAttempts;
@@ -50,13 +56,17 @@ function defaultGlobalStats(): GlobalStats {
     lastPlayed: 0,
     versusWins: 0,
     versusLosses: 0,
+    countryAbility: DEFAULT_ABILITY,
+    capitalAbility: DEFAULT_ABILITY,
   };
 }
 
 export function defaultProgress(countryId: string): CountryProgress {
+  const seed = seedRating(difficultyById.get(countryId) ?? 2);
   return {
     countryId,
     countryAttempts: 0, countryCorrect: 0, countryLastSeen: 0, countryConsecutiveCorrect: 0,
     capitalAttempts: 0, capitalCorrect: 0, capitalLastSeen: 0, capitalConsecutiveCorrect: 0,
+    countryRating: seed, capitalRating: seed,
   };
 }
