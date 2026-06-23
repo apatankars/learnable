@@ -214,7 +214,7 @@ export function AccountLanding({
         </div>
 
         {/* Lifetime stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12, marginBottom: 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12, marginBottom: 24 }}>
           <StatCard label="Sessions" value={String(globalStats.totalSessions)} />
           <StatCard label="Best Score" value={globalStats.bestScore.toLocaleString()} />
           <StatCard label="Avg Score" value={avgScore.toLocaleString()} />
@@ -233,7 +233,7 @@ export function AccountLanding({
         <h2 style={{ fontFamily: 'var(--ff-d)', fontWeight: 400, fontSize: 18, color: 'var(--t1)', marginBottom: 14, letterSpacing: '0.03em' }}>
           By Game Mode
         </h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12, marginBottom: 32 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: 12, marginBottom: 32 }}>
           {MODE_META.map(({ id, label, blurb }) => {
             const ms = globalStats.modeStats[id];
             const sessions = ms?.sessions ?? 0;
@@ -247,12 +247,12 @@ export function AccountLanding({
                 background: 'var(--bg)', borderRadius: 3, border: '1px solid var(--border)',
                 padding: '14px 16px', opacity: played ? 1 : 0.55,
               }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
-                  <span style={{ fontFamily: 'var(--ff-u)', fontWeight: 600, fontSize: 14, color: 'var(--t1)' }}>{label}</span>
-                  <span style={{ fontFamily: 'var(--ff-u)', fontSize: 11, color: 'var(--t3)' }}>{blurb}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, marginBottom: 10 }}>
+                  <span style={{ fontFamily: 'var(--ff-u)', fontWeight: 600, fontSize: 14, color: 'var(--t1)', whiteSpace: 'nowrap' }}>{label}</span>
+                  <span style={{ fontFamily: 'var(--ff-u)', fontSize: 11, color: 'var(--t3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{blurb}</span>
                 </div>
                 {played ? (
-                  <div style={{ display: 'flex', gap: 14 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
                     <ModeMetric label={id === 'versus' ? 'Games' : 'Sessions'} value={String(sessions)} />
                     <ModeMetric label={id === 'versus' ? 'Wins' : 'Best'} value={best.toLocaleString()} />
                     {id !== 'versus' && <ModeMetric label="Avg" value={avg.toLocaleString()} />}
@@ -443,9 +443,9 @@ function InsightRow({ left, right, tag }: { left: string; right: string; tag?: s
 
 function ModeMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column' }}>
-      <span style={{ fontFamily: 'var(--ff-d)', fontWeight: 600, fontSize: 18, color: 'var(--t1)', lineHeight: 1.1 }}>{value}</span>
-      <span style={{ fontFamily: 'var(--ff-u)', fontSize: 10, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 2 }}>{label}</span>
+    <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
+      <span style={{ fontFamily: 'var(--ff-d)', fontWeight: 600, fontSize: 16, color: 'var(--t1)', lineHeight: 1.1, fontVariantNumeric: 'tabular-nums', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value}</span>
+      <span style={{ fontFamily: 'var(--ff-u)', fontSize: 10, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 3 }}>{label}</span>
     </div>
   );
 }
