@@ -56,6 +56,7 @@ function defaultGlobalStats(): GlobalStats {
     lastPlayed: 0,
     versusWins: 0,
     versusLosses: 0,
+    modeStats: {},
     countryAbility: DEFAULT_ABILITY,
     capitalAbility: DEFAULT_ABILITY,
   };

@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import type { User } from '@supabase/supabase-js';
-import type { CountryProgress, AttemptResult, GlobalStats, ConfusionEdge, ComissPair } from '../types';
+import type { CountryProgress, AttemptResult, GlobalStats, ConfusionEdge, ComissPair, GameMode, ModeStat } from '../types';
 import {
   loadProgress, saveProgress, loadGlobalStats, saveGlobalStats,
   defaultProgress, getMastery,
@@ -77,6 +77,7 @@ async function fetchServerStats(userId: string): Promise<GlobalStats | null> {
     lastPlayed: data.last_played,
     versusWins: data.versus_wins ?? 0,
     versusLosses: data.versus_losses ?? 0,
+    modeStats: data.mode_stats ?? {},
     countryAbility: data.country_ability ?? 1500,
     capitalAbility: data.capital_ability ?? 1500,
   };
@@ -126,6 +127,7 @@ async function upsertStats(userId: string, stats: GlobalStats) {
     last_played: stats.lastPlayed,
     versus_wins: stats.versusWins,
     versus_losses: stats.versusLosses,
+    mode_stats: stats.modeStats,
     country_ability: stats.countryAbility,
     capital_ability: stats.capitalAbility,
   }, { onConflict: 'user_id' });
@@ -273,12 +275,13 @@ export function useProgress(user: User | null = null) {
     if (uid) capped.forEach(([a, b]) => incrementComiss(uid, a, b));
   }, []);
 
-  const finishSession = useCallback((score: number, streak: number) => {
+  const finishSession = useCallback((score: number, streak: number, mode: GameMode) => {
     setGlobalStats(prev => {
       const today = new Date().toISOString().slice(0, 10);
       const days = prev.daysPlayed.includes(today)
         ? prev.daysPlayed
         : [...prev.daysPlayed, today];
+      const prevMode: ModeStat = prev.modeStats[mode] ?? { sessions: 0, bestScore: 0, totalScore: 0 };
       const next: GlobalStats = {
         ...prev,
         totalSessions: prev.totalSessions + 1,
@@ -287,6 +290,14 @@ export function useProgress(user: User | null = null) {
         bestStreak: Math.max(prev.bestStreak, streak),
         daysPlayed: days,
         lastPlayed: Date.now(),
+        modeStats: {
+          ...prev.modeStats,
+          [mode]: {
+            sessions: prevMode.sessions + 1,
+            bestScore: Math.max(prevMode.bestScore, score),
+            totalScore: prevMode.totalScore + score,
+          },
+        },
       };
       saveGlobalStats(next);
       const uid = userRef.current?.id;
@@ -297,10 +308,15 @@ export function useProgress(user: User | null = null) {
 
   const recordVersusResult = useCallback((win: boolean) => {
     setGlobalStats(prev => {
+      const prevMode: ModeStat = prev.modeStats.versus ?? { sessions: 0, bestScore: 0, totalScore: 0 };
       const next: GlobalStats = {
         ...prev,
         versusWins: prev.versusWins + (win ? 1 : 0),
         versusLosses: prev.versusLosses + (win ? 0 : 1),
+        modeStats: {
+          ...prev.modeStats,
+          versus: { ...prevMode, sessions: prevMode.sessions + 1 },
+        },
       };
       saveGlobalStats(next);
       const uid = userRef.current?.id;

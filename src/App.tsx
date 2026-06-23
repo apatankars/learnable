@@ -6,9 +6,9 @@ import { useAuth } from './hooks/useAuth';
 import { useLeaderboard } from './hooks/useLeaderboard';
 import { loadSettings, saveSettings } from './lib/progressStorage';
 import {
+  loadAccountModule,
   loadGameViewModule,
   loadLeaderboardViewModule,
-  loadProgressDashboardModule,
   loadVersusGameViewModule,
   loadVersusLobbyModule,
   warmAppViews,
@@ -16,12 +16,12 @@ import {
 } from './lib/preload';
 import type { GameSettings } from './types';
 
-type View = 'home' | 'game' | 'progress' | 'leaderboard' | 'versus-lobby';
+type View = 'home' | 'game' | 'account' | 'leaderboard' | 'versus-lobby';
 import { useVersusMultiplayer } from './hooks/useVersusMultiplayer';
 import { buildQueue } from './hooks/useGameEngine';
 
 const GameView = lazy(() => loadGameViewModule().then((module) => ({ default: module.GameView })));
-const ProgressDashboard = lazy(() => loadProgressDashboardModule().then((module) => ({ default: module.ProgressDashboard })));
+const AccountLanding = lazy(() => loadAccountModule().then((module) => ({ default: module.AccountLanding })));
 const LeaderboardView = lazy(() => loadLeaderboardViewModule().then((module) => ({ default: module.LeaderboardView })));
 const VersusGameView = lazy(() => loadVersusGameViewModule().then((module) => ({ default: module.VersusGameView })));
 const VersusLobby = lazy(() => loadVersusLobbyModule().then((module) => ({ default: module.VersusLobby })));
@@ -29,6 +29,7 @@ const JoinVersusModal = lazy(() => loadVersusLobbyModule().then((module) => ({ d
 
 const DEFAULT_SETTINGS: GameSettings = {
   mode: 'both',
+  topic: 'world',
   timeLimitSeconds: 300,
   noTimeLimit: false,
   blindMode: false,
@@ -48,6 +49,7 @@ function getInitialSettings(): GameSettings {
     saved.blindMode ??= false;
     saved.practicePrompts ??= 'both';
     saved.versusPrompts ??= 'both';
+    saved.topic ??= 'world';
     return saved;
   }
   return DEFAULT_SETTINGS;
@@ -116,6 +118,8 @@ export default function App() {
         setShowAuth(true);
         return;
       }
+      // Versus is world-only for now (uses the globe map).
+      settings = { ...settings, topic: 'world' };
       void loadVersusLobbyModule();
       void loadVersusGameViewModule();
       versusHook.hostLobby(settings, versusEmoji);
@@ -173,7 +177,7 @@ export default function App() {
           personalBests={personalBests}
           user={user}
           onStart={handleStart}
-          onViewProgress={() => navigateTo('progress')}
+          onViewProgress={() => navigateTo('account')}
           onViewLeaderboard={() => navigateTo('leaderboard')}
           onSignIn={() => setShowAuth(true)}
           onSignOut={signOut}
@@ -197,7 +201,7 @@ export default function App() {
             globalStats={progress.globalStats}
             personalBests={personalBests}
             onBackToMenu={() => navigateTo('home')}
-            onViewProgress={() => navigateTo('progress')}
+            onViewProgress={() => navigateTo('account')}
             onViewLeaderboard={() => navigateTo('leaderboard')}
             onPractice={handlePractice}
             progress={progress}
@@ -207,15 +211,19 @@ export default function App() {
         </Suspense>
       )}
 
-      {view === 'progress' && (
-        <Suspense fallback={<FullscreenFallback label="Loading progress…" />}>
-          <ProgressDashboard
+      {view === 'account' && (
+        <Suspense fallback={<FullscreenFallback label="Loading account…" />}>
+          <AccountLanding
+            user={user}
             progress={progress.progress}
             globalStats={progress.globalStats}
+            personalBests={personalBests}
             confusions={progress.confusions}
             comiss={progress.comiss}
             onBack={() => navigateTo('home')}
             onReset={progress.resetProgress}
+            onSignIn={() => setShowAuth(true)}
+            onSignOut={signOut}
           />
         </Suspense>
       )}

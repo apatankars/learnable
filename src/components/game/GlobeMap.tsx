@@ -64,54 +64,54 @@ const COLOR_STYLES: Record<CountryColorState, {
     borderWidth: 0.075,
   },
   current: {
-    altitude: 0.055,
-    cap: 'rgba(247, 210, 92, 0.96)',
+    altitude: 0.07,
+    cap: 'rgba(255, 206, 64, 1)',
     point: 'rgba(255, 243, 174, 0.98)',
-    ring: 'rgba(247, 210, 92, 0.82)',
-    side: 'rgba(196, 145, 38, 0.48)',
-    stroke: 'rgba(255, 245, 199, 0.92)',
-    border: '#6f4f12',
-    borderWidth: 0.12,
+    ring: 'rgba(255, 213, 74, 0.92)',
+    side: 'rgba(196, 145, 38, 0.62)',
+    stroke: 'rgba(255, 248, 214, 0.98)',
+    border: '#3c2a06',
+    borderWidth: 0.2,
   },
   correct: {
-    altitude: 0.024,
-    cap: 'rgba(102, 196, 124, 0.84)',
+    altitude: 0.03,
+    cap: 'rgba(86, 204, 116, 0.95)',
     point: 'rgba(192, 248, 202, 0.9)',
-    ring: 'rgba(102, 196, 124, 0.54)',
-    side: 'rgba(58, 118, 69, 0.28)',
-    stroke: 'rgba(210, 255, 222, 0.66)',
-    border: '#2c6a3c',
-    borderWidth: 0.1,
+    ring: 'rgba(102, 210, 130, 0.7)',
+    side: 'rgba(46, 120, 64, 0.42)',
+    stroke: 'rgba(224, 255, 230, 0.82)',
+    border: '#143d20',
+    borderWidth: 0.15,
   },
   skipped: {
-    altitude: 0.018,
-    cap: 'rgba(214, 162, 74, 0.74)',
+    altitude: 0.024,
+    cap: 'rgba(224, 168, 70, 0.92)',
     point: 'rgba(248, 224, 181, 0.88)',
-    ring: 'rgba(214, 162, 74, 0.44)',
-    side: 'rgba(150, 106, 39, 0.22)',
-    stroke: 'rgba(248, 224, 181, 0.58)',
-    border: '#8e6221',
-    borderWidth: 0.095,
+    ring: 'rgba(228, 174, 78, 0.66)',
+    side: 'rgba(150, 106, 39, 0.4)',
+    stroke: 'rgba(252, 232, 196, 0.78)',
+    border: '#5c3d12',
+    borderWidth: 0.14,
   },
   wrong: {
-    altitude: 0.024,
-    cap: 'rgba(214, 93, 93, 0.84)',
+    altitude: 0.03,
+    cap: 'rgba(226, 84, 84, 0.95)',
     point: 'rgba(255, 218, 218, 0.94)',
-    ring: 'rgba(214, 93, 93, 0.58)',
-    side: 'rgba(128, 48, 48, 0.32)',
-    stroke: 'rgba(255, 220, 220, 0.68)',
-    border: '#7f2f2f',
-    borderWidth: 0.1,
+    ring: 'rgba(232, 96, 96, 0.74)',
+    side: 'rgba(132, 44, 44, 0.46)',
+    stroke: 'rgba(255, 226, 226, 0.84)',
+    border: '#4d1717',
+    borderWidth: 0.15,
   },
   teaching: {
-    altitude: 0.048,
-    cap: 'rgba(92, 177, 247, 0.88)',
+    altitude: 0.058,
+    cap: 'rgba(78, 178, 252, 0.94)',
     point: 'rgba(217, 238, 255, 0.96)',
-    ring: 'rgba(92, 177, 247, 0.68)',
-    side: 'rgba(44, 108, 171, 0.32)',
-    stroke: 'rgba(214, 240, 255, 0.8)',
-    border: '#235e96',
-    borderWidth: 0.11,
+    ring: 'rgba(92, 190, 255, 0.78)',
+    side: 'rgba(40, 104, 168, 0.46)',
+    stroke: 'rgba(224, 244, 255, 0.9)',
+    border: '#0f3658',
+    borderWidth: 0.16,
   },
 };
 
@@ -179,6 +179,119 @@ function GlobeShell({ decorative, size }: { decorative?: boolean; size?: number 
 
 function afterPaint(callback: () => void): void {
   requestAnimationFrame(() => requestAnimationFrame(callback));
+}
+
+
+interface SharpenableTexture {
+  anisotropy?: number;
+  generateMipmaps?: boolean;
+  needsUpdate?: boolean;
+}
+
+interface SharpenableMaterial {
+  map?: SharpenableTexture | null;
+  bumpMap?: SharpenableTexture | null;
+  emissiveMap?: SharpenableTexture | null;
+  emissive?: { setHex: (hex: number) => void };
+  emissiveIntensity?: number;
+  needsUpdate?: boolean;
+}
+
+// Apply render-quality settings to the live globe. In high-quality mode we crank
+// texture anisotropy (keeps the existing earth texture sharp at grazing angles,
+// where countries otherwise go blurry) and use the device pixel ratio (clamped
+// at 2). Performance mode drops both — anisotropy to 1 and pixel ratio to 1 —
+// which is the real FPS lever. No extra assets are loaded either way.
+// Returns true once the globe texture exists (so callers can stop polling).
+function applyGlobeQuality(globe: GlobeMethods, highQuality: boolean): boolean {
+  const renderer = globe.renderer?.();
+  // globeMaterial() exists at runtime but isn't in react-globe.gl's typings.
+  const material = (globe as unknown as { globeMaterial?: () => SharpenableMaterial })
+    .globeMaterial?.();
+  if (!renderer || !material) {
+    return false;
+  }
+
+  const maxAnisotropy = renderer.capabilities?.getMaxAnisotropy?.() ?? 1;
+  const targetAnisotropy = highQuality ? maxAnisotropy : 1;
+  const targetPixelRatio = highQuality ? Math.min(2, window.devicePixelRatio || 1) : 1;
+
+  if (renderer.getPixelRatio?.() !== targetPixelRatio) {
+    renderer.setPixelRatio(targetPixelRatio);
+
+    // react-globe.gl renders through an EffectComposer, which holds its own
+    // render targets — its pixel ratio/size must be updated too or the change
+    // is invisible.
+    const composer = globe.postProcessingComposer?.() as
+      | { setPixelRatio?: (ratio: number) => void; setSize?: (w: number, h: number) => void }
+      | undefined;
+    composer?.setPixelRatio?.(targetPixelRatio);
+
+    const el = renderer.domElement;
+    if (el) {
+      renderer.setSize(el.clientWidth, el.clientHeight, false);
+      composer?.setSize?.(el.clientWidth, el.clientHeight);
+    }
+  }
+
+  let textureReady = false;
+  for (const texture of [material.map, material.bumpMap]) {
+    if (texture) {
+      textureReady = true;
+      if (texture.anisotropy !== targetAnisotropy) {
+        texture.anisotropy = targetAnisotropy;
+        texture.generateMipmaps = true;
+        texture.needsUpdate = true;
+      }
+    }
+  }
+
+  // Lift overall brightness so the oceans and shaded hemisphere don't read as
+  // dark/muddy. Re-using the base color texture as an emissive map makes the
+  // globe partly self-lit, which guarantees a brightness floor everywhere —
+  // even the night side shows its imagery, so small island nations stay
+  // visible no matter how the globe is rotated. Idempotent — only set once.
+  if (material.map && material.emissiveMap !== material.map) {
+    material.emissiveMap = material.map;
+    material.emissive?.setHex(0xffffff);
+    material.emissiveIntensity = 0.62;
+    material.needsUpdate = true;
+  }
+
+  return textureReady;
+}
+
+interface TunableLight {
+  intensity?: number;
+  isAmbientLight?: boolean;
+  isDirectionalLight?: boolean;
+}
+
+// Flatten the globe's lighting so there is no dark "night" hemisphere. By
+// default react-globe.gl uses a dim ambient plus a strong directional light,
+// which leaves half the globe in shadow — exactly where small island nations
+// disappear. We boost the ambient (uniform, all-sides) light and soften the
+// directional one to a gentle highlight, so the whole sphere reads evenly while
+// keeping a little dimensionality. Combined with the emissive floor above, the
+// imagery stays legible at every rotation. We scale the existing intensities
+// rather than set absolute values, so this stays correct regardless of the
+// three.js light-unit convention react-globe.gl ships with.
+function tuneGlobeLighting(globe: GlobeMethods): void {
+  const lights = (globe as unknown as { lights?: () => TunableLight[] }).lights?.();
+  if (!lights) {
+    return;
+  }
+
+  for (const light of lights) {
+    if (typeof light.intensity !== 'number') {
+      continue;
+    }
+    if (light.isAmbientLight) {
+      light.intensity *= 2.6;
+    } else if (light.isDirectionalLight) {
+      light.intensity *= 0.35;
+    }
+  }
 }
 
 function getFeatureBoundaryPaths(
@@ -275,11 +388,13 @@ export const GlobeMap = memo(function GlobeMap({
   const readyRef = useRef(false);
   const readyNotifiedRef = useRef(false);
   const settleTimerRef = useRef<number | null>(null);
+  const sharpenTimerRef = useRef<number | null>(null);
   const latestFocusTokenRef = useRef(focusToken);
   const onReadyRef = useRef(onReady);
   const onTargetReadyRef = useRef(onTargetReady);
   const [globeModule, setGlobeModule] = useState<GlobeModule | null>(null);
   const [globeGeometry, setGlobeGeometry] = useState<GlobeGeometryData | null>(null);
+  const highQualityRef = useRef(true);
   const [dimensions, setDimensions] = useState(() => ({
     height: size ?? 0,
     width: size ?? 0,
@@ -303,13 +418,45 @@ export const GlobeMap = memo(function GlobeMap({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [decorative]);
 
   useEffect(() => () => {
     if (settleTimerRef.current != null) {
       window.clearTimeout(settleTimerRef.current);
     }
+    if (sharpenTimerRef.current != null) {
+      window.clearInterval(sharpenTimerRef.current);
+    }
   }, []);
+
+  const scheduleSharpen = useCallback(() => {
+    const globe = globeRef.current;
+    if (!globe) {
+      return;
+    }
+
+    if (applyGlobeQuality(globe, highQualityRef.current)) {
+      return;
+    }
+
+    // Texture may still be loading — poll briefly until it lands, then stop.
+    let attempts = 0;
+    if (sharpenTimerRef.current != null) {
+      window.clearInterval(sharpenTimerRef.current);
+    }
+    sharpenTimerRef.current = window.setInterval(() => {
+      attempts += 1;
+      const current = globeRef.current;
+      if ((current && applyGlobeQuality(current, highQualityRef.current)) || attempts > 40) {
+        if (sharpenTimerRef.current != null) {
+          window.clearInterval(sharpenTimerRef.current);
+          sharpenTimerRef.current = null;
+        }
+      }
+    }, 50);
+  }, []);
+
+
 
   useEffect(() => {
     onReadyRef.current = onReady;
@@ -446,7 +593,20 @@ export const GlobeMap = memo(function GlobeMap({
     globe.pointOfView(decorative ? VIEWPOINTS.decorative : VIEWPOINTS.overview, duration);
   }, [currentId, decorative, globeGeometry, recenterToken]);
 
-  const polygonsData = globeGeometry?.features ?? [];
+  // Only render the highlighted countries as extruded polygons. Drawing all
+  // ~195 default polygons (caps + side walls) every frame was the main FPS
+  // sink, and their fill is nearly invisible anyway — political definition now
+  // comes from the dedicated border-line layer instead.
+  const polygonsData = useMemo(() => {
+    if (!globeGeometry || decorative) {
+      return [];
+    }
+
+    return globeGeometry.features.filter((feature) => {
+      const alpha3 = feature.properties.alpha3;
+      return alpha3 === currentId || (colorMap[alpha3] ?? 'default') !== 'default';
+    });
+  }, [colorMap, currentId, decorative, globeGeometry]);
 
   const boundaryPathsData = useMemo<PathDatum[]>(() => {
     if (!globeGeometry || decorative) {
@@ -455,18 +615,13 @@ export const GlobeMap = memo(function GlobeMap({
 
     return globeGeometry.features.flatMap((feature) => {
       const alpha3 = feature.properties.alpha3;
-      const state = colorMap[alpha3] ?? 'default';
-      if (state === 'default') {
-        return [];
-      }
-
       return getFeatureBoundaryPaths(feature).map((points, index) => ({
         id: `${alpha3}:${index}`,
         alpha3,
         points,
       }));
     });
-  }, [colorMap, decorative, globeGeometry]);
+  }, [decorative, globeGeometry]);
 
   const featureById = useMemo(() => {
     if (!globeGeometry) {
@@ -507,6 +662,9 @@ export const GlobeMap = memo(function GlobeMap({
       return;
     }
 
+    scheduleSharpen();
+    tuneGlobeLighting(globe);
+
     if (currentId && globeGeometry?.centroids[currentId]) {
       const centroid = globeGeometry.centroids[currentId];
       globe.pointOfView({
@@ -539,7 +697,6 @@ export const GlobeMap = memo(function GlobeMap({
           rendererConfig={{ alpha: true, antialias: true, powerPreference: 'high-performance' }}
           backgroundColor="rgba(0,0,0,0)"
           globeImageUrl="/earth-day.jpg"
-          bumpImageUrl="/earth-day.jpg"
           showAtmosphere
           atmosphereAltitude={0.16}
           atmosphereColor="#8cbef1"
@@ -574,17 +731,17 @@ export const GlobeMap = memo(function GlobeMap({
           pathPointAlt={(path: object) => {
             const alpha3 = (path as PathDatum).alpha3;
             const state = colorMap[alpha3] ?? 'default';
-            return COLOR_STYLES[state].altitude + 0.0015;
+            return state === 'default' ? 0.001 : COLOR_STYLES[state].altitude + 0.0015;
           }}
           pathColor={(path: object) => {
             const alpha3 = (path as PathDatum).alpha3;
             const state = colorMap[alpha3] ?? 'default';
-            return COLOR_STYLES[state].border;
+            return state === 'default' ? 'rgba(255, 255, 255, 0.55)' : COLOR_STYLES[state].border;
           }}
           pathStroke={(path: object) => {
             const alpha3 = (path as PathDatum).alpha3;
             const state = colorMap[alpha3] ?? 'default';
-            return COLOR_STYLES[state].borderWidth;
+            return state === 'default' ? 0.35 : COLOR_STYLES[state].borderWidth;
           }}
           pathResolution={1}
           pathTransitionDuration={0}

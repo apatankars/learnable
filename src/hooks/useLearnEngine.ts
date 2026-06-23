@@ -7,9 +7,7 @@ import { matchCountry, matchCapital, attributeConfusion } from '../lib/fuzzy';
 import { calculatePoints } from '../lib/scoring';
 import { itemPriority, confusionWeightFor } from '../lib/adaptive';
 import { weightedPick } from '../lib/weightedRandom';
-import countriesData from '../data/countries.json';
-
-const allCountries = countriesData as CountryEntry[];
+import { getDataset, normalizeTopic } from '../lib/dataset';
 
 // ── Learn-mode tuning ────────────────────────────────────────────────────────
 // Working-set model (Leitner / "7±2"): keep a small set of items in active
@@ -189,9 +187,11 @@ export function useLearnEngine(
   const previousPhaseRef = useRef<'playing' | 'teaching'>('playing');
   const lastCorrectRef = useRef<boolean>(true); // was the previous answer correct? gates new items
 
-  const getFilteredCountries = useCallback(() => {
+  const currentTopic = () => normalizeTopic(settingsRef.current?.topic);
+
+  const getFilteredCountries = useCallback((): CountryEntry[] => {
     if (!settingsRef.current) return [];
-    return allCountries.filter(c => {
+    return getDataset(settingsRef.current.topic).entries.filter(c => {
       if (!settingsRef.current!.includeDependent && !c.independent) return false;
       if (settingsRef.current!.regionFilter.length > 0 && !settingsRef.current!.regionFilter.includes(c.region)) return false;
       return true;
@@ -366,13 +366,14 @@ export function useLearnEngine(
   }, [advanceGame]);
 
   const submitAnswer = useCallback((input: string, currentPrompt: GamePrompt, currentStreak: number) => {
-    const country = allCountries.find(c => c.id === currentPrompt.countryId);
+    const topic = currentTopic();
+    const country = getDataset(topic).byId.get(currentPrompt.countryId);
     if (!country) return null;
     const timeTaken = Date.now() - promptStartRef.current;
 
     const matchResult = currentPrompt.promptType === 'country'
-      ? matchCountry(input, currentPrompt.countryId)
-      : matchCapital(input, currentPrompt.countryId);
+      ? matchCountry(input, currentPrompt.countryId, topic)
+      : matchCapital(input, currentPrompt.countryId, topic);
 
     const correctAnswer = currentPrompt.promptType === 'country' ? country.name : country.capital;
 
@@ -385,7 +386,7 @@ export function useLearnEngine(
         fuzzyScore: matchResult?.score ?? 1,
         timeTaken,
         pointsAwarded: 0,
-        confusedWithId: attributeConfusion(input, currentPrompt.promptType, currentPrompt.countryId),
+        confusedWithId: attributeConfusion(input, currentPrompt.promptType, currentPrompt.countryId, topic),
       };
       onAttempt(result);
       dispatch({ type: 'WRONG', result });
@@ -434,7 +435,7 @@ export function useLearnEngine(
   }, [onAttempt, advanceGame, progressData, confusions, stats]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const submitSkip = useCallback((currentPrompt: GamePrompt) => {
-    const country = allCountries.find(c => c.id === currentPrompt.countryId);
+    const country = getDataset(currentTopic()).byId.get(currentPrompt.countryId);
     if (!country) return null;
 
     const timeTaken = Date.now() - promptStartRef.current;

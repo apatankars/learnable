@@ -1,6 +1,5 @@
-import type { GameSettings } from '../../types';
-
-const REGIONS = ['Africa', 'Americas', 'Asia', 'Europe', 'Oceania'];
+import type { GameSettings, Topic } from '../../types';
+import { getRegions } from '../../lib/dataset';
 
 interface SettingsPanelProps {
   settings: GameSettings;
@@ -11,6 +10,11 @@ export function SettingsPanel({ settings, onChange }: SettingsPanelProps) {
   function update(patch: Partial<GameSettings>) {
     onChange({ ...settings, ...patch });
   }
+
+  const topic: Topic = settings.topic ?? 'world';
+  const isUsStates = topic === 'us-states';
+  const REGIONS = getRegions(topic);
+  const placeLabel = isUsStates ? 'state' : 'country';
 
   const promptSetting =
     settings.mode === 'versus'
@@ -88,16 +92,18 @@ export function SettingsPanel({ settings, onChange }: SettingsPanelProps) {
         </div>
       </div>
 
-      {/* Include territories */}
-      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }}>
-        <input
-          type="checkbox"
-          checked={settings.includeDependent}
-          onChange={e => update({ includeDependent: e.target.checked })}
-          style={{ width: 16, height: 16, accentColor: 'var(--olive)' }}
-        />
-        <span style={{ fontSize: 13, color: 'var(--t2)' }}>Include dependent territories</span>
-      </label>
+      {/* Include territories — world only (all US states are independent) */}
+      {!isUsStates && (
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }}>
+          <input
+            type="checkbox"
+            checked={settings.includeDependent}
+            onChange={e => update({ includeDependent: e.target.checked })}
+            style={{ width: 16, height: 16, accentColor: 'var(--olive)' }}
+          />
+          <span style={{ fontSize: 13, color: 'var(--t2)' }}>Include dependent territories</span>
+        </label>
+      )}
 
       {/* Prompt selection */}
       {(settings.mode === 'practice' || settings.mode === 'learn' || settings.mode === 'versus') && (
@@ -118,7 +124,7 @@ export function SettingsPanel({ settings, onChange }: SettingsPanelProps) {
                   cursor: 'pointer', transition: 'all 0.14s'
                 }}
               >
-                {p}
+                {p === 'country' ? placeLabel : p}
               </button>
             ))}
           </div>

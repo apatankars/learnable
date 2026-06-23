@@ -4,8 +4,7 @@
     {
       "name": "learnable",
       "runtimeExecutable": "/Users/armaanpatankar/Desktop/BrownUniversity/CS/learnable/node_modules/.bin/vite",
-      "runtimeArgs": ["--port", "3459"],
-      "port": 3459
+      "autoPort": true
     }
   ]
 }

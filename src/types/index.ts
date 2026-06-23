@@ -1,5 +1,6 @@
 export type GameMode = 'country' | 'capital' | 'both' | 'practice' | 'learn' | 'versus';
 export type PromptType = 'country' | 'capital';
+export type Topic = 'world' | 'us-states';
 export type GamePhase = 'idle' | 'playing' | 'paused' | 'gameover' | 'teaching';
 export type CountryColorState = 'default' | 'current' | 'correct' | 'skipped' | 'wrong' | 'teaching';
 export type MatchTier = 'correct' | 'fuzzy' | 'wrong';
@@ -53,6 +54,7 @@ export interface GameSession {
 
 export interface GameSettings {
   mode: GameMode;
+  topic?: Topic;
   timeLimitSeconds: number;
   noTimeLimit: boolean;
   blindMode: boolean;
@@ -83,6 +85,12 @@ export interface CountryProgress {
   capitalRating: number;
 }
 
+export interface ModeStat {
+  sessions: number;
+  bestScore: number;
+  totalScore: number;
+}
+
 export interface GlobalStats {
   totalSessions: number;
   totalScore: number;
@@ -92,6 +100,7 @@ export interface GlobalStats {
   lastPlayed: number;
   versusWins: number;
   versusLosses: number;
+  modeStats: Record<string, ModeStat>;
   countryAbility: number; // per-user Elo ability, default 1500
   capitalAbility: number;
 }
@@ -122,6 +131,7 @@ export interface ComissPair {
 
 export interface UserSettings {
   mode: GameMode;
+  topic?: Topic;
   timeLimitSeconds: number;
   noTimeLimit: boolean;
   blindMode: boolean;

@@ -7,7 +7,7 @@ import { BotanicalDivider } from "../ui/BotanicalDivider";
 import { SpaceBackdrop } from "../ui/SpaceBackdrop";
 import { getTimeMode } from "../../lib/leaderboard";
 import { loadGlobeMapModule } from "../../lib/preload";
-import type { GameMode, GameSettings, GlobalStats } from "../../types";
+import type { GameMode, GameSettings, GlobalStats, Topic } from "../../types";
 
 const OrbisGlobe = lazy(() => loadGlobeMapModule().then((module) => ({ default: module.GlobeMap })));
 
@@ -158,6 +158,27 @@ const MODES: {
   },
 ];
 
+const TOPICS: { id: Topic; label: string; sub: string }[] = [
+  { id: "world", label: "World", sub: "Countries & capitals" },
+  { id: "us-states", label: "US States", sub: "States & capitals" },
+];
+
+const US_STATE_MODE_OVERRIDES: Partial<Record<GameMode, { label: string; desc: string }>> = {
+  country: { label: "States", desc: "Name the highlighted state" },
+  capital: { label: "Capitals", desc: "Identify state capitals" },
+  both: { label: "Both", desc: "States & capitals combined" },
+};
+
+function getModeMeta(
+  m: { id: GameMode; label: string; desc: string },
+  topic: Topic,
+) {
+  if (topic === "us-states") {
+    return US_STATE_MODE_OVERRIDES[m.id] ?? { label: m.label, desc: m.desc };
+  }
+  return { label: m.label, desc: m.desc };
+}
+
 export function HomeScreen({
   defaultSettings,
   globalStats,
@@ -176,6 +197,7 @@ export function HomeScreen({
   const [showSettings, setShowSettings] = useState(false);
   const [hoveredMode, setHoveredMode] = useState<GameMode | null>(null);
   const [showDecorativeGlobe, setShowDecorativeGlobe] = useState(false);
+  const topic: Topic = settings.topic ?? "world";
   const versusPromptLabel =
     settings.versusPrompts === "country"
       ? "Countries"
@@ -308,6 +330,64 @@ export function HomeScreen({
           </div> */}
         </header>
 
+        {/* Topic toggle — World vs US States */}
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            marginBottom: 22,
+          }}
+        >
+          {TOPICS.map((t) => {
+            const active = topic === t.id;
+            return (
+              <button
+                key={t.id}
+                onClick={() =>
+                  setSettings((s) => ({ ...s, topic: t.id, regionFilter: [] }))
+                }
+                style={{
+                  flex: 1,
+                  padding: "10px 12px",
+                  borderRadius: 3,
+                  border: active
+                    ? "1px solid var(--gold)"
+                    : "1px solid var(--border)",
+                  background: active ? "var(--bg)" : "var(--s1)",
+                  color: active ? "var(--gold-hi)" : "var(--t2)",
+                  cursor: "pointer",
+                  transition: "all 0.14s",
+                  fontFamily: "var(--ff-u)",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 2,
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: "var(--ff-d)",
+                    fontSize: 15,
+                    fontWeight: 400,
+                    color: active ? "var(--gold-hi)" : "var(--t1)",
+                  }}
+                >
+                  {t.label}
+                </span>
+                <span
+                  style={{
+                    fontSize: 11,
+                    color: active ? "var(--gold)" : "var(--t3)",
+                    fontWeight: 300,
+                  }}
+                >
+                  {t.sub}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
         {/* Stats bar */}
         {user && globalStats.totalSessions > 0 && (
           <div
@@ -365,6 +445,7 @@ export function HomeScreen({
             const locked = m.requiresLogin && !user;
             const selected = settings.mode === m.id;
             const hovered = hoveredMode === m.id;
+            const meta = getModeMeta(m, topic);
             return (
               <button
                 key={m.id}
@@ -431,7 +512,7 @@ export function HomeScreen({
                       marginBottom: 2,
                     }}
                   >
-                    {m.label}
+                    {meta.label}
                   </div>
                   <div
                     style={{
@@ -443,7 +524,7 @@ export function HomeScreen({
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {m.desc}
+                    {meta.desc}
                   </div>
                 </div>
                 {locked && (
@@ -615,7 +696,10 @@ export function HomeScreen({
                   "rgba(135,100,24,0.12)";
               }}
             >
-              Start — {MODES.find((m) => m.id === settings.mode)?.label}
+              Start — {(() => {
+                const m = MODES.find((mm) => mm.id === settings.mode);
+                return m ? getModeMeta(m, topic).label : settings.mode;
+              })()}
             </button>
           )}
           <button
@@ -652,41 +736,37 @@ export function HomeScreen({
               <line x1="9" y1="20" x2="15" y2="20" />
             </svg>
           </button>
-          {user && (
-            <button
-              onClick={onViewProgress}
-              title="My Progress"
-              style={{
-                padding: "12px 14px",
-                borderRadius: 3,
-                border: "1px solid var(--border-hi)",
-                color: "var(--t2)",
-                background: "transparent",
-                cursor: "pointer",
-                fontFamily: "var(--ff-u)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                transition: "border-color 0.14s, color 0.14s",
-              }}
+          <button
+            onClick={onViewProgress}
+            title="Account"
+            style={{
+              padding: "12px 14px",
+              borderRadius: 3,
+              border: "1px solid var(--border-hi)",
+              color: "var(--t2)",
+              background: "transparent",
+              cursor: "pointer",
+              fontFamily: "var(--ff-u)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "border-color 0.14s, color 0.14s",
+            }}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width={20}
+              height={20}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.35}
+              strokeLinecap="round"
+              strokeLinejoin="round"
             >
-              <svg
-                viewBox="0 0 24 24"
-                width={20}
-                height={20}
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={1.35}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M4 18v-4h3v4Z" />
-                <path d="M9 18V8h3v10Z" />
-                <path d="M14 18v-6h3v6Z" />
-                <line x1="3" y1="18" x2="19" y2="18" />
-              </svg>
-            </button>
-          )}
+              <circle cx="12" cy="8" r="3.4" />
+              <path d="M5.5 19c0-3.3 2.9-5.5 6.5-5.5s6.5 2.2 6.5 5.5" />
+            </svg>
+          </button>
         </div>
 
         {/* Settings toggle */}

@@ -1,5 +1,5 @@
 import { geoCentroid, geoCircle } from 'd3-geo';
-import { feature as topojsonFeature } from 'topojson-client';
+import { feature as topojsonFeature, mesh as topojsonMesh } from 'topojson-client';
 import countriesData from '../data/countries.json';
 import type { CountryEntry } from '../types';
 
@@ -9,6 +9,13 @@ const countryMap = new Map(countries.map((country) => [country.id, country]));
 const ANCHOR_URL = '/capital-anchors.geojson';
 const SURFACE_URL = '/country-surfaces.geojson';
 const TOPO_FALLBACK_URL = '/countries-10m.json';
+// 50m (not 110m): the coarser 110m topology omits small island nations
+// entirely — the Lesser Antilles (Antigua & Barbuda, St. Kitts & Nevis,
+// Dominica, Grenada, St. Lucia, Barbados, St. Vincent) are simply absent, so
+// they'd never get a border outline. 50m includes them. The mesh is merged into
+// a single line set once at load, so the higher vertex count is a one-time
+// build cost with no per-frame rendering penalty.
+const BORDERS_URL = '/countries-50m.json';
 
 const MANUAL_ANCHORS: Record<string, { lat: number; lng: number }> = {
   NRU: { lat: -0.5477, lng: 166.9209 },
@@ -441,4 +448,27 @@ export function loadGlobeGeometry(): Promise<GlobeGeometryData> {
   }
 
   return globeGeometryPromise;
+}
+
+let borderLinesPromise: Promise<Array<Array<[number, number]>>> | null = null;
+
+// All country borders, merged & de-duplicated into a single low-res line set
+// from the 110m topology. Used to draw crisp political boundaries cheaply as a
+// single line mesh (rather than re-rendering every country polygon).
+export function loadBorderLines(): Promise<Array<Array<[number, number]>>> {
+  if (!borderLinesPromise) {
+    borderLinesPromise = loadJson<FallbackTopology>(BORDERS_URL).then((topology) => {
+      const object = topology.objects.countries;
+      if (!object) {
+        return [];
+      }
+
+      const merged = topojsonMesh(topology as never, object as never) as
+        GeoJSON.MultiLineString;
+
+      return merged.coordinates as Array<Array<[number, number]>>;
+    }).catch(() => []);
+  }
+
+  return borderLinesPromise;
 }
