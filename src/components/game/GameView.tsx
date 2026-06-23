@@ -77,10 +77,10 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
   const modeKey  = `${settings.mode}_${timeMode}`;
 
   const handleFinish = useCallback((score: number, streak: number) => {
-    finishSession(score, streak);
+    finishSession(score, streak, settings.mode);
     onSubmitScore(score);
     setIsNewBest(score > (personalBests[modeKey] ?? globalStats.bestScore));
-  }, [finishSession, onSubmitScore, personalBests, modeKey, globalStats.bestScore]);
+  }, [finishSession, onSubmitScore, personalBests, modeKey, globalStats.bestScore, settings.mode]);
 
   const isLearnMode     = settings.mode === 'learn';
   const standardEngine = useGameEngine(recordAttempt, handleFinish);

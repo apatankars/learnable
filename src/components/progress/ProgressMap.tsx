@@ -1,39 +1,31 @@
-import { useRef, useEffect, useMemo, useState, useCallback } from 'react';
-import { Map as MapGL, Source, Layer } from 'react-map-gl/maplibre';
-import type { MapRef, MapMouseEvent } from 'react-map-gl/maplibre';
-import { feature } from 'topojson-client';
-import type { Topology } from 'topojson-specification';
+import { useEffect, useMemo, useState, useCallback } from 'react';
+import { geoEqualEarth, geoPath, geoGraticule10 } from 'd3-geo';
+import { feature, mesh } from 'topojson-client';
+import type { Topology, GeometryCollection } from 'topojson-specification';
 import { numericToId } from '../../lib/geoIds';
 import type { CountryEntry } from '../../types';
 import countriesData from '../../data/countries.json';
-import 'maplibre-gl/dist/maplibre-gl.css';
 
 const countries = countriesData as CountryEntry[];
 const countryMap = new Map(countries.map(c => [c.id, c]));
 const GEO_URL = '/countries-50m.json';
 
-type CountryFeatureProperties = GeoJSON.GeoJsonProperties & {
-  alpha3?: string;
-  mastery?: number;
-};
+// SVG canvas — Equal Earth has a ~2.05:1 aspect ratio
+const VB_W = 1000;
+const VB_H = 488;
 
-type CountryGeoFeature = GeoJSON.Feature<GeoJSON.Geometry, CountryFeatureProperties> & {
-  id?: string | number;
-};
+interface RenderedCountry {
+  id: string;
+  alpha3: string;
+  d: string;
+}
 
-// Blank MapLibre style — just a background, no tiles needed
-const MAP_STYLE = {
-  version: 8 as const,
-  sources: {},
-  layers: [
-    {
-      id: 'background',
-      type: 'background' as const,
-      paint: { 'background-color': '#c8dff0' }, // soft ocean blue
-    },
-  ],
-  glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
-};
+interface MapData {
+  countries: RenderedCountry[];
+  borders: string;
+  sphere: string;
+  graticule: string;
+}
 
 interface ProgressMapProps {
   masteryMap: Record<string, number>;
@@ -46,128 +38,114 @@ interface TooltipState {
   y: number;
 }
 
-export function ProgressMap({ masteryMap }: ProgressMapProps) {
-  const mapRef   = useRef<MapRef>(null);
-  const [tooltip, setTooltip] = useState<TooltipState | null>(null);
-  const [geojson, setGeojson] = useState<GeoJSON.FeatureCollection | null>(null);
+// Mastery → fill colour. Mirrors the ramp used across the dashboard.
+function masteryFill(m: number | undefined): string {
+  if (m === undefined) return '#d4c9a8';        // not studied
+  if (m >= 0.85) return '#4a9a36';
+  if (m >= 0.7) return '#6fb55a';
+  if (m >= 0.55) return '#a7c34a';
+  if (m >= 0.4) return '#fbbf24';
+  if (m >= 0.2) return '#fb923c';
+  return '#f87171';
+}
 
-  // Load + annotate TopoJSON → GeoJSON on mount
+export function ProgressMap({ masteryMap }: ProgressMapProps) {
+  const [tooltip, setTooltip] = useState<TooltipState | null>(null);
+  const [mapData, setMapData] = useState<MapData | null>(null);
+
+  // Load TopoJSON once, project to SVG paths with d3-geo.
   useEffect(() => {
+    let cancelled = false;
     fetch(GEO_URL)
       .then(r => r.json())
       .then((topo: Topology) => {
-        const geo = feature(topo, topo.objects.countries) as unknown as GeoJSON.FeatureCollection;
-        // Attach alpha3 to each feature's properties for MapLibre expressions
-        const annotated: GeoJSON.FeatureCollection = {
-          ...geo,
-          features: geo.features.map(f => {
-            const geoFeature = f as CountryGeoFeature;
-            const alpha3 = numericToId(String(geoFeature.id ?? '')) ?? '';
-            return {
-              ...f,
-              properties: { ...(f.properties ?? {}), alpha3 },
-            };
-          }),
-        };
-        setGeojson(annotated);
+        if (cancelled) return;
+        const fc = feature(
+          topo,
+          topo.objects.countries as GeometryCollection,
+        ) as unknown as GeoJSON.FeatureCollection;
+
+        const projection = geoEqualEarth().fitExtent(
+          [[8, 8], [VB_W - 8, VB_H - 8]],
+          { type: 'Sphere' },
+        );
+        const path = geoPath(projection);
+
+        const rendered: RenderedCountry[] = [];
+        for (const f of fc.features) {
+          const numericId = (f as { id?: string | number }).id;
+          const alpha3 = numericToId(String(numericId ?? '')) ?? '';
+          const d = path(f);
+          if (!d) continue;
+          rendered.push({ id: String(numericId ?? alpha3), alpha3, d });
+        }
+
+        setMapData({
+          countries: rendered,
+          borders: path(mesh(topo, topo.objects.countries as GeometryCollection, (a, b) => a !== b)) ?? '',
+          sphere: path({ type: 'Sphere' }) ?? '',
+          graticule: path(geoGraticule10()) ?? '',
+        });
       });
+    return () => { cancelled = true; };
   }, []);
 
-  // Rebuild GeoJSON features with mastery embedded whenever masteryMap changes
-  const annotatedGeojson = useMemo<GeoJSON.FeatureCollection | null>(() => {
-    if (!geojson) return null;
-    return {
-      ...geojson,
-      features: geojson.features.map(f => {
-        const alpha3 = (f.properties as CountryFeatureProperties | null)?.alpha3 ?? '';
-        const mastery = masteryMap[alpha3] ?? -1;   // -1 = not studied
-        return {
-          ...f,
-          properties: { ...(f.properties ?? {}), alpha3, mastery },
-        };
-      }),
-    };
-  }, [geojson, masteryMap]);
-
-  // Hover → tooltip
-  const handleMouseMove = useCallback((e: MapMouseEvent) => {
-    if (!mapRef.current) return;
-    const features = mapRef.current.queryRenderedFeatures(e.point, {
-      layers: ['countries-fill'],
-    });
-    if (!features.length) {
+  const handleEnter = useCallback((alpha3: string, e: React.MouseEvent) => {
+    const country = alpha3 ? countryMap.get(alpha3) : undefined;
+    if (!country) {
       setTooltip(null);
       return;
     }
-    const props = (features[0] as CountryGeoFeature).properties ?? {};
-    const alpha3 = typeof props.alpha3 === 'string' ? props.alpha3 : '';
-    const country = alpha3 ? countryMap.get(alpha3) : undefined;
-    const masteryValue = typeof props.mastery === 'number' ? props.mastery : Number(props.mastery);
-    const mastery = Number.isFinite(masteryValue) && masteryValue >= 0 ? masteryValue : null;
-    if (country) {
-      setTooltip({ country, mastery, x: e.originalEvent.clientX, y: e.originalEvent.clientY });
-    } else {
-      setTooltip(null);
-    }
+    const raw = masteryMap[alpha3];
+    const mastery = typeof raw === 'number' && raw >= 0 ? raw : null;
+    setTooltip({ country, mastery, x: e.clientX, y: e.clientY });
+  }, [masteryMap]);
+
+  const handleMove = useCallback((e: React.MouseEvent) => {
+    setTooltip(prev => (prev ? { ...prev, x: e.clientX, y: e.clientY } : prev));
   }, []);
 
-  const handleMouseLeave = useCallback(() => setTooltip(null), []);
+  const handleLeave = useCallback(() => setTooltip(null), []);
+
+  const paths = useMemo(() => {
+    if (!mapData) return null;
+    return mapData.countries.map(c => (
+      <path
+        key={c.id}
+        d={c.d}
+        fill={masteryFill(c.alpha3 ? masteryMap[c.alpha3] : undefined)}
+        fillOpacity={c.alpha3 && masteryMap[c.alpha3] !== undefined ? 0.92 : 0.7}
+        stroke="none"
+        style={{ cursor: countryMap.has(c.alpha3) ? 'pointer' : 'default', transition: 'fill 0.4s ease' }}
+        onMouseEnter={(e) => handleEnter(c.alpha3, e)}
+        onMouseMove={handleMove}
+        onMouseLeave={handleLeave}
+      />
+    ));
+  }, [mapData, masteryMap, handleEnter, handleMove, handleLeave]);
 
   return (
-    <div className="w-full h-full relative rounded-2xl overflow-hidden border border-bark-200">
-      <MapGL
-        ref={mapRef}
-        mapStyle={MAP_STYLE}
-        initialViewState={{ longitude: 10, latitude: 20, zoom: 1.2 }}
-        style={{ width: '100%', height: '100%' }}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-        interactiveLayerIds={['countries-fill']}
-        // Disable attribution (clean look)
-        attributionControl={false}
-      >
-        {annotatedGeojson && (
-          <Source id="countries" type="geojson" data={annotatedGeojson}>
-            {/* Filled polygons — mastery colour */}
-            <Layer
-              id="countries-fill"
-              type="fill"
-              paint={{
-                'fill-color': [
-                  'case',
-                  ['<', ['get', 'mastery'], 0],
-                  '#d4c9a8',                // not studied
-                  [
-                    'interpolate',
-                    ['linear'],
-                    ['get', 'mastery'],
-                    0,   '#f87171',          // 0% → red
-                    0.4, '#fbbf24',          // 40% → amber
-                    0.7, '#6fb55a',          // 70% → light green
-                    1,   '#4a9a36',          // 100% → green
-                  ],
-                ],
-                'fill-opacity': [
-                  'case',
-                  ['<', ['get', 'mastery'], 0],
-                  0.65,
-                  0.82,
-                ],
-              }}
-            />
-            {/* Borders */}
-            <Layer
-              id="countries-stroke"
-              type="line"
-              paint={{
-                'line-color': '#b8a882',
-                'line-width': 0.6,
-                'line-opacity': 0.7,
-              }}
-            />
-          </Source>
-        )}
-      </MapGL>
+    <div className="w-full h-full relative" style={{ background: '#c8dff0' }}>
+      {mapData ? (
+        <svg
+          viewBox={`0 0 ${VB_W} ${VB_H}`}
+          preserveAspectRatio="xMidYMid meet"
+          style={{ width: '100%', height: '100%', display: 'block' }}
+        >
+          {/* Ocean sphere */}
+          <path d={mapData.sphere} fill="#c8dff0" stroke="#a9c6dd" strokeWidth={0.8} />
+          {/* Graticule */}
+          <path d={mapData.graticule} fill="none" stroke="#b3cde0" strokeWidth={0.4} opacity={0.7} />
+          {/* Country fills */}
+          {paths}
+          {/* Crisp internal borders, drawn once on top */}
+          <path d={mapData.borders} fill="none" stroke="#8a7c5c" strokeWidth={0.5} strokeOpacity={0.7} pointerEvents="none" />
+        </svg>
+      ) : (
+        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--t3)', fontFamily: 'var(--ff-u)', fontSize: 13 }}>
+          Loading map…
+        </div>
+      )}
 
       {/* Tooltip */}
       {tooltip && (
@@ -187,12 +165,7 @@ export function ProgressMap({ masteryMap }: ProgressMapProps) {
                   className="h-full rounded-full transition-all"
                   style={{
                     width: `${Math.round(tooltip.mastery * 100)}%`,
-                    backgroundColor:
-                      tooltip.mastery >= 0.8 ? '#4a9a36'
-                      : tooltip.mastery >= 0.6 ? '#6fb55a'
-                      : tooltip.mastery >= 0.4 ? '#fbbf24'
-                      : tooltip.mastery >= 0.2 ? '#fb923c'
-                      : '#f87171',
+                    backgroundColor: masteryFill(tooltip.mastery),
                   }}
                 />
               </div>

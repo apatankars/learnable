@@ -7,7 +7,7 @@ const GAMEPLAY_ASSET_URLS = [
 
 export const loadGameViewModule = () => import('../components/game/GameView');
 export const loadVersusGameViewModule = () => import('../components/game/VersusGameView');
-export const loadProgressDashboardModule = () => import('../components/progress/ProgressDashboard');
+export const loadAccountModule = () => import('../components/account/AccountLanding');
 export const loadLeaderboardViewModule = () => import('../components/leaderboard/LeaderboardView');
 export const loadVersusLobbyModule = () => import('../components/menus/VersusLobby');
 export const loadGlobeMapModule = () => import('../components/game/GlobeMap');
@@ -26,7 +26,7 @@ export function warmAppViews(): Promise<void> {
     warmAppViewsPromise = Promise.all([
       loadGameViewModule(),
       loadVersusGameViewModule(),
-      loadProgressDashboardModule(),
+      loadAccountModule(),
       loadLeaderboardViewModule(),
       loadVersusLobbyModule(),
       loadGlobeMapModule(),
