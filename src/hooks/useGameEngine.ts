@@ -1,14 +1,10 @@
 import { useReducer, useCallback } from 'react';
 import type {
-  GameSession, GameSettings, GamePrompt, AttemptResult, PromptType
+  GameSession, GameSettings, GamePrompt, AttemptResult, PromptType, Topic
 } from '../types';
-import type { CountryEntry } from '../types';
 import { matchCountry, matchCapital } from '../lib/fuzzy';
 import { calculatePoints } from '../lib/scoring';
-import countriesData from '../data/countries.json';
-
-const allCountries = countriesData as CountryEntry[];
-const countryById = new Map(allCountries.map(c => [c.id, c]));
+import { getDataset, normalizeTopic } from '../lib/dataset';
 
 function getPromptTypes(settings: GameSettings): PromptType[] {
   if (settings.mode === 'country') return ['country'];
@@ -27,7 +23,7 @@ function getPromptTypes(settings: GameSettings): PromptType[] {
 }
 
 export function buildQueue(settings: GameSettings): GamePrompt[] {
-  const filtered = allCountries.filter(c => {
+  const filtered = getDataset(settings.topic).entries.filter(c => {
     if (!settings.includeDependent && !c.independent) return false;
     if (settings.regionFilter.length > 0 && !settings.regionFilter.includes(c.region)) return false;
     return true;
@@ -157,6 +153,7 @@ function gameReducer(state: GameSession, action: GameAction): GameSession {
 let _queue: GamePrompt[] = [];
 let _queueIdx = 0;
 let _promptStart = Date.now();
+let _topic: Topic = 'world';
 
 export function useGameEngine(
   onAttempt: (result: AttemptResult) => void,
@@ -175,6 +172,7 @@ export function useGameEngine(
     _queue = prebuiltQueue || buildQueue(settings);
     _queueIdx = 0;
     _promptStart = Date.now();
+    _topic = normalizeTopic(settings.topic);
     dispatch({ type: 'START', settings });
   }, []);
 
@@ -183,13 +181,13 @@ export function useGameEngine(
   }, []);
 
   const submitAnswer = useCallback((input: string, currentPrompt: GamePrompt, currentStreak: number, hintUsed = false, preserveStreakOnWrong = false) => {
-    const country = countryById.get(currentPrompt.countryId);
+    const country = getDataset(_topic).byId.get(currentPrompt.countryId);
     if (!country) return null;
     const timeTaken = Date.now() - _promptStart;
 
     const matchResult = currentPrompt.promptType === 'country'
-      ? matchCountry(input, currentPrompt.countryId)
-      : matchCapital(input, currentPrompt.countryId);
+      ? matchCountry(input, currentPrompt.countryId, _topic)
+      : matchCapital(input, currentPrompt.countryId, _topic);
 
     const correctAnswer = currentPrompt.promptType === 'country' ? country.name : country.capital;
 
@@ -230,7 +228,7 @@ export function useGameEngine(
   }, [onAttempt]);
 
   const submitSkip = useCallback((currentPrompt: GamePrompt, preserveStreak = false) => {
-    const country = countryById.get(currentPrompt.countryId);
+    const country = getDataset(_topic).byId.get(currentPrompt.countryId);
     if (!country) return null;
 
     const timeTaken = Date.now() - _promptStart;

@@ -29,6 +29,7 @@ const JoinVersusModal = lazy(() => loadVersusLobbyModule().then((module) => ({ d
 
 const DEFAULT_SETTINGS: GameSettings = {
   mode: 'both',
+  topic: 'world',
   timeLimitSeconds: 300,
   noTimeLimit: false,
   blindMode: false,
@@ -48,6 +49,7 @@ function getInitialSettings(): GameSettings {
     saved.blindMode ??= false;
     saved.practicePrompts ??= 'both';
     saved.versusPrompts ??= 'both';
+    saved.topic ??= 'world';
     return saved;
   }
   return DEFAULT_SETTINGS;
@@ -116,6 +118,8 @@ export default function App() {
         setShowAuth(true);
         return;
       }
+      // Versus is world-only for now (uses the globe map).
+      settings = { ...settings, topic: 'world' };
       void loadVersusLobbyModule();
       void loadVersusGameViewModule();
       versusHook.hostLobby(settings, versusEmoji);
