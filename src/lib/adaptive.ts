@@ -18,7 +18,7 @@ export function seedRating(difficulty: number): number {
   return { 1: 1300, 2: 1500, 3: 1700 }[difficulty] ?? 1500;
 }
 
-function expectedScore(ability: number, itemRating: number): number {
+export function expectedScore(ability: number, itemRating: number): number {
   return 1 / (1 + Math.pow(10, (itemRating - ability) / 400));
 }
 

@@ -1,4 +1,4 @@
-export type GameMode = 'country' | 'capital' | 'both' | 'practice' | 'learn' | 'versus';
+export type GameMode = 'country' | 'capital' | 'both' | 'practice' | 'learn' | 'review' | 'versus';
 export type PromptType = 'country' | 'capital';
 export type Topic = 'world' | 'us-states';
 export type GamePhase = 'idle' | 'playing' | 'paused' | 'gameover' | 'teaching';
@@ -7,6 +7,7 @@ export type MatchTier = 'correct' | 'fuzzy' | 'wrong';
 
 export interface CountryEntry {
   id: string;
+  alpha2?: string; // ISO 3166-1 alpha-2, lowercase — keys public/flags/{alpha2}.svg
   name: string;
   altNames: string[];
   capital: string;
@@ -16,10 +17,15 @@ export interface CountryEntry {
   independent: boolean;
 }
 
+// How the user answers: typing the name, clicking the place on the map, or
+// naming the country whose flag is shown (typed, but prompted by the flag).
+export type AnswerFormat = 'typed' | 'locate' | 'flag';
+
 export interface GamePrompt {
   countryId: string;
   promptType: PromptType;
   displayText: string;
+  answerFormat?: AnswerFormat; // absent = typed
 }
 
 export interface AttemptResult {
@@ -31,6 +37,8 @@ export interface AttemptResult {
   timeTaken: number;
   pointsAwarded: number;
   confusedWithId?: string; // the country whose name/capital the wrong answer matched
+  hintUsed?: boolean;
+  answerFormat?: AnswerFormat;
 }
 
 export interface GameSession {
@@ -62,6 +70,7 @@ export interface GameSettings {
   includeDependent: boolean;
   practicePrompts?: 'country' | 'capital' | 'both';
   versusPrompts?: 'country' | 'capital' | 'both';
+  answerFormats?: AnswerFormat | 'mixed'; // default 'typed'; 'mixed' ≈ 50/50 on country prompts
 }
 
 export interface MatchResult {
@@ -105,6 +114,21 @@ export interface GlobalStats {
   capitalAbility: number;
 }
 
+// Spaced-repetition grade derived from an attempt (no explicit rating buttons).
+export type SrsGrade = 'again' | 'hard' | 'good' | 'easy';
+
+// Cross-session review schedule for one (item, promptType) pair.
+export interface SrsCard {
+  itemId: string;
+  promptType: PromptType;
+  stability: number; // days until recall probability decays to ~90%
+  difficulty: number; // 1 (easy) .. 10 (hard)
+  dueAt: number; // epoch ms
+  reps: number;
+  lapses: number;
+  lastReviewAt: number; // epoch ms
+}
+
 // A directed confusion edge: shown `shownId`, the user answered with `answeredId`.
 export interface ConfusionEdge {
   shownId: string;
@@ -139,6 +163,7 @@ export interface UserSettings {
   includeDependent: boolean;
   practicePrompts?: 'country' | 'capital' | 'both';
   versusPrompts?: 'country' | 'capital' | 'both';
+  answerFormats?: AnswerFormat | 'mixed';
 }
 
 export type TimeMode = 'blitz' | 'standard' | 'infinite';

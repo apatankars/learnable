@@ -50,6 +50,7 @@ function getInitialSettings(): GameSettings {
     saved.practicePrompts ??= 'both';
     saved.versusPrompts ??= 'both';
     saved.topic ??= 'world';
+    saved.answerFormats ??= 'typed';
     return saved;
   }
   return DEFAULT_SETTINGS;
@@ -126,6 +127,10 @@ export default function App() {
       navigateTo('versus-lobby');
       return;
     }
+    if (settings.mode === 'review') {
+      // Reviews are self-paced — draining the due queue is the goal, not speed.
+      settings = { ...settings, noTimeLimit: true };
+    }
     void loadGameViewModule();
     void warmGameplayAssets();
     saveSettings(settings);
@@ -190,6 +195,7 @@ export default function App() {
           }}
           versusEmoji={versusEmoji}
           onVersusEmojiChange={setVersusEmoji}
+          dueToday={progress.srsDueCounts.today}
         />
       )}
 
@@ -220,6 +226,7 @@ export default function App() {
             personalBests={personalBests}
             confusions={progress.confusions}
             comiss={progress.comiss}
+            srs={progress.srs}
             onBack={() => navigateTo('home')}
             onReset={progress.resetProgress}
             onSignIn={() => setShowAuth(true)}

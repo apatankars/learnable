@@ -365,7 +365,7 @@ export function useLearnEngine(
     return advanceGame();
   }, [advanceGame]);
 
-  const submitAnswer = useCallback((input: string, currentPrompt: GamePrompt, currentStreak: number) => {
+  const submitAnswer = useCallback((input: string, currentPrompt: GamePrompt, currentStreak: number, hintUsed = false) => {
     const topic = currentTopic();
     const country = getDataset(topic).byId.get(currentPrompt.countryId);
     if (!country) return null;
@@ -387,6 +387,7 @@ export function useLearnEngine(
         timeTaken,
         pointsAwarded: 0,
         confusedWithId: attributeConfusion(input, currentPrompt.promptType, currentPrompt.countryId, topic),
+        hintUsed,
       };
       onAttempt(result);
       dispatch({ type: 'WRONG', result });
@@ -419,6 +420,7 @@ export function useLearnEngine(
       fuzzyScore: matchResult.score,
       timeTaken,
       pointsAwarded: points,
+      hintUsed,
     };
     onAttempt(result);
     dispatch({ type: 'CORRECT', result });

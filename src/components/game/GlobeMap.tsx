@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { GlobeMethods } from 'react-globe.gl';
 import type { CountryColorState } from '../../types';
-import { loadGlobeGeometry } from '../../lib/globeGeometry';
+import { loadGlobeGeometry, resolveCountryAt } from '../../lib/globeGeometry';
 import type { GlobeGeometryData } from '../../lib/globeGeometry';
 
 type GlobeModule = typeof import('react-globe.gl');
@@ -11,6 +11,11 @@ interface GlobeMapProps {
   currentId?: string | null;
   decorative?: boolean;
   focusToken?: number;
+  // Locate mode: don't move the camera on prompt changes (the fly-to would give
+  // the answer away). Every focusToken bump still settles via onTargetReady.
+  freezeFocus?: boolean;
+  // Locate mode: resolve clicks on the globe to a country id (null = ocean).
+  onLocateClick?: (id: string | null) => void;
   recenterToken?: number;
   onReady?: () => void;
   onTargetReady?: (token: number) => void;
@@ -377,6 +382,8 @@ export const GlobeMap = memo(function GlobeMap({
   currentId = null,
   decorative = false,
   focusToken = 0,
+  freezeFocus = false,
+  onLocateClick,
   recenterToken = 0,
   onReady,
   onTargetReady,
@@ -542,6 +549,13 @@ export const GlobeMap = memo(function GlobeMap({
       return;
     }
 
+    if (freezeFocus) {
+      // Leave the camera wherever the user put it, but the settle contract
+      // must still hold: every focusToken ends in onTargetReady(token).
+      scheduleSettled(focusToken, 0);
+      return;
+    }
+
     const centroid = currentId ? globeGeometry.centroids[currentId] : null;
     const duration = decorative ? DECORATIVE_TRANSITION_MS : FOCUS_TRANSITION_MS;
 
@@ -563,7 +577,7 @@ export const GlobeMap = memo(function GlobeMap({
       : 0;
     globe.pointOfView(decorative ? VIEWPOINTS.decorative : VIEWPOINTS.overview, overviewDuration);
     scheduleSettled(focusToken, overviewDuration);
-  }, [currentId, decorative, focusToken, globeGeometry, scheduleSettled]);
+  }, [currentId, decorative, focusToken, freezeFocus, globeGeometry, scheduleSettled]);
 
   useEffect(() => {
     if (!recenterToken) {
@@ -654,6 +668,16 @@ export const GlobeMap = memo(function GlobeMap({
   const GlobeRenderer = globeModule?.default;
   const isRenderable = Boolean(GlobeRenderer && globeGeometry && dimensions.width > 0 && dimensions.height > 0);
 
+  const onLocateClickRef = useRef(onLocateClick);
+  onLocateClickRef.current = onLocateClick;
+  const handleGlobeClick = useCallback(({ lat, lng }: { lat: number; lng: number }) => {
+    const handler = onLocateClickRef.current;
+    if (!handler || !globeGeometry) {
+      return;
+    }
+    handler(resolveCountryAt(globeGeometry, lat, lng));
+  }, [globeGeometry]);
+
   const handleGlobeReady = () => {
     readyRef.current = true;
 
@@ -664,6 +688,12 @@ export const GlobeMap = memo(function GlobeMap({
 
     scheduleSharpen();
     tuneGlobeLighting(globe);
+
+    if (freezeFocus) {
+      globe.pointOfView(decorative ? VIEWPOINTS.decorative : VIEWPOINTS.overview, 0);
+      scheduleSettled(focusToken, 0);
+      return;
+    }
 
     if (currentId && globeGeometry?.centroids[currentId]) {
       const centroid = globeGeometry.centroids[currentId];
@@ -687,6 +717,7 @@ export const GlobeMap = memo(function GlobeMap({
         width: size ? `${size}px` : '100%',
         height: size ? `${size}px` : '100%',
         position: 'relative',
+        cursor: onLocateClick ? 'pointer' : undefined,
       }}
     >
       {isRenderable && GlobeRenderer ? (
@@ -755,6 +786,7 @@ export const GlobeMap = memo(function GlobeMap({
           ringMaxRadius={(ring: object) => decorative ? 10 : 14 * (ring as RingDatum).overlayScale}
           ringPropagationSpeed={() => decorative ? 1.8 : 2.4}
           ringRepeatPeriod={() => decorative ? 1700 : 1300}
+          onGlobeClick={onLocateClick ? handleGlobeClick : undefined}
           onGlobeReady={handleGlobeReady}
         />
       ) : (

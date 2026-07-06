@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import type { User } from '@supabase/supabase-js';
-import type { CountryProgress, GlobalStats, GameMode, ConfusionEdge, ComissPair } from '../../types';
+import type { CountryProgress, GlobalStats, GameMode, ConfusionEdge, ComissPair, SrsCard } from '../../types';
 import { getMastery } from '../../lib/progressStorage';
 import { topConfusionPairs, topComissPairs } from '../../lib/adaptive';
+import { dueCounts } from '../../lib/srs';
 import countriesData from '../../data/countries.json';
 import type { CountryEntry } from '../../types';
 import { ProgressMap } from '../progress/ProgressMap';
@@ -29,6 +30,7 @@ interface AccountLandingProps {
   personalBests: Record<string, number>;
   confusions: ConfusionEdge[];
   comiss: ComissPair[];
+  srs?: Record<string, SrsCard>;
   onBack: () => void;
   onReset: () => void;
   onSignIn: () => void;
@@ -36,7 +38,7 @@ interface AccountLandingProps {
 }
 
 export function AccountLanding({
-  user, progress, globalStats, personalBests, confusions, comiss, onBack, onReset, onSignIn, onSignOut,
+  user, progress, globalStats, personalBests, confusions, comiss, srs = {}, onBack, onReset, onSignIn, onSignOut,
 }: AccountLandingProps) {
   const [activeTab, setActiveTab] = useState<'all' | 'needs_improvement' | 'killing_it'>('all');
 
@@ -114,7 +116,10 @@ export function AccountLanding({
       .sort((a, b) => b.rating - a.rating)
       .slice(0, 8);
   }, [withMastery]);
-  const hasInsights = mixedUp.length > 0 || oftenMissed.length > 0 || hardestForYou.length > 0;
+  const srsCards = useMemo(() => Object.values(srs), [srs]);
+  const reviewForecast = useMemo(() => dueCounts(srsCards), [srsCards]);
+  const hasInsights = mixedUp.length > 0 || oftenMissed.length > 0 || hardestForYou.length > 0
+    || srsCards.length > 0;
 
   function masteryColor(m: number): string {
     if (m >= 0.8) return 'var(--olive-hi)';
@@ -331,6 +336,13 @@ export function AccountLanding({
                           right={`${p.count}×`}
                         />
                       ))}
+                    </InsightCard>
+                  )}
+                  {srsCards.length > 0 && (
+                    <InsightCard title="Review forecast" hint="Spaced-repetition schedule">
+                      <InsightRow left="Due today" right={`${reviewForecast.today}`} />
+                      <InsightRow left="Due this week" right={`${reviewForecast.week}`} />
+                      <InsightRow left="Scheduled in total" right={`${srsCards.length}`} />
                     </InsightCard>
                   )}
                 </div>

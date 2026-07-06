@@ -9,6 +9,9 @@ interface UsStatesMapProps {
   colorMap?: Record<string, CountryColorState>;
   currentId?: string | null;
   focusToken?: number;
+  // Locate mode: clicks on a state resolve to its id. When set, states get a
+  // hover highlight and a pointer cursor.
+  onLocateClick?: (id: string) => void;
   recenterToken?: number;
   onReady?: () => void;
   onTargetReady?: (token: number) => void;
@@ -74,11 +77,13 @@ export const UsStatesMap = memo(function UsStatesMap({
   colorMap = {},
   currentId = null,
   focusToken = 0,
+  onLocateClick,
   recenterToken = 0,
   onReady,
   onTargetReady,
 }: UsStatesMapProps) {
   const [shapes, setShapes] = useState<StateShape[] | null>(null);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
   const onReadyRef = useRef(onReady);
   const onTargetReadyRef = useRef(onTargetReady);
   const readyNotifiedRef = useRef(false);
@@ -153,17 +158,22 @@ export const UsStatesMap = memo(function UsStatesMap({
               const state = colorMap[s.id] ?? 'default';
               const style = FILL_STYLES[state];
               const isActive = state === 'current' || state === 'teaching';
+              const isHovered = Boolean(onLocateClick) && hoveredId === s.id && state === 'default';
               return (
                 <path
                   key={s.id}
                   d={s.d}
-                  fill={style.fill}
-                  stroke={style.stroke}
+                  fill={isHovered ? 'rgba(255, 226, 130, 0.45)' : style.fill}
+                  stroke={isHovered ? 'rgba(255, 240, 200, 0.7)' : style.stroke}
                   strokeWidth={style.strokeWidth}
                   strokeLinejoin="round"
                   vectorEffect="non-scaling-stroke"
+                  onClick={onLocateClick ? () => onLocateClick(s.id) : undefined}
+                  onMouseEnter={onLocateClick ? () => setHoveredId(s.id) : undefined}
+                  onMouseLeave={onLocateClick ? () => setHoveredId((prev) => (prev === s.id ? null : prev)) : undefined}
                   style={{
                     transition: 'fill 0.2s ease',
+                    cursor: onLocateClick ? 'pointer' : undefined,
                     filter: isActive ? 'drop-shadow(0 0 6px rgba(255, 213, 74, 0.55))' : undefined,
                   }}
                 />

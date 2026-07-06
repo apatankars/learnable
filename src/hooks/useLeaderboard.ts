@@ -16,7 +16,7 @@ export function useLeaderboard(user: User | null) {
   const submitSessionScore = useCallback(async (score: number, settings: GameSettings) => {
     const u = userRef.current;
     if (!u || score <= 0) return;
-    if (settings.mode === 'practice' || settings.mode === 'learn') return;
+    if (settings.mode === 'practice' || settings.mode === 'learn' || settings.mode === 'review') return;
     const timeMode = getTimeMode(settings.timeLimitSeconds, settings.noTimeLimit);
     const key = `${settings.mode}_${timeMode}`;
     setPersonalBests(prev => {

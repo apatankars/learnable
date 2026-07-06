@@ -43,6 +43,12 @@ const modeInfo: Record<GameMode, { icon: string; title: string; desc: string; co
     desc: 'Learn new countries before you are tested on them',
     color: 'from-blue-400 to-blue-600',
   },
+  review: {
+    icon: '⏳',
+    title: 'Daily Review',
+    desc: 'Revisit what you learned, right before you forget it',
+    color: 'from-petal-400 to-petal-600',
+  },
 };
 
 export function ModeCard({ mode, selected, onClick }: ModeCardProps) {

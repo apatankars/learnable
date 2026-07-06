@@ -7,7 +7,7 @@ import { TeachingPanel } from './TeachingPanel';
 import { BotanicalCorner } from '../ui/BotanicalCorner';
 import { SpaceBackdrop } from '../ui/SpaceBackdrop';
 import type { GamePrompt, GameSettings, GlobalStats } from '../../types';
-import { useGameEngine, buildAdaptiveQueue } from '../../hooks/useGameEngine';
+import { useGameEngine, buildAdaptiveQueue, buildReviewQueue } from '../../hooks/useGameEngine';
 import { useLearnEngine } from '../../hooks/useLearnEngine';
 import { confusionPartners } from '../../lib/adaptive';
 import { useTimer } from '../../hooks/useTimer';
@@ -34,7 +34,7 @@ type FlashTrigger = { points?: number; type: 'correct' | 'wrong' | 'fuzzy' | 'sk
 
 const MODE_LABELS: Record<string, string> = {
   country: 'Countries', capital: 'Capitals', both: 'Both',
-  practice: 'Practice', learn: 'Learn',
+  practice: 'Practice', learn: 'Learn', review: 'Daily Review',
 };
 
 const FEEDBACK_DELAY_MS = 90;
@@ -62,6 +62,10 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
   const [isPromptRendering, setIsPromptRendering] = useState(true);
   const [recenterToken, setRecenterToken]   = useState(0);
   const [hintUsed, setHintUsed]             = useState(false);
+  const [reviewEmpty, setReviewEmpty]       = useState(false);
+  // Locate mode: transient per-country color overrides while feedback shows
+  // (clicked country flashes red, the real target flashes green).
+  const [locateFlash, setLocateFlash]       = useState<Record<string, import('../../types').CountryColorState>>({});
   const [hintMsg, setHintMsg]               = useState('');
   const [lastPoints, setLastPoints]         = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -134,10 +138,17 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
     for (const key of session.answered){ const [id] = key.split(':'); map[id] = 'correct'; }
     const activePrompt = pendingPrompt ?? currentPrompt;
     if (activePrompt?.countryId) {
-      map[activePrompt.countryId] = session.phase === 'teaching' ? 'teaching' : 'current';
+      // Locate/flag prompts never highlight the target — the highlight would
+      // answer the question (finding it / naming its flag's owner).
+      const hideTarget = (activePrompt.answerFormat === 'locate' || activePrompt.answerFormat === 'flag')
+        && session.phase !== 'teaching';
+      if (!hideTarget) {
+        map[activePrompt.countryId] = session.phase === 'teaching' ? 'teaching' : 'current';
+      }
     }
+    for (const [id, state] of Object.entries(locateFlash)) map[id] = state;
     return map;
-  }, [currentPrompt, pendingPrompt, session.answered, session.phase, session.skipped, session.wrong]);
+  }, [currentPrompt, locateFlash, pendingPrompt, session.answered, session.phase, session.skipped, session.wrong]);
 
   const handleTimerExpire = useCallback(() => {
     endGame(session.score, session.maxStreak);
@@ -175,6 +186,15 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
       // confusion, with confusable pairs interleaved.
       const queue = buildAdaptiveQueue(settings, progress.progress, progress.confusions, globalStats);
       standardEngine.startGame(settings, queue);
+    } else if (settings.mode === 'review') {
+      // Daily Review: drain the cards due today, most overdue/weakest first.
+      const queue = buildReviewQueue(settings, progress.srs, progress.progress, progress.confusions, globalStats);
+      if (queue.length === 0) {
+        setReviewEmpty(true);
+      } else {
+        setQueueTotal(queue.length);
+        standardEngine.startGame(settings, queue);
+      }
     } else {
       standardEngine.startGame(settings);
     }
@@ -206,6 +226,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
       setQueueTotal(filteredCountryCount);
       return;
     }
+    if (settings.mode === 'review') return; // set from the built queue in the start effect
 
     const promptCount =
       settings.mode === 'both'
@@ -218,9 +239,10 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
   }, [settings]);
 
 
-  // Focus input when prompt changes
+  // Focus input when prompt changes (typed prompts only — locate has no input)
   useEffect(() => {
-    if (inputState === 'idle' && session.phase === 'playing' && currentPrompt && !isPromptRendering) {
+    if (inputState === 'idle' && session.phase === 'playing' && currentPrompt
+      && currentPrompt.answerFormat !== 'locate' && !isPromptRendering) {
       setTimeout(() => inputRef.current?.focus(), 24);
     }
   }, [currentPrompt, inputState, isPromptRendering, session.phase]);
@@ -282,10 +304,49 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
     if (hintUsed || !currentPrompt || session.phase !== 'playing') return;
     const currentCountry = countryMap.get(currentPrompt.countryId);
     if (!currentCountry) return;
-    const ans = currentPrompt.promptType === 'country' ? currentCountry.name : currentCountry.capital;
     setHintUsed(true);
+    if (currentPrompt.answerFormat === 'locate') {
+      // The name is already on screen — the useful hint is where to look.
+      setHintMsg(`It's in ${currentCountry.region} · −50% points`);
+      return;
+    }
+    const ans = currentPrompt.promptType === 'country' ? currentCountry.name : currentCountry.capital;
     setHintMsg(`Starts with "${ans[0].toUpperCase()}" · −50% points`);
   }
+
+  const handleLocateClick = useCallback((clickedId: string | null) => {
+    if (!clickedId) return; // ocean / empty space
+    const prompt = currentPrompt;
+    if (!prompt || prompt.answerFormat !== 'locate') return;
+    if (session.phase !== 'playing' || isPromptRendering || showWrongFeedback) return;
+
+    const result = standardEngine.submitLocate(clickedId, prompt, session.streak, hintUsed);
+    if (!result) return;
+
+    if (result.tier === 'wrong') {
+      setInputState('wrong');
+      setWrongAnswer(`That was ${result.clickedName} — ${result.correctAnswer} is shown in green`);
+      setShowWrongFeedback(true);
+      setLocateFlash({ [clickedId]: 'wrong', [prompt.countryId]: 'correct' });
+      triggerFlash({ type: 'wrong' });
+      setTimeout(() => {
+        setLocateFlash({});
+        setShowWrongFeedback(false);
+        setInputState('idle');
+        queuePromptForRender(result.nextPrompt ?? null);
+        setPromptIndex(i => i + 1);
+      }, WRONG_DELAY_MS);
+    } else {
+      setInputState('correct');
+      setLastPoints(result.points ?? null);
+      triggerFlash({ type: 'correct', points: result.points });
+      setTimeout(() => {
+        setInputState('idle');
+        queuePromptForRender(result.nextPrompt ?? null);
+        setPromptIndex(i => i + 1);
+      }, FEEDBACK_DELAY_MS);
+    }
+  }, [currentPrompt, session.phase, session.streak, isPromptRendering, showWrongFeedback, standardEngine, hintUsed, queuePromptForRender]);
 
   function handleSkip() {
     if (!currentPrompt || session.phase !== 'playing') return;
@@ -331,6 +392,12 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
   }, [isLearnMode, session.answered]);
 
   const completed        = isLearnMode ? learnedCountries : session.totalQuestions;
+  const activePrompt     = pendingPrompt ?? currentPrompt;
+  const isLocate         = currentPrompt?.answerFormat === 'locate';
+  const isFlag           = currentPrompt?.answerFormat === 'flag';
+  const mapLocateActive  = activePrompt?.answerFormat === 'locate';
+  // Both locate and flag prompts keep the map neutral (no target highlight/fly-to).
+  const mapTargetHidden  = mapLocateActive || activePrompt?.answerFormat === 'flag';
   const isPlaying        = session.phase === 'playing';
   const isPaused         = session.phase === 'paused';
   const isTeaching       = session.phase === 'teaching';
@@ -466,6 +533,28 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
           display: 'flex', flexDirection: 'column',
         }}>
           {session.phase === 'gameover' ? null
+          : reviewEmpty ? (
+            <div style={{ marginTop: 48, textAlign: 'center' }}>
+              <div style={{ fontSize: 34, marginBottom: 14 }}>🌿</div>
+              <div style={{ fontFamily: 'var(--ff-d)', fontSize: 20, color: 'var(--t1)', marginBottom: 8 }}>
+                Nothing due today
+              </div>
+              <div style={{ fontSize: 13, color: 'var(--t3)', lineHeight: 1.6, marginBottom: 22 }}>
+                Your reviews are all caught up — come back tomorrow,<br />
+                or learn something new in the meantime.
+              </div>
+              <button
+                onClick={onBackToMenu}
+                style={{
+                  fontSize: 12, letterSpacing: '0.06em', fontFamily: 'var(--ff-u)',
+                  padding: '9px 20px', borderRadius: 4, cursor: 'pointer',
+                  border: '1px solid var(--border-hi)', background: 'var(--bg)', color: 'var(--t2)',
+                }}
+              >
+                Back to menu
+              </button>
+            </div>
+          )
           : session.phase === 'idle' ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--t3)', fontSize: 12, letterSpacing: '0.08em', marginTop: 36 }}>
               <div className="animate-spin" style={{ width: 18, height: 18, borderRadius: '50%', border: '1.5px solid var(--border-hi)', borderTopColor: 'var(--olive)' }} />
@@ -493,8 +582,25 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
                 color: 'var(--t3)', marginBottom: 10, fontWeight: 500,
                 fontFamily: 'var(--ff-u)',
               }}>
-                {currentPrompt.promptType === 'country' ? `Identify the highlighted ${placeNoun}` : 'Name the capital'}
+                {isLocate
+                  ? 'Find it on the map'
+                  : isFlag
+                    ? 'Whose flag is this?'
+                    : currentPrompt.promptType === 'country' ? `Identify the highlighted ${placeNoun}` : 'Name the capital'}
               </div>
+
+              {isFlag && currentCountry?.alpha2 && (
+                <img
+                  src={`/flags/${currentCountry.alpha2}.svg`}
+                  alt="Mystery flag"
+                  width={92}
+                  height={92}
+                  style={{
+                    borderRadius: '50%', marginBottom: 14, alignSelf: 'flex-start',
+                    boxShadow: '0 2px 12px rgba(0,0,0,0.22)',
+                  }}
+                />
+              )}
 
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 15 }}>
                 <div style={{
@@ -504,9 +610,13 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
                   color: 'var(--t1)', lineHeight: 1.2,
                   overflowWrap: 'anywhere',
                 }}>
-                  {currentPrompt.promptType === 'country'
-                    ? `Name this ${placeNoun}`
-                    : currentCountry ? `Capital of ${currentCountry.name}?` : '…'}
+                  {isLocate
+                    ? (currentCountry ? `Find ${currentCountry.name}` : '…')
+                    : isFlag
+                      ? 'Name this country'
+                      : currentPrompt.promptType === 'country'
+                        ? `Name this ${placeNoun}`
+                        : currentCountry ? `Capital of ${currentCountry.name}?` : '…'}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5, flexShrink: 0, minWidth: 96, paddingTop: 4 }}>
                   <div style={{ fontSize: 12, color: 'var(--t3)', letterSpacing: '0.06em', lineHeight: 1 }}>
@@ -522,8 +632,8 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
                 </div>
               </div>
 
-              {/* Region tag */}
-              {currentCountry && (
+              {/* Region tag (hidden for locate/flag — it gives too much away) */}
+              {currentCountry && !isLocate && !isFlag && (
                 <div style={{
                   display: 'inline-flex', alignItems: 'center',
                   fontSize: 11, letterSpacing: '0.10em', textTransform: 'uppercase',
@@ -536,8 +646,8 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
                 </div>
               )}
 
-              {/* Input */}
-              {!showFeedbackOk && !showFeedbackMiss && (
+              {/* Input (locate prompts answer by clicking the map instead) */}
+              {!showFeedbackOk && !showFeedbackMiss && !isLocate && (
                 <div style={{
                   display: 'flex', alignItems: 'center',
                   border: showWrongFeedback
@@ -734,8 +844,9 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
           {isUsStates ? (
             <UsStatesMap
               colorMap={colorMap}
-              currentId={pendingPrompt?.countryId ?? currentPrompt?.countryId ?? null}
+              currentId={mapTargetHidden ? null : (activePrompt?.countryId ?? null)}
               focusToken={focusToken}
+              onLocateClick={mapLocateActive ? handleLocateClick : undefined}
               recenterToken={recenterToken}
               onReady={handleGlobeReady}
               onTargetReady={commitRenderedPrompt}
@@ -744,8 +855,10 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
           ) : (
             <OrbisGlobe
               colorMap={colorMap}
-              currentId={pendingPrompt?.countryId ?? currentPrompt?.countryId ?? null}
+              currentId={mapTargetHidden ? null : (activePrompt?.countryId ?? null)}
               focusToken={focusToken}
+              freezeFocus={mapLocateActive}
+              onLocateClick={mapLocateActive ? handleLocateClick : undefined}
               recenterToken={recenterToken}
               onReady={handleGlobeReady}
               onTargetReady={commitRenderedPrompt}
@@ -795,7 +908,9 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
           color: 'rgba(255,255,255,0.25)', pointerEvents: 'none',
           fontFamily: 'var(--ff-u)',
         }}>
-          {isUsStates ? 'Identify the highlighted state' : 'Drag to rotate · Scroll to zoom'}
+          {isLocate
+            ? `Click the ${placeNoun} to answer`
+            : isUsStates ? 'Identify the highlighted state' : 'Drag to rotate · Scroll to zoom'}
         </div>
       </div>
 

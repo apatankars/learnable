@@ -49,14 +49,26 @@ export function TeachingPanel({ country, promptType, score, streak, confusedWith
           </div>
         </div>
       </div>
-      <h3 style={{
-        fontFamily: 'var(--ff-d)', fontSize: 24, fontWeight: 400,
-        color: 'var(--t1)', lineHeight: 1.25, marginBottom: 8,
-      }}>
-        {promptType === 'country'
-          ? `This is ${country.name}`
-          : `${country.name}'s capital is ${country.capital}`}
-      </h3>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 8 }}>
+        {country.alpha2 && (
+          <img
+            src={`/flags/${country.alpha2}.svg`}
+            alt={`Flag of ${country.name}`}
+            width={44}
+            height={44}
+            loading="lazy"
+            style={{ flexShrink: 0, borderRadius: '50%', boxShadow: '0 1px 6px rgba(0,0,0,0.18)' }}
+          />
+        )}
+        <h3 style={{
+          fontFamily: 'var(--ff-d)', fontSize: 24, fontWeight: 400,
+          color: 'var(--t1)', lineHeight: 1.25,
+        }}>
+          {promptType === 'country'
+            ? `This is ${country.name}`
+            : `${country.name}'s capital is ${country.capital}`}
+        </h3>
+      </div>
       <p style={{
         fontSize: 13, color: 'var(--t2)', marginBottom: 22,
         fontFamily: 'var(--ff-u)', lineHeight: 1.5,

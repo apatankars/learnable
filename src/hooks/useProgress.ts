@@ -1,11 +1,14 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import type { User } from '@supabase/supabase-js';
-import type { CountryProgress, AttemptResult, GlobalStats, ConfusionEdge, ComissPair, GameMode, ModeStat } from '../types';
+import type { CountryProgress, AttemptResult, GlobalStats, ConfusionEdge, ComissPair, GameMode, ModeStat, SrsCard } from '../types';
 import {
   loadProgress, saveProgress, loadGlobalStats, saveGlobalStats,
   defaultProgress, getMastery,
 } from '../lib/progressStorage';
-import { updateRatings } from '../lib/adaptive';
+import { updateRatings, DEFAULT_ABILITY } from '../lib/adaptive';
+import {
+  srsKey, gradeFromAttempt, createCard, reviewCard, seedCardFromHistory, dueCounts,
+} from '../lib/srs';
 import { supabase } from '../lib/supabase';
 
 // ── Supabase helpers ──────────────────────────────────────────────────────────
@@ -59,6 +62,59 @@ async function fetchComiss(userId: string): Promise<ComissPair[]> {
     .eq('user_id', userId);
   if (error || !data) return [];
   return data.map(row => ({ aId: row.item_a, bId: row.item_b, count: row.count }));
+}
+
+// Returns {} when the user simply has no rows yet (triggers backfill) and
+// null on a fetch error (so a transient failure doesn't cause a re-seed).
+async function fetchSrs(userId: string): Promise<Record<string, SrsCard> | null> {
+  const { data, error } = await supabase
+    .from('user_srs')
+    .select('*')
+    .eq('user_id', userId);
+  if (error || !data) return null;
+  const result: Record<string, SrsCard> = {};
+  for (const row of data) {
+    result[srsKey(row.item_id, row.prompt_type)] = {
+      itemId: row.item_id,
+      promptType: row.prompt_type,
+      stability: row.stability,
+      difficulty: row.difficulty,
+      dueAt: row.due_at,
+      reps: row.reps,
+      lapses: row.lapses,
+      lastReviewAt: row.last_review_at,
+    };
+  }
+  return result;
+}
+
+function srsRow(userId: string, c: SrsCard) {
+  return {
+    user_id: userId,
+    item_id: c.itemId,
+    prompt_type: c.promptType,
+    stability: c.stability,
+    difficulty: c.difficulty,
+    due_at: c.dueAt,
+    reps: c.reps,
+    lapses: c.lapses,
+    last_review_at: c.lastReviewAt,
+    updated_at: new Date().toISOString(),
+  };
+}
+
+async function upsertSrs(userId: string, card: SrsCard) {
+  await supabase.from('user_srs')
+    .upsert(srsRow(userId, card), { onConflict: 'user_id,item_id,prompt_type' });
+}
+
+async function bulkUpsertSrs(userId: string, cards: SrsCard[]) {
+  for (let i = 0; i < cards.length; i += 200) {
+    await supabase.from('user_srs').upsert(
+      cards.slice(i, i + 200).map(c => srsRow(userId, c)),
+      { onConflict: 'user_id,item_id,prompt_type' },
+    );
+  }
 }
 
 async function fetchServerStats(userId: string): Promise<GlobalStats | null> {
@@ -147,6 +203,7 @@ export function useProgress(user: User | null = null) {
   const [globalStats, setGlobalStats] = useState<GlobalStats>(() => loadGlobalStats());
   const [confusions, setConfusions] = useState<ConfusionEdge[]>([]);
   const [comiss, setComiss] = useState<ComissPair[]>([]);
+  const [srs, setSrs] = useState<Record<string, SrsCard>>({});
   const userRef = useRef<User | null>(user);
   userRef.current = user;
   // Mirrors of state so the (stable) callbacks can read the latest values
@@ -155,6 +212,8 @@ export function useProgress(user: User | null = null) {
   statsRef.current = globalStats;
   const progressRef = useRef<Record<string, CountryProgress>>(progress);
   progressRef.current = progress;
+  const srsRef = useRef<Record<string, SrsCard>>(srs);
+  srsRef.current = srs;
 
   // Load server data when user logs in
   useEffect(() => {
@@ -174,6 +233,29 @@ export function useProgress(user: User | null = null) {
       }
       setConfusions(await fetchConfusions(user.id));
       setComiss(await fetchComiss(user.id));
+
+      // SRS schedules. If the user has attempt history but no cards yet
+      // (account predates SRS), seed cards from Elo + history once. `null`
+      // means the fetch errored — skip so a transient failure can't re-seed.
+      const serverSrs = await fetchSrs(user.id);
+      if (serverSrs === null) return;
+      if (Object.keys(serverSrs).length === 0 && serverProgress) {
+        const now = Date.now();
+        const seeded: Record<string, SrsCard> = {};
+        for (const p of Object.values(serverProgress)) {
+          for (const pt of ['country', 'capital'] as const) {
+            const ability = pt === 'country'
+              ? serverStats?.countryAbility ?? DEFAULT_ABILITY
+              : serverStats?.capitalAbility ?? DEFAULT_ABILITY;
+            const card = seedCardFromHistory(p, pt, ability, now);
+            if (card) seeded[srsKey(card.itemId, pt)] = card;
+          }
+        }
+        setSrs(seeded);
+        bulkUpsertSrs(user.id, Object.values(seeded));
+      } else {
+        setSrs(serverSrs);
+      }
     })();
   }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -223,6 +305,19 @@ export function useProgress(user: User | null = null) {
       if (uid) upsertStats(uid, nextStats);
       return nextStats;
     });
+
+    // ── SRS: every graded attempt (any mode) advances the review schedule.
+    //    Uses the pre-update rating/ability, matching what the user just faced. ──
+    const key = srsKey(result.countryId, result.promptType);
+    const existingCard = srsRef.current[key];
+    const card = existingCard
+      ? reviewCard(existingCard, gradeFromAttempt(result), now)
+      : createCard(result.countryId, result.promptType, itemRating, ability, now);
+    setSrs(prev => ({ ...prev, [key]: card }));
+    {
+      const uid = userRef.current?.id;
+      if (uid) upsertSrs(uid, card);
+    }
 
     // ── Confusion graph: record which country the wrong answer was mistaken for ──
     if (result.confusedWithId) {
@@ -340,8 +435,10 @@ export function useProgress(user: User | null = null) {
       });
   }, [progress]);
 
+  const srsDueCounts = useMemo(() => dueCounts(Object.values(srs)), [srs]);
+
   return {
-    progress, globalStats, confusions, comiss,
+    progress, globalStats, confusions, comiss, srs, srsDueCounts,
     recordAttempt, finishSession, resetProgress, getWeakCountries,
     recordVersusResult, recordSessionMisses,
   };

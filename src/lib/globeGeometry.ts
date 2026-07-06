@@ -1,4 +1,4 @@
-import { geoCentroid, geoCircle } from 'd3-geo';
+import { geoArea, geoCentroid, geoCircle, geoContains, geoDistance } from 'd3-geo';
 import { feature as topojsonFeature, mesh as topojsonMesh } from 'topojson-client';
 import countriesData from '../data/countries.json';
 import type { CountryEntry } from '../types';
@@ -92,6 +92,59 @@ type TopologyCountryFeature =
   GeoJSON.Feature<GeoJSON.Polygon | GeoJSON.MultiPolygon, TopologyNameProperties>;
 
 let globeGeometryPromise: Promise<GlobeGeometryData> | null = null;
+
+// ── Click resolution (locate mode) ──────────────────────────────────────────
+
+const featureAreaCache = new WeakMap<GlobeCountryFeature, number>();
+
+function areaOf(feature: GlobeCountryFeature): number {
+  let area = featureAreaCache.get(feature);
+  if (area === undefined) {
+    area = geoArea(feature);
+    featureAreaCache.set(feature, area);
+  }
+  return area;
+}
+
+// Microstates get a near-miss snap radius: their synthetic circle features are
+// hit-testable but tiny at overview altitude.
+const SNAP_RADIUS_RAD = 1.2 * (Math.PI / 180);
+
+// Resolve a clicked lat/lng to a country id. When several features contain the
+// point (enclaves — Vatican inside Italy, Lesotho inside South Africa), the
+// smallest wins. Ocean/no-hit clicks fall back to the nearest synthetic
+// microstate centroid within the snap radius, else null.
+export function resolveCountryAt(
+  geometry: GlobeGeometryData,
+  lat: number,
+  lng: number,
+): string | null {
+  let best: string | null = null;
+  let bestArea = Infinity;
+  for (const feature of geometry.features) {
+    if (geoContains(feature, [lng, lat])) {
+      const area = areaOf(feature);
+      if (area < bestArea) {
+        bestArea = area;
+        best = feature.properties.alpha3;
+      }
+    }
+  }
+  if (best) return best;
+
+  let bestDist = SNAP_RADIUS_RAD;
+  for (const feature of geometry.features) {
+    if (!feature.properties.synthetic) continue;
+    const centroid = geometry.centroids[feature.properties.alpha3];
+    if (!centroid) continue;
+    const dist = geoDistance([lng, lat], [centroid.lng, centroid.lat]);
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = feature.properties.alpha3;
+    }
+  }
+  return best;
+}
 
 function normalizeAlpha3(...values: Array<string | undefined>): string {
   for (const rawValue of values) {

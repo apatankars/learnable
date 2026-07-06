@@ -24,6 +24,7 @@ interface HomeScreenProps {
   onVersusMode: () => void;
   versusEmoji: string;
   onVersusEmojiChange: (emoji: string) => void;
+  dueToday?: number;
 }
 
 const VERSUS_EMOJI_OPTIONS = [
@@ -98,6 +99,13 @@ function ModeIcon({ type }: { type: string }) {
         <path d="M6,8 L6,18 C6,18 9,21 12,21 C15,21 18,18 18,18 L18,8" />
       </svg>
     );
+  if (type === "clock")
+    return (
+      <svg viewBox="0 0 24 24" {...s}>
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12,7 L12,12 L15.5,14" />
+      </svg>
+    );
   if (type === "users")
     return (
       <svg viewBox="0 0 24 24" {...s}>
@@ -156,6 +164,13 @@ const MODES: {
     icon: "book",
     requiresLogin: true,
   },
+  {
+    id: "review",
+    label: "Daily Review",
+    desc: "Catch items before you forget them",
+    icon: "clock",
+    requiresLogin: true,
+  },
 ];
 
 const TOPICS: { id: Topic; label: string; sub: string }[] = [
@@ -192,6 +207,7 @@ export function HomeScreen({
   onVersusMode,
   versusEmoji,
   onVersusEmojiChange,
+  dueToday = 0,
 }: HomeScreenProps) {
   const [settings, setSettings] = useState<GameSettings>(defaultSettings);
   const [showSettings, setShowSettings] = useState(false);
@@ -211,7 +227,7 @@ export function HomeScreen({
   );
   const modeKey = `${settings.mode}_${currentTimeMode}`;
   const personalBest =
-    settings.mode !== "practice" && settings.mode !== "learn"
+    settings.mode !== "practice" && settings.mode !== "learn" && settings.mode !== "review"
       ? (personalBests[modeKey] ?? null)
       : null;
 
@@ -541,6 +557,23 @@ export function HomeScreen({
                     }}
                   >
                     Login
+                  </div>
+                )}
+                {m.id === "review" && !locked && (
+                  <div
+                    style={{
+                      fontSize: 9,
+                      letterSpacing: "0.1em",
+                      textTransform: "uppercase",
+                      color: dueToday > 0 ? "var(--gold)" : "var(--t3)",
+                      border: `1px solid ${dueToday > 0 ? "var(--gold)" : "var(--border)"}`,
+                      borderRadius: 2,
+                      padding: "2px 5px",
+                      flexShrink: 0,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {dueToday > 0 ? `${dueToday} due` : "All done"}
                   </div>
                 )}
                 {selected && !locked && (

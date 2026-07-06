@@ -1,11 +1,12 @@
 import { useReducer, useCallback } from 'react';
 import type {
   GameSession, GameSettings, GamePrompt, AttemptResult, PromptType, Topic,
-  CountryProgress, GlobalStats, ConfusionEdge,
+  CountryProgress, GlobalStats, ConfusionEdge, SrsCard, AnswerFormat,
 } from '../types';
 import { matchCountry, matchCapital, attributeConfusion } from '../lib/fuzzy';
 import { calculatePoints } from '../lib/scoring';
 import { itemPriority, confusionWeightFor, confusionPartners } from '../lib/adaptive';
+import { isDue } from '../lib/srs';
 import { getDataset, normalizeTopic } from '../lib/dataset';
 
 function getPromptTypes(settings: GameSettings): PromptType[] {
@@ -22,6 +23,29 @@ function getPromptTypes(settings: GameSettings): PromptType[] {
     return ['country', 'capital'];
   }
   return ['country', 'capital'];
+}
+
+// Apply the answer-format preference to a built queue. Only country-type
+// prompts can be locate ("find X on the map") or flag ("whose flag is this?");
+// capitals stay typed. Versus is excluded — its view has no locate/flag UI and
+// both players must see the same game. Flags are world-only (no state flags).
+function applyAnswerFormats(prompts: GamePrompt[], settings: GameSettings): GamePrompt[] {
+  const pref = settings.answerFormats ?? 'typed';
+  if (pref === 'typed' || settings.mode === 'versus') return prompts;
+  const allowFlag = normalizeTopic(settings.topic) === 'world';
+  return prompts.map(p => {
+    if (p.promptType !== 'country') return p;
+    let format: AnswerFormat;
+    if (pref === 'mixed') {
+      const options: AnswerFormat[] = allowFlag ? ['typed', 'locate', 'flag'] : ['typed', 'locate'];
+      format = options[Math.floor(Math.random() * options.length)];
+    } else if (pref === 'flag') {
+      format = allowFlag ? 'flag' : 'typed';
+    } else {
+      format = 'locate';
+    }
+    return format === 'typed' ? p : { ...p, answerFormat: format };
+  });
 }
 
 export function buildQueue(settings: GameSettings): GamePrompt[] {
@@ -50,7 +74,7 @@ export function buildQueue(settings: GameSettings): GamePrompt[] {
     const j = Math.floor(Math.random() * (i + 1));
     [prompts[i], prompts[j]] = [prompts[j], prompts[i]];
   }
-  return prompts;
+  return applyAnswerFormats(prompts, settings);
 }
 
 // Adaptive Practice queue: orders the same full set of prompts so weak / hard /
@@ -109,8 +133,16 @@ export function buildAdaptiveQueue(
     pool.splice(idx, 1);
   }
 
-  // Interleave: pull each item's strongest still-pending confusion partner of the
-  // same prompt type to the slot immediately after it.
+  return applyAnswerFormats(interleaveConfusionPartners(ordered, confusions), settings);
+}
+
+// Interleave: pull each item's strongest still-pending confusion partner of the
+// same prompt type to the slot immediately after it, so the user is forced to
+// discriminate the two back-to-back. Mutates and returns `ordered`.
+function interleaveConfusionPartners(
+  ordered: GamePrompt[],
+  confusions: ConfusionEdge[],
+): GamePrompt[] {
   const placed = new Set<string>();
   const keyOf = (p: GamePrompt) => `${p.countryId}:${p.promptType}`;
   for (let i = 0; i < ordered.length; i++) {
@@ -128,8 +160,57 @@ export function buildAdaptiveQueue(
       }
     }
   }
-
   return ordered;
+}
+
+// Daily Review queue: all cards due today for the active topic, most overdue /
+// weakest first, capped so a backlog doesn't produce a punishing session.
+const REVIEW_QUEUE_CAP = 40;
+
+export function buildReviewQueue(
+  settings: GameSettings,
+  srsCards: Record<string, SrsCard>,
+  progress: Record<string, CountryProgress>,
+  confusions: ConfusionEdge[],
+  stats: Pick<GlobalStats, 'countryAbility' | 'capitalAbility'>,
+  now = Date.now(),
+): GamePrompt[] {
+  const byId = getDataset(settings.topic).byId;
+
+  type Cand = { prompt: GamePrompt; weight: number };
+  const cands: Cand[] = [];
+  for (const card of Object.values(srsCards)) {
+    if (!isDue(card, now)) continue;
+    const country = byId.get(card.itemId); // SRS rows span topics; keep only the active one
+    if (!country) continue;
+    const ability = card.promptType === 'country' ? stats.countryAbility : stats.capitalAbility;
+    // Overdueness (in days, floored at 1 so today's cards still rank) scaled by
+    // the same priority the other adaptive modes use.
+    const overdueDays = Math.max(1, (now - card.dueAt) / (24 * 3600 * 1000));
+    const weight = overdueDays * itemPriority({
+      progress: progress[card.itemId],
+      promptType: card.promptType,
+      ability,
+      confusionWeight: confusionWeightFor(confusions, card.itemId, card.promptType),
+      now,
+    });
+    cands.push({
+      prompt: {
+        countryId: card.itemId,
+        promptType: card.promptType,
+        displayText: card.promptType === 'country'
+          ? 'Name the highlighted country'
+          : `What is the capital of ${country.name}?`,
+      },
+      weight,
+    });
+  }
+
+  const ordered = cands
+    .sort((a, b) => b.weight - a.weight)
+    .slice(0, REVIEW_QUEUE_CAP)
+    .map(c => c.prompt);
+  return applyAnswerFormats(interleaveConfusionPartners(ordered, confusions), settings);
 }
 
 type GameAction =
@@ -282,6 +363,7 @@ export function useGameEngine(
         timeTaken,
         pointsAwarded: 0,
         confusedWithId: attributeConfusion(input, currentPrompt.promptType, currentPrompt.countryId, _topic),
+        hintUsed,
       };
       onAttempt(result);
       const nextPrompt = nextFromQueue();
@@ -301,12 +383,61 @@ export function useGameEngine(
       fuzzyScore: matchResult.score,
       timeTaken,
       pointsAwarded: points,
+      hintUsed,
     };
     onAttempt(result);
     const nextPrompt = nextFromQueue();
     _promptStart = Date.now();
     dispatch({ type: 'CORRECT', result, nextPrompt });
     return { tier: isFuzzy ? ('fuzzy' as const) : ('correct' as const), matchedName: matchResult.matchedName, points, nextPrompt };
+  }, [onAttempt]);
+
+  // Locate prompts: the "answer" is a click on the map. Correct iff the clicked
+  // country is the target; a wrong click IS the confusion (no fuzzy tier).
+  const submitLocate = useCallback((clickedId: string, currentPrompt: GamePrompt, currentStreak: number, hintUsed = false, preserveStreakOnWrong = false) => {
+    const dataset = getDataset(_topic).byId;
+    const country = dataset.get(currentPrompt.countryId);
+    if (!country) return null;
+    const timeTaken = Date.now() - _promptStart;
+    const clickedName = dataset.get(clickedId)?.name ?? clickedId;
+
+    if (clickedId !== currentPrompt.countryId) {
+      const result: AttemptResult = {
+        countryId: currentPrompt.countryId,
+        promptType: currentPrompt.promptType,
+        userInput: clickedName,
+        correct: false,
+        fuzzyScore: 1,
+        timeTaken,
+        pointsAwarded: 0,
+        confusedWithId: dataset.has(clickedId) ? clickedId : undefined,
+        hintUsed,
+        answerFormat: 'locate',
+      };
+      onAttempt(result);
+      const nextPrompt = nextFromQueue();
+      _promptStart = Date.now();
+      dispatch({ type: 'WRONG', result, nextPrompt, preserveStreak: preserveStreakOnWrong });
+      return { tier: 'wrong' as const, correctAnswer: country.name, clickedName, nextPrompt };
+    }
+
+    const points = calculatePoints(country, currentStreak, timeTaken, 0, hintUsed);
+    const result: AttemptResult = {
+      countryId: currentPrompt.countryId,
+      promptType: currentPrompt.promptType,
+      userInput: clickedName,
+      correct: true,
+      fuzzyScore: 0,
+      timeTaken,
+      pointsAwarded: points,
+      hintUsed,
+      answerFormat: 'locate',
+    };
+    onAttempt(result);
+    const nextPrompt = nextFromQueue();
+    _promptStart = Date.now();
+    dispatch({ type: 'CORRECT', result, nextPrompt });
+    return { tier: 'correct' as const, matchedName: country.name, points, nextPrompt };
   }, [onAttempt]);
 
   const submitSkip = useCallback((currentPrompt: GamePrompt, preserveStreak = false) => {
@@ -354,6 +485,7 @@ export function useGameEngine(
     startGame,
     getFirstPrompt,
     submitAnswer,
+    submitLocate,
     submitSkip,
     pause,
     resume,

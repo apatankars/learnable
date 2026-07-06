@@ -105,6 +105,44 @@ export function SettingsPanel({ settings, onChange }: SettingsPanelProps) {
         </label>
       )}
 
+      {/* Answer format — typed, click-the-map, or a mix. Not for versus (no
+          locate UI there) or learn (teach→test flow is typed for now). */}
+      {settings.mode !== 'versus' && settings.mode !== 'learn' && (
+        <div style={{ paddingTop: 8, borderTop: '1px solid var(--border)' }}>
+          <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+            Answer By
+          </div>
+          <div className="settings-option-row" style={{ gap: 8 }}>
+            {([
+              { id: 'typed' as const, label: '⌨️ Typing', sub: 'type the name' },
+              { id: 'locate' as const, label: '📍 Finding', sub: `click the ${placeLabel}` },
+              ...(!isUsStates ? [{ id: 'flag' as const, label: '🚩 Flags', sub: 'name the flag' }] : []),
+              { id: 'mixed' as const, label: '🔀 Mixed', sub: 'a bit of each' },
+            ]).map(opt => {
+              const active = (settings.answerFormats ?? 'typed') === opt.id;
+              return (
+                <button
+                  key={opt.id}
+                  onClick={() => update({ answerFormats: opt.id })}
+                  style={{
+                    flex: 1, padding: '10px 8px', borderRadius: 3, border: active ? '1px solid var(--gold)' : '1px solid var(--border)',
+                    background: active ? 'var(--bg)' : 'var(--s1)', color: active ? 'var(--gold-hi)' : 'var(--t2)',
+                    fontSize: 13, fontWeight: 500, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                    cursor: 'pointer', transition: 'all 0.14s'
+                  }}
+                >
+                  <span>{opt.label}</span>
+                  <span style={{ fontSize: 11, color: active ? 'var(--gold)' : 'var(--t3)', fontWeight: 400 }}>{opt.sub}</span>
+                </button>
+              );
+            })}
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--t3)', marginTop: 6, lineHeight: 1.5 }}>
+            Finding applies to {placeLabel} prompts — capitals are always typed.
+          </div>
+        </div>
+      )}
+
       {/* Prompt selection */}
       {(settings.mode === 'practice' || settings.mode === 'learn' || settings.mode === 'versus') && (
         <div style={{ paddingTop: 8, borderTop: '1px solid var(--border)' }}>
