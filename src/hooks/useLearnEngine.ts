@@ -8,6 +8,7 @@ import { calculatePoints } from '../lib/scoring';
 import { itemPriority, confusionWeightFor } from '../lib/adaptive';
 import { weightedPick } from '../lib/weightedRandom';
 import { getDataset, normalizeTopic } from '../lib/dataset';
+import { isAlreadyKnown } from '../lib/learnScope';
 
 // ── Learn-mode tuning ────────────────────────────────────────────────────────
 // Working-set model (Leitner / "7±2"): keep a small set of items in active
@@ -34,20 +35,6 @@ function hardnessOf(
 // so they get hammered until they truly stick.
 function graduationTarget(hardness: number, lapses: number): number {
   return Math.min(5, 3 + Math.round(2 * hardness) + Math.min(lapses, 1));
-}
-
-// An item the user has already demonstrably learned: a run of consecutive
-// correct answers on a strong overall record. Learn never re-introduces these —
-// long-term retention is the SRS reviewer's job (see srs.ts) — except as a
-// last-resort fallback when everything in the current filter is known.
-function isAlreadyKnown(p: CountryProgress | undefined, promptType: PromptType): boolean {
-  if (!p) return false;
-  const attempts = promptType === 'country' ? p.countryAttempts : p.capitalAttempts;
-  if (attempts < 2) return false;
-  const correct = promptType === 'country' ? p.countryCorrect : p.capitalCorrect;
-  const consecutive = promptType === 'country'
-    ? p.countryConsecutiveCorrect : p.capitalConsecutiveCorrect;
-  return consecutive >= 2 && correct / attempts >= 0.75;
 }
 
 // In-session re-test weight decays as an item's streak grows; harder items decay
@@ -236,10 +223,13 @@ export function useLearnEngine(
     const fresh: { country: CountryEntry; promptType: PromptType }[] = [];
     const known: { country: CountryEntry; promptType: PromptType }[] = [];
 
+    // 'scratch' scope re-teaches everything in the filter, ignoring what the
+    // user already knows; 'resume' (default) sets already-known items aside.
+    const fromScratch = settingsRef.current?.learnScope === 'scratch';
     for (const country of filtered) {
       for (const pt of promptTypes) {
         if (excluded.has(`${country.id}:${pt}`)) continue;
-        (isAlreadyKnown(progressData[country.id], pt) ? known : fresh)
+        (!fromScratch && isAlreadyKnown(progressData[country.id], pt) ? known : fresh)
           .push({ country, promptType: pt });
       }
     }

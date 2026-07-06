@@ -71,6 +71,7 @@ export interface GameSettings {
   practicePrompts?: 'country' | 'capital' | 'both';
   versusPrompts?: 'country' | 'capital' | 'both';
   answerFormats?: AnswerFormat | 'mixed'; // default 'typed'; 'mixed' ≈ 50/50 on country prompts
+  learnScope?: 'resume' | 'scratch'; // learn only — default 'resume': skip already-learned items
 }
 
 export interface MatchResult {

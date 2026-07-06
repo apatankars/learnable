@@ -15,6 +15,7 @@ import { useProgress } from '../../hooks/useProgress';
 import { getTimeMode } from '../../lib/leaderboard';
 import type { User } from '@supabase/supabase-js';
 import { getDataset, normalizeTopic } from '../../lib/dataset';
+import { learnPoolCounts } from '../../lib/learnScope';
 
 interface GameViewProps {
   settings: GameSettings;
@@ -223,7 +224,11 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
     }).length;
 
     if (settings.mode === 'learn') {
-      setQueueTotal(filteredCountryCount);
+      // The bar tracks the session's actual set: on 'resume' only the countries
+      // still to learn count (falling back to the full filter when everything
+      // is already learned and the session runs as a refresher).
+      const { total, remaining } = learnPoolCounts(settings, progress.progress);
+      setQueueTotal(settings.learnScope === 'scratch' || remaining === 0 ? total : remaining);
       return;
     }
     if (settings.mode === 'review') return; // set from the built queue in the start effect

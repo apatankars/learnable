@@ -196,6 +196,7 @@ export default function App() {
           versusEmoji={versusEmoji}
           onVersusEmojiChange={setVersusEmoji}
           dueToday={progress.srsDueCounts.today}
+          progressData={progress.progress}
         />
       )}
 

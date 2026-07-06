@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { SettingsPanel } from "./SettingsPanel";
 import { UserMenu } from "../auth/UserMenu";
@@ -7,7 +7,8 @@ import { BotanicalDivider } from "../ui/BotanicalDivider";
 import { SpaceBackdrop } from "../ui/SpaceBackdrop";
 import { getTimeMode } from "../../lib/leaderboard";
 import { loadGlobeMapModule } from "../../lib/preload";
-import type { GameMode, GameSettings, GlobalStats, Topic } from "../../types";
+import { learnPoolCounts } from "../../lib/learnScope";
+import type { CountryProgress, GameMode, GameSettings, GlobalStats, Topic } from "../../types";
 
 const OrbisGlobe = lazy(() => loadGlobeMapModule().then((module) => ({ default: module.GlobeMap })));
 
@@ -25,6 +26,7 @@ interface HomeScreenProps {
   versusEmoji: string;
   onVersusEmojiChange: (emoji: string) => void;
   dueToday?: number;
+  progressData?: Record<string, CountryProgress>;
 }
 
 const VERSUS_EMOJI_OPTIONS = [
@@ -208,6 +210,7 @@ export function HomeScreen({
   versusEmoji,
   onVersusEmojiChange,
   dueToday = 0,
+  progressData,
 }: HomeScreenProps) {
   const [settings, setSettings] = useState<GameSettings>(defaultSettings);
   const [showSettings, setShowSettings] = useState(false);
@@ -220,6 +223,16 @@ export function HomeScreen({
       : settings.versusPrompts === "capital"
         ? "Capitals"
         : "Both";
+
+  // Learn scope preview: how many countries in the current filter still need
+  // learning. Shown as a Resume/From-scratch chooser when there's progress.
+  const learnCounts = useMemo(
+    () => (settings.mode === "learn" && progressData ? learnPoolCounts(settings, progressData) : null),
+    [settings, progressData],
+  );
+  const showLearnScope = !!learnCounts && learnCounts.remaining < learnCounts.total;
+  const placeNounFor = (n: number) =>
+    topic === "us-states" ? (n === 1 ? "state" : "states") : (n === 1 ? "country" : "countries");
 
   const currentTimeMode = getTimeMode(
     settings.timeLimitSeconds,
@@ -591,6 +604,75 @@ export function HomeScreen({
             );
           })}
         </div>
+
+        {/* Learn scope: resume where you left off (with a preview of how many
+            remain) or start over from scratch. Only shown once some of the
+            current filter has been learned. */}
+        {showLearnScope && learnCounts && (
+          <div style={{ marginBottom: 10 }}>
+            <div
+              style={{
+                fontSize: 10,
+                fontWeight: 500,
+                color: "var(--t3)",
+                textTransform: "uppercase",
+                letterSpacing: "0.1em",
+                marginBottom: 6,
+                fontFamily: "var(--ff-u)",
+              }}
+            >
+              Session
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              {(
+                [
+                  {
+                    id: "resume" as const,
+                    label: "⟳ Resume",
+                    sub: learnCounts.remaining > 0
+                      ? `${learnCounts.remaining} ${placeNounFor(learnCounts.remaining)} left`
+                      : "all learned · refresher",
+                  },
+                  {
+                    id: "scratch" as const,
+                    label: "✦ From scratch",
+                    sub: `all ${learnCounts.total} ${placeNounFor(learnCounts.total)}`,
+                  },
+                ]
+              ).map((opt) => {
+                const active = (settings.learnScope ?? "resume") === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    onClick={() => setSettings({ ...settings, learnScope: opt.id })}
+                    style={{
+                      flex: 1,
+                      padding: "9px 8px",
+                      borderRadius: 3,
+                      border: active ? "1px solid var(--gold)" : "1px solid var(--border)",
+                      background: active ? "var(--bg)" : "var(--s1)",
+                      color: active ? "var(--gold-hi)" : "var(--t2)",
+                      fontSize: 13,
+                      fontWeight: 500,
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: 2,
+                      cursor: "pointer",
+                      transition: "all 0.14s",
+                      fontFamily: "var(--ff-u)",
+                    }}
+                  >
+                    <span>{opt.label}</span>
+                    <span style={{ fontSize: 11, color: active ? "var(--gold)" : "var(--t3)", fontWeight: 400 }}>
+                      {opt.sub}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Action buttons */}
         <div
