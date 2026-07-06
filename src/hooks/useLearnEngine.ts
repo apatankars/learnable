@@ -30,10 +30,24 @@ function hardnessOf(
 }
 
 // Consecutive-correct answers needed before an item graduates out of the set.
-// Easy items leave after 2; hard/confused/previously-lapsed items take up to 5,
+// Easy items leave after 3; hard/confused/previously-lapsed items take up to 5,
 // so they get hammered until they truly stick.
 function graduationTarget(hardness: number, lapses: number): number {
-  return Math.min(5, 2 + Math.round(2 * hardness) + Math.min(lapses, 1));
+  return Math.min(5, 3 + Math.round(2 * hardness) + Math.min(lapses, 1));
+}
+
+// An item the user has already demonstrably learned: a run of consecutive
+// correct answers on a strong overall record. Learn never re-introduces these —
+// long-term retention is the SRS reviewer's job (see srs.ts) — except as a
+// last-resort fallback when everything in the current filter is known.
+function isAlreadyKnown(p: CountryProgress | undefined, promptType: PromptType): boolean {
+  if (!p) return false;
+  const attempts = promptType === 'country' ? p.countryAttempts : p.capitalAttempts;
+  if (attempts < 2) return false;
+  const correct = promptType === 'country' ? p.countryCorrect : p.capitalCorrect;
+  const consecutive = promptType === 'country'
+    ? p.countryConsecutiveCorrect : p.capitalConsecutiveCorrect;
+  return consecutive >= 2 && correct / attempts >= 0.75;
 }
 
 // In-session re-test weight decays as an item's streak grows; harder items decay
@@ -179,6 +193,10 @@ export function useLearnEngine(
 
   // Per-session mutable state
   const activeQueue = useRef<ActiveItem[]>([]); // Items currently in rotation
+  const graduatedKeys = useRef<Set<string>>(new Set()); // Items mastered this session — never re-taught
+  // Whether this session may teach already-known items. Decided once, on the
+  // first selection: only when the chosen filter has nothing new left to learn.
+  const allowKnownRef = useRef<boolean | null>(null);
   const settingsRef = useRef<GameSettings | null>(null);
   const promptStartRef = useRef<number>(0);
   const questionsSinceTeachRef = useRef<number>(0);
@@ -209,27 +227,37 @@ export function useLearnEngine(
   const selectNextToTeach = useCallback((): GamePrompt | null => {
     const filtered = getFilteredCountries();
     const promptTypes = getPromptTypes();
-    
-    // Avoid picking items already in the active queue
-    const activeKeys = new Set(activeQueue.current.map(p => `${p.prompt.countryId}:${p.prompt.promptType}`));
-    
-    const items: { country: CountryEntry; promptType: PromptType }[] = [];
-    const weights: number[] = [];
+
+    // Never re-introduce an item that's in rotation or that already graduated
+    // this session — once it's been drilled to its target, it's done for the day.
+    const excluded = new Set(activeQueue.current.map(p => `${p.prompt.countryId}:${p.prompt.promptType}`));
+    for (const key of graduatedKeys.current) excluded.add(key);
+
+    const fresh: { country: CountryEntry; promptType: PromptType }[] = [];
+    const known: { country: CountryEntry; promptType: PromptType }[] = [];
 
     for (const country of filtered) {
       for (const pt of promptTypes) {
-        if (activeKeys.has(`${country.id}:${pt}`)) continue;
-        items.push({ country, promptType: pt });
-        weights.push(itemPriority({
-          progress: progressData[country.id],
-          promptType: pt,
-          ability: abilityFor(pt),
-          confusionWeight: confusionWeightFor(confusions, country.id, pt),
-        }));
+        if (excluded.has(`${country.id}:${pt}`)) continue;
+        (isAlreadyKnown(progressData[country.id], pt) ? known : fresh)
+          .push({ country, promptType: pt });
       }
     }
 
-    if (items.length === 0) return null; // Queue exhausted
+    // Teach material that still needs learning. Already-known items are only
+    // eligible when the session *started* with nothing new to learn (so the
+    // mode stays usable, drilling weakest-first); if there was fresh material,
+    // the session ends once it's all been learned instead of circling back.
+    if (allowKnownRef.current === null) allowKnownRef.current = fresh.length === 0;
+    const items = fresh.length > 0 ? fresh : (allowKnownRef.current ? known : []);
+    if (items.length === 0) return null; // Everything learned — session complete
+
+    const weights = items.map(({ country, promptType: pt }) => itemPriority({
+      progress: progressData[country.id],
+      promptType: pt,
+      ability: abilityFor(pt),
+      confusionWeight: confusionWeightFor(confusions, country.id, pt),
+    }));
 
     const picked = weightedPick(items, weights);
     
@@ -244,8 +272,13 @@ export function useLearnEngine(
 
   const advanceGame = useCallback((): GamePrompt | null => {
     // Graduate any item that has been answered correctly enough times — it leaves
-    // the working set so focus shifts to items not yet learned.
-    activeQueue.current = activeQueue.current.filter(it => it.streak < it.target);
+    // the working set (and is barred from re-introduction this session) so focus
+    // shifts to items not yet learned.
+    activeQueue.current = activeQueue.current.filter(it => {
+      if (it.streak < it.target) return true;
+      graduatedKeys.current.add(`${it.prompt.countryId}:${it.prompt.promptType}`);
+      return false;
+    });
 
     const set = activeQueue.current;
     const avgStreak = set.length ? set.reduce((s, it) => s + it.streak, 0) / set.length : 0;
@@ -349,6 +382,8 @@ export function useLearnEngine(
   const startGame = useCallback((settings: GameSettings) => {
     settingsRef.current = settings;
     activeQueue.current = [];
+    graduatedKeys.current = new Set();
+    allowKnownRef.current = null;
     questionsSinceTeachRef.current = 0;
     lastPhaseRef.current = 'playing';
     lastPromptRef.current = null;
@@ -490,6 +525,8 @@ export function useLearnEngine(
 
   const reset = useCallback(() => {
     activeQueue.current = [];
+    graduatedKeys.current = new Set();
+    allowKnownRef.current = null;
     dispatch({ type: 'RESET' });
   }, []);
 
