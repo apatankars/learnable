@@ -7,10 +7,11 @@ interface TeachingPanelProps {
   score: number;
   streak: number;
   confusedWith?: string; // name of the country this is most often mixed up with
+  borders?: string[];    // names of bordering countries, for context
   onAcknowledge: () => void;
 }
 
-export function TeachingPanel({ country, promptType, score, streak, confusedWith, onAcknowledge }: TeachingPanelProps) {
+export function TeachingPanel({ country, promptType, score, streak, confusedWith, borders, onAcknowledge }: TeachingPanelProps) {
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => { buttonRef.current?.focus(); }, [country, promptType]);
@@ -83,6 +84,44 @@ export function TeachingPanel({ country, promptType, score, streak, confusedWith
           fontFamily: 'var(--ff-u)', lineHeight: 1.5, opacity: 0.9,
         }}>
           ⚠ You often mix this up with <strong>{confusedWith}</strong> — look closely.
+        </p>
+      )}
+      {promptType === 'country' && borders && borders.length > 0 && (
+        <div style={{ marginBottom: 22 }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 7, marginBottom: 9,
+            fontSize: 10, letterSpacing: '0.13em', textTransform: 'uppercase',
+            color: 'rgba(47,106,99,0.9)', fontWeight: 500, fontFamily: 'var(--ff-u)',
+          }}>
+            <span style={{
+              width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+              background: 'rgba(96,176,168,0.55)', border: '1px solid #2f6a63',
+            }} />
+            Borders {borders.length} {borders.length === 1 ? 'country' : 'countries'}
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {borders.map(name => (
+              <span
+                key={name}
+                style={{
+                  fontSize: 12, color: 'var(--t2)', fontFamily: 'var(--ff-u)',
+                  padding: '3px 9px', borderRadius: 3, lineHeight: 1.4,
+                  background: 'rgba(96,176,168,0.10)',
+                  border: '1px solid rgba(58,118,112,0.30)',
+                }}
+              >
+                {name}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+      {promptType === 'country' && borders && borders.length === 0 && (
+        <p style={{
+          fontSize: 12, color: 'var(--t3)', marginTop: -8, marginBottom: 22,
+          fontFamily: 'var(--ff-u)', lineHeight: 1.5, fontStyle: 'italic',
+        }}>
+          No land borders — it's an island nation.
         </p>
       )}
       <button

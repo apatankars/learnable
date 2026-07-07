@@ -14,7 +14,7 @@ import { useTimer } from '../../hooks/useTimer';
 import { useProgress } from '../../hooks/useProgress';
 import { getTimeMode } from '../../lib/leaderboard';
 import type { User } from '@supabase/supabase-js';
-import { getDataset, normalizeTopic } from '../../lib/dataset';
+import { getDataset, getBorders, normalizeTopic } from '../../lib/dataset';
 import { learnPoolCounts } from '../../lib/learnScope';
 
 interface GameViewProps {
@@ -134,6 +134,15 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
 
   const colorMap = useMemo(() => {
     const map: Record<string, import('../../types').CountryColorState> = {};
+    // Learn mode: while teaching a country, softly light up its land neighbours
+    // so it's learned in context. Painted first so any already-learned state
+    // (correct/wrong/skipped) or the teaching target itself still wins below.
+    if (session.phase === 'teaching') {
+      const teachId = (pendingPrompt ?? currentPrompt)?.countryId;
+      if (teachId) {
+        for (const nb of getBorders(topic, teachId)) map[nb] = 'neighbor';
+      }
+    }
     for (const key of session.skipped) { const [id] = key.split(':'); map[id] = 'skipped'; }
     for (const key of session.wrong)   { const [id] = key.split(':'); map[id] = 'wrong'; }
     for (const key of session.answered){ const [id] = key.split(':'); map[id] = 'correct'; }
@@ -149,7 +158,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
     }
     for (const [id, state] of Object.entries(locateFlash)) map[id] = state;
     return map;
-  }, [currentPrompt, locateFlash, pendingPrompt, session.answered, session.phase, session.skipped, session.wrong]);
+  }, [currentPrompt, locateFlash, pendingPrompt, session.answered, session.phase, session.skipped, session.wrong, topic]);
 
   const handleTimerExpire = useCallback(() => {
     endGame(session.score, session.maxStreak);
@@ -391,6 +400,13 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
     const [top] = confusionPartners(progress.confusions, currentPrompt.countryId, currentPrompt.promptType);
     return top && top.count >= 2 ? countryMap.get(top.id)?.name : undefined;
   }, [isLearnMode, currentPrompt, progress.confusions]);
+  const teachingBorders = useMemo(() => {
+    if (!isLearnMode || !currentPrompt) return [];
+    return getBorders(topic, currentPrompt.countryId)
+      .map(id => countryMap.get(id)?.name)
+      .filter((n): n is string => Boolean(n))
+      .sort((a, b) => a.localeCompare(b));
+  }, [isLearnMode, currentPrompt, topic, countryMap]);
   const learnedCountries = useMemo(() => {
     if (!isLearnMode) return 0;
     return new Set(Array.from(session.answered, key => key.split(':')[0])).size;
@@ -577,6 +593,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
               score={session.score}
               streak={session.streak}
               confusedWith={teachingConfusedWith}
+              borders={topic === 'world' ? teachingBorders : undefined}
               onAcknowledge={handleAcknowledge}
             />
           ) : currentPrompt ? (

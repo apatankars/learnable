@@ -118,6 +118,19 @@ const COLOR_STYLES: Record<CountryColorState, {
     border: '#0f3658',
     borderWidth: 0.16,
   },
+  // Learn mode: neighbours of the country being taught. A muted teal that reads
+  // as "context" — clearly subordinate to the bright blue teaching highlight,
+  // but distinct from the near-invisible default fill.
+  neighbor: {
+    altitude: 0.016,
+    cap: 'rgba(96, 176, 168, 0.34)',
+    point: 'rgba(0,0,0,0)',
+    ring: 'rgba(0,0,0,0)',
+    side: 'rgba(58, 118, 112, 0.24)',
+    stroke: 'rgba(196, 236, 230, 0.5)',
+    border: '#2f6a63',
+    borderWidth: 0.11,
+  },
 };
 
 let globeModulePromise: Promise<GlobeModule> | null = null;

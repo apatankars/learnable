@@ -19,6 +19,18 @@ const MAX_ACTIVE = 7;            // cap on items in rotation at once
 const MIN_REVIEWS_BETWEEN_NEW = 2; // min tests before another item is introduced
 const WARMUP_SET_SIZE = 3;       // ramp the set up quickly at the start
 
+// Expanding retrieval spacing: after an item's s-th consecutive correct answer
+// it sits out for a growing number of *other* questions, so a streak means
+// spaced recall rather than short-term echo. Harder items cool down a little
+// less (their memory traces decay faster).
+function gapAfterStreak(streak: number, hardness: number): number {
+  const base = 1 + 2 * streak; // 3, 5, 7, 9 …
+  return Math.max(2, Math.min(10, Math.round(base * (1.15 - 0.4 * hardness))));
+}
+// A miss brings the item back after this many other questions — soon, but
+// never back-to-back, so recovery can't ride on pure recency.
+const LAPSE_GAP = 2;
+
 // How hard an item is for this user (0 easy … 1 hard), combining Elo difficulty
 // and how often it's confused with something else.
 function hardnessOf(
@@ -48,6 +60,7 @@ interface ActiveItem {
   streak: number;   // consecutive correct since last lapse
   lapses: number;   // times missed this session
   target: number;   // consecutive-correct needed to graduate
+  notBeforeQ: number; // test-counter value before which this item may not be re-asked
 }
 
 type GameAction =
@@ -187,6 +200,7 @@ export function useLearnEngine(
   const settingsRef = useRef<GameSettings | null>(null);
   const promptStartRef = useRef<number>(0);
   const questionsSinceTeachRef = useRef<number>(0);
+  const testCountRef = useRef<number>(0); // total tests served — the clock for spacing gaps
   const lastPhaseRef = useRef<'playing' | 'teaching'>('playing');
   const lastPromptRef = useRef<GamePrompt | null>(null);
   const previousPhaseRef = useRef<'playing' | 'teaching'>('playing');
@@ -278,12 +292,16 @@ export function useLearnEngine(
     // After teaching an item we must test it first (immediate retrieval practice),
     // so never introduce another new item straight out of the teaching phase.
     const justTaught = lastPhaseRef.current === 'teaching';
-    // Otherwise introduce a new item when the set is empty, still warming up, or
-    // the user is doing well (last answer correct AND set is being learned). Never
-    // pile on new material right after a miss or while the set is full.
+    // Is any active item past its spacing gap and due for a re-test?
+    const dueExists = set.some(it => it.notBeforeQ <= testCountRef.current);
+    // Otherwise introduce a new item when the set is empty, still warming up,
+    // everything active is still cooling down (new material fills the gap
+    // instead of violating an item's spacing), or the user is doing well.
+    // Never pile on new material while the set is full.
     const readyForNew =
       set.length === 0 ||
-      (!justTaught && room && (warmingUp || (lastCorrectRef.current && avgStreak >= 1 && spacingOk)));
+      (!justTaught && room &&
+        (warmingUp || !dueExists || (lastCorrectRef.current && avgStreak >= 1 && spacingOk)));
 
     if (readyForNew) {
       const toTeach = selectNextToTeach();
@@ -296,6 +314,7 @@ export function useLearnEngine(
         );
         activeQueue.current.push({
           prompt: toTeach, streak: 0, lapses: 0, target: graduationTarget(hardness, 0),
+          notBeforeQ: 0, // tested immediately after teaching
         });
         promptStartRef.current = Date.now();
         lastPhaseRef.current = 'teaching';
@@ -316,10 +335,23 @@ export function useLearnEngine(
       }
 
       if (index === -1) {
-        // Weighted selection: weight decays as an item's streak grows, but the
-        // decay base is per-item — hard/confused items decay slower so they stay
-        // in rotation and get hammered until they truly stick.
-        const weights = activeQueue.current.map(p => {
+        // Only items past their spacing gap may be re-asked; when none are due
+        // (and there was nothing new to teach) take the soonest-due item rather
+        // than stall. Among due items, weight decays as streak grows, but the
+        // decay base is per-item — hard/confused items decay slower so they
+        // stay in rotation until they truly stick.
+        let candidates = activeQueue.current
+          .map((_, i) => i)
+          .filter(i => activeQueue.current[i].notBeforeQ <= testCountRef.current);
+        if (candidates.length === 0) {
+          const soonest = Math.min(...activeQueue.current.map(p => p.notBeforeQ));
+          candidates = activeQueue.current
+            .map((_, i) => i)
+            .filter(i => activeQueue.current[i].notBeforeQ === soonest);
+        }
+
+        const weights = candidates.map(i => {
+          const p = activeQueue.current[i];
           const hardness = hardnessOf(
             progressData[p.prompt.countryId], p.prompt.promptType,
             abilityFor(p.prompt.promptType),
@@ -329,9 +361,12 @@ export function useLearnEngine(
         });
 
         // Avoid asking the exact same question twice in a row during testing if there are other options
-        if (activeQueue.current.length > 1 && lastPhaseRef.current === 'playing' && lastPromptRef.current) {
+        if (candidates.length > 1 && lastPhaseRef.current === 'playing' && lastPromptRef.current) {
           const lp = lastPromptRef.current;
-          const duplicateIndex = activeQueue.current.findIndex(p => p.prompt.countryId === lp.countryId && p.prompt.promptType === lp.promptType);
+          const duplicateIndex = candidates.findIndex(i => {
+            const p = activeQueue.current[i].prompt;
+            return p.countryId === lp.countryId && p.promptType === lp.promptType;
+          });
           if (duplicateIndex !== -1) {
             weights[duplicateIndex] = 0; // Zero out weight so it cannot be picked
           }
@@ -340,21 +375,22 @@ export function useLearnEngine(
         const totalWeight = weights.reduce((sum, w) => sum + w, 0);
         let r = Math.random() * totalWeight;
 
-        for (let i = 0; i < activeQueue.current.length; i++) {
-          r -= weights[i];
-          if (r <= 0 && weights[i] > 0) {
-            index = i;
+        for (let k = 0; k < candidates.length; k++) {
+          r -= weights[k];
+          if (r <= 0 && weights[k] > 0) {
+            index = candidates[k];
             break;
           }
         }
 
         // Fallback in case of floating point precision issues
         if (index === -1) {
-          index = activeQueue.current.findIndex((_, i) => weights[i] > 0);
-          if (index === -1) index = 0; // Should never happen
+          const k = weights.findIndex(w => w > 0);
+          index = candidates[k !== -1 ? k : 0];
         }
       }
 
+      testCountRef.current++;
       const toTest = activeQueue.current[index].prompt;
       promptStartRef.current = Date.now();
       lastPhaseRef.current = 'playing';
@@ -375,6 +411,7 @@ export function useLearnEngine(
     graduatedKeys.current = new Set();
     allowKnownRef.current = null;
     questionsSinceTeachRef.current = 0;
+    testCountRef.current = 0;
     lastPhaseRef.current = 'playing';
     lastPromptRef.current = null;
     lastCorrectRef.current = true;
@@ -418,7 +455,8 @@ export function useLearnEngine(
       dispatch({ type: 'WRONG', result });
       lastCorrectRef.current = false;
 
-      // Lapse: reset streak, raise the bar to graduate so it gets drilled more.
+      // Lapse: reset streak, raise the bar to graduate so it gets drilled more,
+      // and hold it out a couple of questions so recovery isn't pure recency.
       const entry = activeQueue.current.find(p => p.prompt.countryId === currentPrompt.countryId && p.prompt.promptType === currentPrompt.promptType);
       if (entry) {
         entry.streak = 0;
@@ -429,6 +467,7 @@ export function useLearnEngine(
           confusionWeightFor(confusions, currentPrompt.countryId, pt),
         );
         entry.target = graduationTarget(hardness, entry.lapses);
+        entry.notBeforeQ = testCountRef.current + LAPSE_GAP;
       }
 
       const nextPrompt = advanceGame();
@@ -451,10 +490,19 @@ export function useLearnEngine(
     dispatch({ type: 'CORRECT', result });
     lastCorrectRef.current = true;
 
-    // Increment streak toward graduation (handled in advanceGame).
+    // Increment streak toward graduation (handled in advanceGame) and push the
+    // item out on an expanding schedule — the deeper the streak, the longer it
+    // waits before the next retrieval.
     const entryIndex = activeQueue.current.findIndex(p => p.prompt.countryId === currentPrompt.countryId && p.prompt.promptType === currentPrompt.promptType);
     if (entryIndex !== -1) {
-      activeQueue.current[entryIndex].streak++;
+      const entry = activeQueue.current[entryIndex];
+      entry.streak++;
+      const pt = currentPrompt.promptType;
+      const hardness = hardnessOf(
+        progressData[currentPrompt.countryId], pt, abilityFor(pt),
+        confusionWeightFor(confusions, currentPrompt.countryId, pt),
+      );
+      entry.notBeforeQ = testCountRef.current + gapAfterStreak(entry.streak, hardness);
     }
 
     const nextPrompt = advanceGame();
@@ -479,7 +527,8 @@ export function useLearnEngine(
     dispatch({ type: 'SKIP', result });
     lastCorrectRef.current = false;
 
-    // A skip counts as a lapse — keep it in rotation and raise its bar.
+    // A skip counts as a lapse — keep it in rotation, raise its bar, and hold
+    // it out a couple of questions like any other miss.
     const entry = activeQueue.current.find(p => p.prompt.countryId === currentPrompt.countryId && p.prompt.promptType === currentPrompt.promptType);
     if (entry) {
       entry.streak = 0;
@@ -490,6 +539,7 @@ export function useLearnEngine(
         confusionWeightFor(confusions, currentPrompt.countryId, pt),
       );
       entry.target = graduationTarget(hardness, entry.lapses);
+      entry.notBeforeQ = testCountRef.current + LAPSE_GAP;
     }
 
     const nextPrompt = advanceGame();
@@ -517,6 +567,7 @@ export function useLearnEngine(
     activeQueue.current = [];
     graduatedKeys.current = new Set();
     allowKnownRef.current = null;
+    testCountRef.current = 0;
     dispatch({ type: 'RESET' });
   }, []);
 

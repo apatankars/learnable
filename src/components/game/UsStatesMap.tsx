@@ -36,6 +36,8 @@ const FILL_STYLES: Record<CountryColorState, { fill: string; stroke: string; str
   skipped:  { fill: 'rgba(224, 168, 70, 0.88)',  stroke: '#5c3d12', strokeWidth: 0.9 },
   wrong:    { fill: 'rgba(226, 84, 84, 0.90)',   stroke: '#4d1717', strokeWidth: 0.9 },
   teaching: { fill: 'rgba(78, 178, 252, 0.90)',  stroke: '#0f3658', strokeWidth: 1.4 },
+  // Unused for US states (no border dataset), but required by the color union.
+  neighbor: { fill: 'rgba(96, 176, 168, 0.34)',  stroke: '#2f6a63', strokeWidth: 0.7 },
 };
 
 let topologyPromise: Promise<StateShape[]> | null = null;

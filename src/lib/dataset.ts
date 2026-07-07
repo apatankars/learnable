@@ -1,6 +1,18 @@
 import type { CountryEntry, Topic } from '../types';
 import countriesData from '../data/countries.json';
 import statesData from '../data/states.json';
+import bordersData from '../data/borders.json';
+
+// Land-border adjacency, keyed by alpha3 id (world topic only — US states have
+// no border data). Used in Learn mode to show a country in the context of its
+// neighbours.
+const borders = bordersData as Record<string, string[]>;
+
+// Bordering country ids for `id`, most useful for the 'world' topic. Returns an
+// empty array for island nations, unknown ids, or the us-states topic.
+export function getBorders(topic: Topic | undefined, id: string): string[] {
+  return normalizeTopic(topic) === 'world' ? borders[id] ?? [] : [];
+}
 
 const countries = countriesData as CountryEntry[];
 const states = statesData as CountryEntry[];
