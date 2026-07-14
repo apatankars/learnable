@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import type { User } from "@supabase/supabase-js";
 import { SettingsPanel } from "./SettingsPanel";
 import { UserMenu } from "../auth/UserMenu";
@@ -196,6 +197,180 @@ function getModeMeta(
   return { label: m.label, desc: m.desc };
 }
 
+// Two clean groups instead of one uneven grid of 7:
+//  • Quick Quiz  — pick what you're tested on (a segmented control)
+//  • Study       — the structured, login-gated modes (an even 2×2)
+const QUIZ_IDS: GameMode[] = ["country", "capital", "both"];
+const STUDY_IDS: GameMode[] = ["learn", "practice", "review", "versus"];
+
+// A pop of color per study mode — kept earthy so it stays calm, not loud.
+const STUDY_ACCENT: Record<
+  string,
+  { line: string; text: string; tint: string; glow: string }
+> = {
+  learn: {
+    line: "rgba(86,116,40,0.55)",
+    text: "#4a6a22",
+    tint: "rgba(86,116,40,0.10)",
+    glow: "rgba(86,116,40,0.20)",
+  },
+  practice: {
+    line: "rgba(135,100,24,0.55)",
+    text: "#8a5f12",
+    tint: "rgba(135,100,24,0.10)",
+    glow: "rgba(135,100,24,0.20)",
+  },
+  review: {
+    line: "rgba(198,124,22,0.6)",
+    text: "#b06e14",
+    tint: "rgba(214,133,20,0.12)",
+    glow: "rgba(214,133,20,0.22)",
+  },
+  versus: {
+    line: "rgba(47,111,126,0.55)",
+    text: "#2b6472",
+    tint: "rgba(47,111,126,0.10)",
+    glow: "rgba(47,111,126,0.20)",
+  },
+};
+
+function modeById(id: GameMode) {
+  return MODES.find((m) => m.id === id)!;
+}
+
+// A small uppercase label with a fading rule — quiet structure between groups.
+function SectionLabel({ children }: { children: ReactNode }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        marginBottom: 11,
+      }}
+    >
+      <span
+        style={{
+          fontSize: 10.5,
+          fontWeight: 600,
+          letterSpacing: "0.16em",
+          textTransform: "uppercase",
+          color: "var(--t3)",
+          fontFamily: "var(--ff-u)",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {children}
+      </span>
+      <span
+        style={{
+          flex: 1,
+          height: 1,
+          background: "linear-gradient(90deg, var(--border), transparent)",
+        }}
+      />
+    </div>
+  );
+}
+
+// Segmented control with a single highlight that glides between options.
+function Segmented({
+  options,
+  value,
+  onChange,
+  serif = false,
+}: {
+  options: { id: string; label: string; sub?: string }[];
+  value: string | null;
+  onChange: (id: string) => void;
+  serif?: boolean;
+}) {
+  const count = options.length;
+  const activeIndex = options.findIndex((o) => o.id === value);
+  const hasActive = activeIndex >= 0;
+  return (
+    <div
+      style={{
+        position: "relative",
+        display: "grid",
+        gridTemplateColumns: `repeat(${count}, 1fr)`,
+        background: "var(--s2)",
+        border: "1px solid var(--border)",
+        borderRadius: 9,
+        padding: 4,
+      }}
+    >
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          top: 4,
+          bottom: 4,
+          left: 4,
+          width: `calc((100% - 8px) / ${count})`,
+          transform: `translateX(${Math.max(activeIndex, 0) * 100}%)`,
+          background: "var(--bg)",
+          border: "1px solid var(--gold)",
+          borderRadius: 6,
+          boxShadow: "0 1px 7px rgba(80,60,10,0.10)",
+          opacity: hasActive ? 1 : 0,
+          transition:
+            "transform 0.32s cubic-bezier(0.34, 1.32, 0.36, 1), opacity 0.2s ease",
+          pointerEvents: "none",
+        }}
+      />
+      {options.map((o) => {
+        const active = o.id === value;
+        return (
+          <button
+            key={o.id}
+            onClick={() => onChange(o.id)}
+            style={{
+              position: "relative",
+              zIndex: 1,
+              background: "transparent",
+              border: "none",
+              padding: serif ? "8px 6px" : "7px 6px",
+              cursor: "pointer",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 1,
+              fontFamily: "var(--ff-u)",
+            }}
+          >
+            <span
+              style={{
+                fontFamily: serif ? "var(--ff-d)" : "var(--ff-u)",
+                fontSize: serif ? 18 : 13,
+                fontWeight: serif ? 500 : 500,
+                lineHeight: 1.1,
+                letterSpacing: serif ? "0.01em" : "0.02em",
+                color: active ? "var(--gold-hi)" : "var(--t1)",
+                transition: "color 0.22s ease",
+              }}
+            >
+              {o.label}
+            </span>
+            {o.sub && (
+              <span
+                style={{
+                  fontSize: 10.5,
+                  fontWeight: 400,
+                  color: active ? "var(--gold)" : "var(--t3)",
+                  transition: "color 0.22s ease",
+                }}
+              >
+                {o.sub}
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function HomeScreen({
   defaultSettings,
   globalStats,
@@ -345,76 +520,37 @@ export function HomeScreen({
           >
             <BotanicalDivider />
           </div>
-          {/* <div
+          <div
             style={{
               fontFamily: "var(--ff-d)",
               fontWeight: 300,
               fontStyle: "italic",
-              fontSize: 17,
+              fontSize: 16,
               color: "var(--t2)",
-              letterSpacing: "0.04em",
+              letterSpacing: "0.03em",
             }}
           >
-            Know the World
-          </div> */}
+            Learn the world, one place at a time
+          </div>
         </header>
 
         {/* Topic toggle — World vs US States */}
-        <div
-          style={{
-            display: "flex",
-            gap: 8,
-            marginBottom: 22,
-          }}
-        >
-          {TOPICS.map((t) => {
-            const active = topic === t.id;
-            return (
-              <button
-                key={t.id}
-                onClick={() =>
-                  setSettings((s) => ({ ...s, topic: t.id, regionFilter: [] }))
-                }
-                style={{
-                  flex: 1,
-                  padding: "10px 12px",
-                  borderRadius: 3,
-                  border: active
-                    ? "1px solid var(--gold)"
-                    : "1px solid var(--border)",
-                  background: active ? "var(--bg)" : "var(--s1)",
-                  color: active ? "var(--gold-hi)" : "var(--t2)",
-                  cursor: "pointer",
-                  transition: "all 0.14s",
-                  fontFamily: "var(--ff-u)",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: 2,
-                }}
-              >
-                <span
-                  style={{
-                    fontFamily: "var(--ff-d)",
-                    fontSize: 15,
-                    fontWeight: 400,
-                    color: active ? "var(--gold-hi)" : "var(--t1)",
-                  }}
-                >
-                  {t.label}
-                </span>
-                <span
-                  style={{
-                    fontSize: 11,
-                    color: active ? "var(--gold)" : "var(--t3)",
-                    fontWeight: 300,
-                  }}
-                >
-                  {t.sub}
-                </span>
-              </button>
-            );
-          })}
+        <div style={{ marginBottom: 20 }}>
+          <Segmented
+            options={TOPICS.map((t) => ({
+              id: t.id,
+              label: t.label,
+              sub: t.sub,
+            }))}
+            value={topic}
+            onChange={(id) =>
+              setSettings((s) => ({
+                ...s,
+                topic: id as Topic,
+                regionFilter: [],
+              }))
+            }
+          />
         </div>
 
         {/* Stats bar */}
@@ -468,141 +604,174 @@ export function HomeScreen({
           </div>
         )}
 
-        {/* Mode grid */}
-        <div className="home-mode-grid" style={{ marginBottom: 28 }}>
-          {MODES.map((m) => {
-            const locked = m.requiresLogin && !user;
-            const selected = settings.mode === m.id;
-            const hovered = hoveredMode === m.id;
-            const meta = getModeMeta(m, topic);
-            return (
-              <button
-                key={m.id}
-                disabled={locked}
-                onMouseEnter={() => !locked && setHoveredMode(m.id)}
-                onMouseLeave={() => setHoveredMode(null)}
-                onClick={() =>
-                  !locked && setSettings((s) => ({ ...s, mode: m.id }))
-                }
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 11,
-                  padding: "13px 15px",
-                  background: selected
-                    ? "var(--bg)"
-                    : hovered
-                      ? "var(--s1)"
-                      : "var(--bg)",
-                  border: selected
-                    ? "1px solid var(--gold)"
-                    : hovered
-                      ? "1px solid var(--border-hi)"
-                      : "1px solid var(--border)",
-                  borderRadius: 3,
-                  textAlign: "left",
-                  color: "var(--t2)",
-                  cursor: locked ? "not-allowed" : "pointer",
-                  opacity: locked ? 0.45 : 1,
-                  transition:
-                    "background 0.16s, border-color 0.16s, box-shadow 0.16s, transform 0.16s",
-                  transform: hovered && !locked ? "translateY(-1px)" : "none",
-                  boxShadow:
-                    hovered && !locked ? "0 2px 12px rgba(0,0,0,0.08)" : "none",
-                  fontFamily: "var(--ff-u)",
-                  position: "relative",
-                }}
-              >
-                <div
+        {/* ── Quick Quiz — pick what you're tested on ── */}
+        <div style={{ marginBottom: 22 }}>
+          <SectionLabel>Quick Quiz</SectionLabel>
+          <Segmented
+            serif
+            options={QUIZ_IDS.map((id) => ({
+              id,
+              label: getModeMeta(modeById(id), topic).label,
+            }))}
+            value={QUIZ_IDS.includes(settings.mode) ? settings.mode : null}
+            onChange={(id) =>
+              setSettings((s) => ({ ...s, mode: id as GameMode }))
+            }
+          />
+        </div>
+
+        {/* ── Study — the structured modes, an even 2×2 ── */}
+        <div style={{ marginBottom: 26 }}>
+          <SectionLabel>Study</SectionLabel>
+          <div className="home-mode-grid">
+            {STUDY_IDS.map((id, i) => {
+              const m = modeById(id);
+              const locked = m.requiresLogin && !user;
+              const selected = settings.mode === id;
+              const hovered = hoveredMode === id;
+              const meta = getModeMeta(m, topic);
+              const accent = STUDY_ACCENT[id];
+              return (
+                <button
+                  key={id}
+                  disabled={locked}
+                  onMouseEnter={() => !locked && setHoveredMode(id)}
+                  onMouseLeave={() => setHoveredMode(null)}
+                  onClick={() =>
+                    !locked && setSettings((s) => ({ ...s, mode: id }))
+                  }
+                  className={`menu-card-in${
+                    selected && !locked ? " menu-accent-pulse" : ""
+                  }`}
                   style={{
-                    flexShrink: 0,
-                    width: 24,
-                    height: 24,
+                    "--accent-glow": accent.glow,
+                    animationDelay: `${i * 70}ms`,
                     display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: selected
-                      ? "var(--gold)"
+                    flexDirection: "column",
+                    alignItems: "flex-start",
+                    gap: 8,
+                    padding: "13px 14px",
+                    minHeight: 92,
+                    background: selected ? accent.tint : "var(--bg)",
+                    border: selected
+                      ? `1px solid ${accent.line}`
                       : hovered
-                        ? "var(--gold)"
-                        : "var(--olive)",
-                  }}
+                        ? `1px solid ${accent.line}`
+                        : "1px solid var(--border)",
+                    borderRadius: 8,
+                    textAlign: "left",
+                    cursor: locked ? "not-allowed" : "pointer",
+                    opacity: locked ? 0.5 : 1,
+                    transition:
+                      "background 0.18s, border-color 0.18s, box-shadow 0.18s, transform 0.18s",
+                    transform:
+                      hovered && !locked ? "translateY(-2px)" : "none",
+                    boxShadow:
+                      hovered && !locked
+                        ? `0 6px 18px ${accent.glow}`
+                        : "none",
+                    fontFamily: "var(--ff-u)",
+                    position: "relative",
+                  } as CSSProperties}
                 >
-                  <ModeIcon type={m.icon} />
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
                   <div
                     style={{
-                      fontFamily: "var(--ff-d)",
-                      fontWeight: 400,
-                      fontSize: 15,
-                      color: "var(--t1)",
-                      lineHeight: 1.2,
-                      marginBottom: 2,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      width: "100%",
                     }}
                   >
-                    {meta.label}
+                    <div
+                      style={{
+                        width: 30,
+                        height: 30,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        borderRadius: 7,
+                        background: accent.tint,
+                        color: accent.text,
+                        transition: "transform 0.18s",
+                        transform:
+                          hovered && !locked ? "scale(1.08)" : "none",
+                      }}
+                    >
+                      <ModeIcon type={m.icon} />
+                    </div>
+                    {locked && (
+                      <span
+                        style={{
+                          fontSize: 8.5,
+                          letterSpacing: "0.12em",
+                          textTransform: "uppercase",
+                          color: "var(--t3)",
+                          border: "1px solid var(--border)",
+                          borderRadius: 3,
+                          padding: "2px 5px",
+                        }}
+                      >
+                        Login
+                      </span>
+                    )}
+                    {id === "review" && !locked && (
+                      <span
+                        style={{
+                          fontSize: 8.5,
+                          letterSpacing: "0.08em",
+                          textTransform: "uppercase",
+                          color: dueToday > 0 ? accent.text : "var(--t3)",
+                          border: `1px solid ${dueToday > 0 ? accent.line : "var(--border)"}`,
+                          background: dueToday > 0 ? accent.tint : "transparent",
+                          borderRadius: 3,
+                          padding: "2px 5px",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {dueToday > 0 ? `${dueToday} due` : "All done"}
+                      </span>
+                    )}
+                    {selected && !locked && !(id === "review" && dueToday > 0) && (
+                      <span
+                        style={{
+                          color: accent.text,
+                          fontSize: 13,
+                          lineHeight: 1,
+                        }}
+                      >
+                        ✓
+                      </span>
+                    )}
                   </div>
-                  <div
-                    style={{
-                      fontSize: 11,
-                      color: "var(--t3)",
-                      fontWeight: 300,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {meta.desc}
+                  <div style={{ width: "100%", minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontFamily: "var(--ff-d)",
+                        fontWeight: 500,
+                        fontSize: 17,
+                        color: selected ? accent.text : "var(--t1)",
+                        lineHeight: 1.15,
+                        marginBottom: 2,
+                        transition: "color 0.18s",
+                      }}
+                    >
+                      {meta.label}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: "var(--t3)",
+                        fontWeight: 300,
+                        lineHeight: 1.3,
+                      }}
+                    >
+                      {meta.desc}
+                    </div>
                   </div>
-                </div>
-                {locked && (
-                  <div
-                    style={{
-                      fontSize: 9,
-                      letterSpacing: "0.12em",
-                      textTransform: "uppercase",
-                      color: "var(--t3)",
-                      border: "1px solid var(--border)",
-                      borderRadius: 2,
-                      padding: "2px 5px",
-                      flexShrink: 0,
-                    }}
-                  >
-                    Login
-                  </div>
-                )}
-                {m.id === "review" && !locked && (
-                  <div
-                    style={{
-                      fontSize: 9,
-                      letterSpacing: "0.1em",
-                      textTransform: "uppercase",
-                      color: dueToday > 0 ? "var(--gold)" : "var(--t3)",
-                      border: `1px solid ${dueToday > 0 ? "var(--gold)" : "var(--border)"}`,
-                      borderRadius: 2,
-                      padding: "2px 5px",
-                      flexShrink: 0,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {dueToday > 0 ? `${dueToday} due` : "All done"}
-                  </div>
-                )}
-                {selected && !locked && (
-                  <div
-                    style={{
-                      color: "var(--gold)",
-                      flexShrink: 0,
-                      fontSize: 12,
-                    }}
-                  >
-                    ✓
-                  </div>
-                )}
-              </button>
-            );
-          })}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Learn scope: resume where you left off (with a preview of how many
@@ -788,33 +957,76 @@ export function HomeScreen({
           ) : (
             <button
               onClick={() => onStart(settings)}
+              className="home-start-btn"
               style={{
                 flex: 1,
-                padding: "12px 20px",
-                borderRadius: 3,
-                background: "rgba(135,100,24,0.12)",
-                border: "1px solid rgba(135,100,24,0.32)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 9,
+                padding: "13px 20px",
+                borderRadius: 6,
+                background:
+                  "linear-gradient(180deg, rgba(172,132,40,0.18), rgba(135,100,24,0.14))",
+                border: "1px solid rgba(135,100,24,0.42)",
                 color: "var(--gold-hi)",
-                fontSize: 13,
-                fontWeight: 500,
-                letterSpacing: "0.06em",
                 cursor: "pointer",
                 fontFamily: "var(--ff-u)",
-                transition: "background 0.14s, border-color 0.14s",
+                transition:
+                  "background 0.16s, border-color 0.16s, box-shadow 0.16s",
               }}
               onMouseEnter={(e) => {
-                (e.target as HTMLButtonElement).style.background =
-                  "rgba(135,100,24,0.22)";
+                const el = e.currentTarget;
+                el.style.background =
+                  "linear-gradient(180deg, rgba(172,132,40,0.30), rgba(135,100,24,0.22))";
+                el.style.boxShadow = "0 4px 16px rgba(135,100,24,0.20)";
               }}
               onMouseLeave={(e) => {
-                (e.target as HTMLButtonElement).style.background =
-                  "rgba(135,100,24,0.12)";
+                const el = e.currentTarget;
+                el.style.background =
+                  "linear-gradient(180deg, rgba(172,132,40,0.18), rgba(135,100,24,0.14))";
+                el.style.boxShadow = "none";
               }}
             >
-              Start — {(() => {
-                const m = MODES.find((mm) => mm.id === settings.mode);
-                return m ? getModeMeta(m, topic).label : settings.mode;
-              })()}
+              <span
+                style={{
+                  fontSize: 10.5,
+                  letterSpacing: "0.16em",
+                  textTransform: "uppercase",
+                  color: "var(--gold)",
+                }}
+              >
+                Start
+              </span>
+              <span
+                style={{
+                  fontFamily: "var(--ff-d)",
+                  fontSize: 18,
+                  fontWeight: 500,
+                  color: "var(--gold-hi)",
+                  letterSpacing: "0.01em",
+                }}
+              >
+                {(() => {
+                  const m = MODES.find((mm) => mm.id === settings.mode);
+                  return m ? getModeMeta(m, topic).label : settings.mode;
+                })()}
+              </span>
+              <span className="home-start-arrow" aria-hidden style={{ display: "inline-flex" }}>
+                <svg
+                  viewBox="0 0 24 24"
+                  width={16}
+                  height={16}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.6}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="4" y1="12" x2="19" y2="12" />
+                  <polyline points="13 6 19 12 13 18" />
+                </svg>
+              </span>
             </button>
           )}
           <button

@@ -156,6 +156,42 @@
 }
 
 
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.menu-card-in {
+  opacity: 0;
+  animation: card-in 0.5s cubic-bezier(0.22, 0.72, 0.28, 1) forwards;
+}
+
+@keyframes menu-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.menu-rise {
+  animation: menu-rise 0.45s ease forwards;
+}
+
+/* Soft accent glow that breathes on the selected study card */
+@keyframes accent-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--accent-glow, rgba(135,100,24,0.18)); }
+  50%      { box-shadow: 0 0 0 5px transparent; }
+}
+
+.menu-accent-pulse {
+  animation: accent-pulse 2.6s ease-in-out infinite;
+}
+
+.home-start-arrow {
+  transition: transform 0.22s cubic-bezier(0.34, 1.4, 0.4, 1);
+}
+.home-start-btn:hover .home-start-arrow {
+  transform: translateX(4px);
+}
+
 @keyframes spin-slow {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
