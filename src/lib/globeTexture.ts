@@ -65,9 +65,10 @@ function paint(geometry: GlobeGeometryData): HTMLCanvasElement {
 
 export function loadGlobeTextureCanvas(geometry: GlobeGeometryData): Promise<HTMLCanvasElement> {
   if (!textureCanvasPromise) {
-    // Defer one frame so the ocean shell can paint before the heavy draw.
+    // Yield briefly so the ocean shell can paint before the heavy draw. A timer
+    // (not rAF) so a backgrounded tab still finishes the texture.
     textureCanvasPromise = new Promise((resolve) => {
-      requestAnimationFrame(() => resolve(paint(geometry)));
+      setTimeout(() => resolve(paint(geometry)), 30);
     });
   }
   return textureCanvasPromise;

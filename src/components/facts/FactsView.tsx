@@ -55,6 +55,9 @@ export function FactsView({ settings, onBackToMenu }: FactsViewProps) {
     [dataset, settings.regionFilter],
   );
 
+  // Explore ignores the study region filter: any country on the globe is fair game.
+  const explorePool = useMemo(() => dataset.entries.filter(c => hasFacts(c.id)), [dataset]);
+  const [exploreNotice, setExploreNotice] = useState<string | null>(null);
   const [tab, setTab] = useState<'study' | 'explore'>('study');
   const [session, setSession] = useState(() => buildSession(pool));
   const [stepIndex, setStepIndex] = useState(0);
@@ -62,7 +65,7 @@ export function FactsView({ settings, onBackToMenu }: FactsViewProps) {
   const [score, setScore] = useState({ correct: 0, total: 0 });
   const [missed, setMissed] = useState<FactQuestion[]>([]);
   const [requeued, setRequeued] = useState(false);
-  const [exploreId, setExploreId] = useState<string>(() => pool[Math.floor(Math.random() * pool.length)]?.id ?? 'FRA');
+  const [exploreId, setExploreId] = useState<string>(() => explorePool[Math.floor(Math.random() * explorePool.length)]?.id ?? 'FRA');
   const [focusToken, setFocusToken] = useState(1);
   const [recenterToken, setRecenterToken] = useState(0);
   const nextBtnRef = useRef<HTMLButtonElement>(null);
@@ -116,13 +119,19 @@ export function FactsView({ settings, onBackToMenu }: FactsViewProps) {
   }
 
   const handleGlobeClick = useCallback((id: string | null) => {
-    if (id && pool.some(c => c.id === id)) setExploreId(id);
-  }, [pool]);
+    if (!id) { setExploreNotice(null); return; }
+    if (explorePool.some(c => c.id === id)) {
+      setExploreId(id);
+      setExploreNotice(null);
+    } else {
+      setExploreNotice(`No facts for ${dataset.byId.get(id)?.name ?? 'that place'} yet. Try another country.`);
+    }
+  }, [explorePool, dataset]);
 
   const progressPercent = steps.length ? Math.min(100, (stepIndex / steps.length) * 100) : 0;
   const tabBtn = (id: 'study' | 'explore', label: string) => (
     <button
-      onClick={() => setTab(id)}
+      onClick={() => { setTab(id); if (id === 'explore') setRecenterToken(t => t + 1); }}
       style={{
         padding: '5px 14px', borderRadius: 999, fontSize: 13, fontFamily: 'var(--ff-u)',
         fontWeight: 800, cursor: 'pointer',
@@ -197,7 +206,12 @@ export function FactsView({ settings, onBackToMenu }: FactsViewProps) {
           {tab === 'explore' ? (
             <ExplorePanel
               country={dataset.byId.get(exploreId)!}
-              onRandom={() => setExploreId(pool[Math.floor(Math.random() * pool.length)].id)}
+              notice={exploreNotice}
+              onRandom={() => {
+                setExploreId(explorePool[Math.floor(Math.random() * explorePool.length)].id);
+                setExploreNotice(null);
+                setRecenterToken(t => t + 1);
+              }}
             />
           ) : done ? (
             <Summary
@@ -251,6 +265,7 @@ export function FactsView({ settings, onBackToMenu }: FactsViewProps) {
             colorMap={colorMap}
             currentId={hideTarget ? null : focusId}
             focusToken={focusToken}
+            freezeFocus={tab === 'explore'}
             onLocateClick={tab === 'explore' ? handleGlobeClick : undefined}
             recenterToken={recenterToken}
             promptIndex={stepIndex}
@@ -372,7 +387,7 @@ function QuestionPanel({ q, review, chosen, onAnswer, onNext, nextRef }: {
   );
 }
 
-function ExplorePanel({ country, onRandom }: { country: CountryEntry; onRandom: () => void }) {
+function ExplorePanel({ country, onRandom, notice }: { country: CountryEntry; onRandom: () => void; notice: string | null }) {
   return (
     <>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
@@ -393,6 +408,14 @@ function ExplorePanel({ country, onRandom }: { country: CountryEntry; onRandom: 
           🎲 Random
         </button>
       </div>
+      {notice && (
+        <div style={{
+          marginBottom: 14, padding: '9px 13px', borderRadius: 12, fontSize: 13, fontWeight: 700,
+          fontFamily: 'var(--ff-u)', color: 'var(--ink)', background: 'var(--sun-soft)', border: '2px solid var(--ink)',
+        }}>
+          {notice}
+        </div>
+      )}
       <FactCard key={country.id} country={country} />
     </>
   );

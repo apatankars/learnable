@@ -51,15 +51,15 @@ export function VersusLobby({ lobbyState, isHost, onStartGame, onLeave, error }:
         </p>
 
         <div style={{
-          background: 'var(--bg)',
-          border: '2px dashed var(--border-hi)',
+          background: 'var(--sun-soft)',
+          border: '3px dashed var(--ink)',
           borderRadius: 10,
           padding: '16px',
           textAlign: 'center',
           fontSize: 36,
           letterSpacing: '0.2em',
-          fontFamily: 'monospace',
-          color: 'var(--gold)',
+          fontFamily: 'var(--ff-d)', fontWeight: 800,
+          color: 'var(--ink)',
           marginBottom: 32,
         }}>
           {lobbyState.roomCode}
@@ -167,10 +167,10 @@ export function VersusLobby({ lobbyState, isHost, onStartGame, onLeave, error }:
               disabled={!canStart}
               style={{
                 flex: 2, padding: '12px 0',
-                background: canStart ? 'var(--sun)' : 'var(--bg)',
+                background: canStart ? 'var(--coral)' : 'var(--bg)',
                 border: canStart ? '2px solid var(--ink)' : '2px solid var(--border)',
-                color: canStart ? 'var(--gold-hi)' : 'var(--t3)',
-                borderRadius: 10, cursor: canStart ? 'pointer' : 'not-allowed',
+                color: canStart ? '#fff' : 'var(--t3)',
+                borderRadius: 12, cursor: canStart ? 'pointer' : 'not-allowed',
                 fontSize: 13, fontWeight: 700, transition: 'all 0.14s',
               }}
             >
@@ -216,14 +216,14 @@ export function JoinVersusModal({
     }}>
       <div style={{
         background: 'var(--bg)',
-        border: '2px solid var(--border)',
-        borderRadius: 10,
+        border: '3px solid var(--ink)',
+        borderRadius: 22,
         padding: '32px',
         width: 320,
         boxShadow: '6px 6px 0 var(--ink)',
         fontFamily: 'var(--ff-u)',
       }}>
-        <h2 style={{ fontSize: 18, color: 'var(--t1)', marginBottom: 16, textAlign: 'center' }}>Join Versus Game</h2>
+        <h2 style={{ fontFamily: 'var(--ff-d)', fontWeight: 800, fontSize: 22, color: 'var(--t1)', marginBottom: 16, textAlign: 'center' }}>Join Versus Game</h2>
         <div style={{ marginBottom: 16 }}>
           <div style={{ fontSize: 11, color: 'var(--t3)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8, textAlign: 'center' }}>
             Your Emoji
@@ -256,8 +256,8 @@ export function JoinVersusModal({
           maxLength={6}
           style={{
             width: '100%', padding: '12px', boxSizing: 'border-box',
-            background: 'var(--s1)', border: '2px solid var(--border)',
-            color: 'var(--t1)', borderRadius: 10, marginBottom: 20,
+            background: 'var(--s1)', border: '2px solid var(--ink)',
+            color: 'var(--t1)', borderRadius: 12, marginBottom: 20,
             fontSize: 16, textAlign: 'center', letterSpacing: '0.1em',
             outline: 'none',
           }}
@@ -278,9 +278,9 @@ export function JoinVersusModal({
             disabled={code.length < 6}
             style={{
               flex: 1, padding: '10px 0',
-              background: code.length === 6 ? 'var(--t1)' : 'var(--s1)',
-              border: 'none',
-              color: code.length === 6 ? 'var(--bg)' : 'var(--t3)',
+              background: code.length === 6 ? 'var(--coral)' : 'var(--s1)',
+              border: '2px solid var(--ink)',
+              color: code.length === 6 ? '#fff' : 'var(--t3)', fontWeight: 800,
               borderRadius: 10, cursor: code.length === 6 ? 'pointer' : 'not-allowed',
             }}
           >

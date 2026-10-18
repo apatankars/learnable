@@ -1,4 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { geoArea } from 'd3-geo';
 import type { GlobeMethods } from 'react-globe.gl';
 import type { CountryColorState } from '../../types';
 import { loadGlobeGeometry, resolveCountryAt } from '../../lib/globeGeometry';
@@ -31,6 +32,8 @@ interface RingDatum {
   lng: number;
   state: CountryColorState;
   overlayScale: number;
+  // Too small to spot at globe scale (Malta, Andorra...) — gets a marker dot.
+  small: boolean;
 }
 
 interface PathDatum {
@@ -72,9 +75,9 @@ const COLOR_STYLES: Record<CountryColorState, {
   },
   current: {
     altitude: 0.004,
-    cap: '#ff4b52',
+    cap: '#ff8f8f',
     point: '#ffffff',
-    ring: 'rgba(255, 75, 82, 0.9)',
+    ring: 'rgba(255, 143, 143, 0.9)',
     side: 'rgba(0, 0, 0, 0)',
     stroke: INK,
     border: INK,
@@ -82,9 +85,9 @@ const COLOR_STYLES: Record<CountryColorState, {
   },
   correct: {
     altitude: 0.004,
-    cap: '#2fcf6b',
+    cap: '#7fe0a4',
     point: '#d9f5cb',
-    ring: 'rgba(47, 207, 107, 0.8)',
+    ring: 'rgba(127, 224, 164, 0.85)',
     side: 'rgba(0, 0, 0, 0)',
     stroke: INK,
     border: INK,
@@ -92,9 +95,9 @@ const COLOR_STYLES: Record<CountryColorState, {
   },
   skipped: {
     altitude: 0.004,
-    cap: '#ff9a1f',
+    cap: '#ffc37a',
     point: '#ffe3b8',
-    ring: 'rgba(255, 154, 31, 0.8)',
+    ring: 'rgba(255, 195, 122, 0.85)',
     side: 'rgba(0, 0, 0, 0)',
     stroke: INK,
     border: INK,
@@ -102,9 +105,9 @@ const COLOR_STYLES: Record<CountryColorState, {
   },
   wrong: {
     altitude: 0.004,
-    cap: '#8f1d2c',
+    cap: '#d9667c',
     point: '#ffd6d6',
-    ring: 'rgba(143, 29, 44, 0.8)',
+    ring: 'rgba(217, 102, 124, 0.85)',
     side: 'rgba(0, 0, 0, 0)',
     stroke: INK,
     border: INK,
@@ -112,9 +115,9 @@ const COLOR_STYLES: Record<CountryColorState, {
   },
   teaching: {
     altitude: 0.004,
-    cap: '#2b7bff',
+    cap: '#85b4ff',
     point: '#d6e6ff',
-    ring: 'rgba(43, 123, 255, 0.85)',
+    ring: 'rgba(133, 180, 255, 0.9)',
     side: 'rgba(0, 0, 0, 0)',
     stroke: INK,
     border: INK,
@@ -124,7 +127,7 @@ const COLOR_STYLES: Record<CountryColorState, {
   // as "context", clearly subordinate to the bright blue teaching highlight.
   neighbor: {
     altitude: 0.004,
-    cap: 'rgba(174, 120, 255, 0.78)',
+    cap: 'rgba(205, 180, 255, 0.85)',
     point: 'rgba(0,0,0,0)',
     ring: 'rgba(0,0,0,0)',
     side: 'rgba(0, 0, 0, 0)',
@@ -557,6 +560,9 @@ export const GlobeMap = memo(function GlobeMap({
     scheduleSettled(focusToken, overviewDuration);
   }, [currentId, decorative, focusToken, freezeFocus, globeGeometry, scheduleSettled]);
 
+  const currentIdRef = useRef(currentId);
+  currentIdRef.current = currentId;
+
   useEffect(() => {
     if (!recenterToken) {
       return;
@@ -567,7 +573,8 @@ export const GlobeMap = memo(function GlobeMap({
       return;
     }
 
-    const centroid = currentId ? globeGeometry.centroids[currentId] : null;
+    const activeId = currentIdRef.current;
+    const centroid = activeId ? globeGeometry.centroids[activeId] : null;
     const duration = decorative ? DECORATIVE_TRANSITION_MS : OVERVIEW_TRANSITION_MS;
 
     if (centroid) {
@@ -583,7 +590,9 @@ export const GlobeMap = memo(function GlobeMap({
     }
 
     globe.pointOfView(decorative ? VIEWPOINTS.decorative : VIEWPOINTS.overview, duration);
-  }, [currentId, decorative, globeGeometry, recenterToken]);
+    // currentId is read from a ref on purpose: only a recenter request (not a
+    // target change) should move the camera.
+  }, [decorative, globeGeometry, recenterToken]);
 
   // Only render the highlighted countries as extruded polygons. Drawing all
   // ~195 default polygons (caps + side walls) every frame was the main FPS
@@ -640,8 +649,11 @@ export const GlobeMap = memo(function GlobeMap({
       lng: centroid.lng,
       state: colorMap[currentId] ?? 'current',
       overlayScale: getFeatureOverlayScale(feature),
+      small: geoArea(feature) < 0.0012,
     }];
   }, [colorMap, currentId, featureById, focusToken, globeGeometry, promptIndex]);
+
+  const pointsData = useMemo(() => ringsData.filter((ring) => ring.small), [ringsData]);
 
   const GlobeRenderer = globeModule?.default;
   const isRenderable = Boolean(GlobeRenderer && globeGeometry && globeMaterial && dimensions.width > 0 && dimensions.height > 0);
@@ -752,6 +764,13 @@ export const GlobeMap = memo(function GlobeMap({
           }}
           pathResolution={1}
           pathTransitionDuration={0}
+          pointsData={pointsData}
+          pointLat="lat"
+          pointLng="lng"
+          pointColor={() => INK}
+          pointAltitude={0.012}
+          pointRadius={0.5}
+          pointResolution={12}
           ringsData={ringsData}
           ringLat="lat"
           ringLng="lng"

@@ -31,13 +31,13 @@ const FOCUS_MS = 520;
 
 const FILL_STYLES: Record<CountryColorState, { fill: string; stroke: string; strokeWidth: number }> = {
   default:  { fill: '#b9ec9a', stroke: '#1f1a2e', strokeWidth: 1 },
-  current:  { fill: '#ff4b52', stroke: '#1f1a2e', strokeWidth: 2 },
-  correct:  { fill: '#2fcf6b', stroke: '#1f1a2e', strokeWidth: 1.4 },
-  skipped:  { fill: '#ff9a1f', stroke: '#1f1a2e', strokeWidth: 1.4 },
-  wrong:    { fill: '#8f1d2c', stroke: '#1f1a2e', strokeWidth: 1.4 },
-  teaching: { fill: '#2b7bff', stroke: '#1f1a2e', strokeWidth: 2 },
+  current:  { fill: '#ff8f8f', stroke: '#1f1a2e', strokeWidth: 2 },
+  correct:  { fill: '#7fe0a4', stroke: '#1f1a2e', strokeWidth: 1.4 },
+  skipped:  { fill: '#ffc37a', stroke: '#1f1a2e', strokeWidth: 1.4 },
+  wrong:    { fill: '#d9667c', stroke: '#1f1a2e', strokeWidth: 1.4 },
+  teaching: { fill: '#85b4ff', stroke: '#1f1a2e', strokeWidth: 2 },
   // Unused for US states (no border dataset), but required by the color union.
-  neighbor: { fill: '#c9a6ff', stroke: '#1f1a2e', strokeWidth: 1.2 },
+  neighbor: { fill: '#cdb4ff', stroke: '#1f1a2e', strokeWidth: 1.2 },
 };
 
 let topologyPromise: Promise<StateShape[]> | null = null;
