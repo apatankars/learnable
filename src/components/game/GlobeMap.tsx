@@ -3,6 +3,8 @@ import type { GlobeMethods } from 'react-globe.gl';
 import type { CountryColorState } from '../../types';
 import { loadGlobeGeometry, resolveCountryAt } from '../../lib/globeGeometry';
 import type { GlobeGeometryData } from '../../lib/globeGeometry';
+import { INK, OCEAN, loadGlobeTextureCanvas } from '../../lib/globeTexture';
+import type { Material } from 'three';
 
 type GlobeModule = typeof import('react-globe.gl');
 
@@ -60,75 +62,74 @@ const COLOR_STYLES: Record<CountryColorState, {
 }> = {
   default: {
     altitude: 0.002,
-    cap: 'rgba(132, 161, 118, 0.14)',
+    cap: 'rgba(255, 255, 255, 0)',
     point: 'rgba(0,0,0,0)',
     ring: 'rgba(0,0,0,0)',
-    side: 'rgba(82, 101, 72, 0.05)',
-    stroke: 'rgba(244, 231, 205, 0.12)',
-    border: '#59684f',
+    side: 'rgba(0, 0, 0, 0)',
+    stroke: 'rgba(31, 26, 46, 0.4)',
+    border: INK,
     borderWidth: 0.075,
   },
   current: {
-    altitude: 0.07,
-    cap: 'rgba(255, 206, 64, 1)',
-    point: 'rgba(255, 243, 174, 0.98)',
-    ring: 'rgba(255, 213, 74, 0.92)',
-    side: 'rgba(196, 145, 38, 0.62)',
-    stroke: 'rgba(255, 248, 214, 0.98)',
-    border: '#3c2a06',
+    altitude: 0.004,
+    cap: '#ff4b52',
+    point: '#ffffff',
+    ring: 'rgba(255, 75, 82, 0.9)',
+    side: 'rgba(0, 0, 0, 0)',
+    stroke: INK,
+    border: INK,
     borderWidth: 0.2,
   },
   correct: {
-    altitude: 0.03,
-    cap: 'rgba(86, 204, 116, 0.95)',
-    point: 'rgba(192, 248, 202, 0.9)',
-    ring: 'rgba(102, 210, 130, 0.7)',
-    side: 'rgba(46, 120, 64, 0.42)',
-    stroke: 'rgba(224, 255, 230, 0.82)',
-    border: '#143d20',
+    altitude: 0.004,
+    cap: '#2fcf6b',
+    point: '#d9f5cb',
+    ring: 'rgba(47, 207, 107, 0.8)',
+    side: 'rgba(0, 0, 0, 0)',
+    stroke: INK,
+    border: INK,
     borderWidth: 0.15,
   },
   skipped: {
-    altitude: 0.024,
-    cap: 'rgba(224, 168, 70, 0.92)',
-    point: 'rgba(248, 224, 181, 0.88)',
-    ring: 'rgba(228, 174, 78, 0.66)',
-    side: 'rgba(150, 106, 39, 0.4)',
-    stroke: 'rgba(252, 232, 196, 0.78)',
-    border: '#5c3d12',
+    altitude: 0.004,
+    cap: '#ff9a1f',
+    point: '#ffe3b8',
+    ring: 'rgba(255, 154, 31, 0.8)',
+    side: 'rgba(0, 0, 0, 0)',
+    stroke: INK,
+    border: INK,
     borderWidth: 0.14,
   },
   wrong: {
-    altitude: 0.03,
-    cap: 'rgba(226, 84, 84, 0.95)',
-    point: 'rgba(255, 218, 218, 0.94)',
-    ring: 'rgba(232, 96, 96, 0.74)',
-    side: 'rgba(132, 44, 44, 0.46)',
-    stroke: 'rgba(255, 226, 226, 0.84)',
-    border: '#4d1717',
+    altitude: 0.004,
+    cap: '#8f1d2c',
+    point: '#ffd6d6',
+    ring: 'rgba(143, 29, 44, 0.8)',
+    side: 'rgba(0, 0, 0, 0)',
+    stroke: INK,
+    border: INK,
     borderWidth: 0.15,
   },
   teaching: {
-    altitude: 0.058,
-    cap: 'rgba(78, 178, 252, 0.94)',
-    point: 'rgba(217, 238, 255, 0.96)',
-    ring: 'rgba(92, 190, 255, 0.78)',
-    side: 'rgba(40, 104, 168, 0.46)',
-    stroke: 'rgba(224, 244, 255, 0.9)',
-    border: '#0f3658',
+    altitude: 0.004,
+    cap: '#2b7bff',
+    point: '#d6e6ff',
+    ring: 'rgba(43, 123, 255, 0.85)',
+    side: 'rgba(0, 0, 0, 0)',
+    stroke: INK,
+    border: INK,
     borderWidth: 0.16,
   },
-  // Learn mode: neighbours of the country being taught. A muted teal that reads
-  // as "context" — clearly subordinate to the bright blue teaching highlight,
-  // but distinct from the near-invisible default fill.
+  // Learn mode: neighbours of the country being taught — a soft lilac that reads
+  // as "context", clearly subordinate to the bright blue teaching highlight.
   neighbor: {
-    altitude: 0.016,
-    cap: 'rgba(96, 176, 168, 0.34)',
+    altitude: 0.004,
+    cap: 'rgba(174, 120, 255, 0.78)',
     point: 'rgba(0,0,0,0)',
     ring: 'rgba(0,0,0,0)',
-    side: 'rgba(58, 118, 112, 0.24)',
-    stroke: 'rgba(196, 236, 230, 0.5)',
-    border: '#2f6a63',
+    side: 'rgba(0, 0, 0, 0)',
+    stroke: INK,
+    border: INK,
     borderWidth: 0.11,
   },
 };
@@ -164,33 +165,14 @@ function GlobeShell({ decorative, size }: { decorative?: boolean; size?: number 
         style={{
           width: shellSize,
           height: shellSize,
-          maxWidth: '82%',
-          maxHeight: '82%',
+          maxWidth: decorative ? '78%' : '82%',
+          maxHeight: decorative ? '78%' : '82%',
           borderRadius: '50%',
-          background: 'radial-gradient(circle at 35% 32%, rgba(113,160,203,0.98) 0%, rgba(33,68,112,0.96) 38%, rgba(8,17,31,0.98) 78%)',
-          boxShadow: '0 0 0 1px rgba(255,255,255,0.05), 0 24px 70px rgba(0,0,0,0.38), inset -34px -44px 90px rgba(0,0,0,0.42)',
-          position: 'relative',
-          overflow: 'hidden',
+          background: OCEAN,
+          border: `4px solid ${INK}`,
+          boxShadow: `6px 6px 0 ${INK}`,
         }}
-      >
-        <div
-          style={{
-            position: 'absolute',
-            inset: '8%',
-            borderRadius: '50%',
-            border: '1px solid rgba(255,255,255,0.08)',
-            opacity: 0.8,
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            inset: decorative ? '12%' : '14%',
-            borderRadius: '50%',
-            background: 'radial-gradient(circle at 40% 34%, rgba(255,255,255,0.22), rgba(255,255,255,0) 52%)',
-          }}
-        />
-      </div>
+      />
     </div>
   );
 }
@@ -209,14 +191,11 @@ interface SharpenableTexture {
 interface SharpenableMaterial {
   map?: SharpenableTexture | null;
   bumpMap?: SharpenableTexture | null;
-  emissiveMap?: SharpenableTexture | null;
-  emissive?: { setHex: (hex: number) => void };
-  emissiveIntensity?: number;
   needsUpdate?: boolean;
 }
 
 // Apply render-quality settings to the live globe. In high-quality mode we crank
-// texture anisotropy (keeps the existing earth texture sharp at grazing angles,
+// texture anisotropy (keeps the painted map sharp at grazing angles,
 // where countries otherwise go blurry) and use the device pixel ratio (clamped
 // at 2). Performance mode drops both — anisotropy to 1 and pixel ratio to 1 —
 // which is the real FPS lever. No extra assets are loaded either way.
@@ -264,52 +243,23 @@ function applyGlobeQuality(globe: GlobeMethods, highQuality: boolean): boolean {
     }
   }
 
-  // Lift overall brightness so the oceans and shaded hemisphere don't read as
-  // dark/muddy. Re-using the base color texture as an emissive map makes the
-  // globe partly self-lit, which guarantees a brightness floor everywhere —
-  // even the night side shows its imagery, so small island nations stay
-  // visible no matter how the globe is rotated. Idempotent — only set once.
-  if (material.map && material.emissiveMap !== material.map) {
-    material.emissiveMap = material.map;
-    material.emissive?.setHex(0xffffff);
-    material.emissiveIntensity = 0.62;
-    material.needsUpdate = true;
-  }
-
   return textureReady;
 }
 
-interface TunableLight {
-  intensity?: number;
-  isAmbientLight?: boolean;
-  isDirectionalLight?: boolean;
-}
-
-// Flatten the globe's lighting so there is no dark "night" hemisphere. By
-// default react-globe.gl uses a dim ambient plus a strong directional light,
-// which leaves half the globe in shadow — exactly where small island nations
-// disappear. We boost the ambient (uniform, all-sides) light and soften the
-// directional one to a gentle highlight, so the whole sphere reads evenly while
-// keeping a little dimensionality. Combined with the emissive floor above, the
-// imagery stays legible at every rotation. We scale the existing intensities
-// rather than set absolute values, so this stays correct regardless of the
-// three.js light-unit convention react-globe.gl ships with.
-function tuneGlobeLighting(globe: GlobeMethods): void {
-  const lights = (globe as unknown as { lights?: () => TunableLight[] }).lights?.();
-  if (!lights) {
+// Inverted-hull outline: a slightly larger ink-colored sphere drawn back-faces
+// only, which shows up as a chunky rim around the globe silhouette.
+async function addGlobeOutline(globe: GlobeMethods): Promise<void> {
+  const THREE = await import('three');
+  const scene = globe.scene();
+  if (scene.getObjectByName('pop-globe-outline')) {
     return;
   }
-
-  for (const light of lights) {
-    if (typeof light.intensity !== 'number') {
-      continue;
-    }
-    if (light.isAmbientLight) {
-      light.intensity *= 2.6;
-    } else if (light.isDirectionalLight) {
-      light.intensity *= 0.35;
-    }
-  }
+  const hull = new THREE.Mesh(
+    new THREE.SphereGeometry(globe.getGlobeRadius() * 1.014, 64, 64),
+    new THREE.MeshBasicMaterial({ color: INK, side: THREE.BackSide }),
+  );
+  hull.name = 'pop-globe-outline';
+  scene.add(hull);
 }
 
 function getFeatureBoundaryPaths(
@@ -414,6 +364,7 @@ export const GlobeMap = memo(function GlobeMap({
   const onTargetReadyRef = useRef(onTargetReady);
   const [globeModule, setGlobeModule] = useState<GlobeModule | null>(null);
   const [globeGeometry, setGlobeGeometry] = useState<GlobeGeometryData | null>(null);
+  const [globeMaterial, setGlobeMaterial] = useState<Material | null>(null);
   const highQualityRef = useRef(true);
   const [dimensions, setDimensions] = useState(() => ({
     height: size ?? 0,
@@ -429,10 +380,24 @@ export const GlobeMap = memo(function GlobeMap({
       }
     }).catch(() => undefined);
 
-    loadGlobeGeometry().then((geometry) => {
-      if (!cancelled) {
-        setGlobeGeometry(geometry);
+    loadGlobeGeometry().then(async (geometry) => {
+      if (cancelled) {
+        return;
       }
+      setGlobeGeometry(geometry);
+
+      // Paint the Pop Atlas map once and wrap it around the sphere unlit, so the
+      // candy colors stay exactly as authored from every angle.
+      const [THREE, canvas] = await Promise.all([
+        import('three'),
+        loadGlobeTextureCanvas(geometry),
+      ]);
+      if (cancelled) {
+        return;
+      }
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      setGlobeMaterial(new THREE.MeshBasicMaterial({ map: texture }));
     }).catch(() => undefined);
 
     return () => {
@@ -679,7 +644,7 @@ export const GlobeMap = memo(function GlobeMap({
   }, [colorMap, currentId, featureById, focusToken, globeGeometry, promptIndex]);
 
   const GlobeRenderer = globeModule?.default;
-  const isRenderable = Boolean(GlobeRenderer && globeGeometry && dimensions.width > 0 && dimensions.height > 0);
+  const isRenderable = Boolean(GlobeRenderer && globeGeometry && globeMaterial && dimensions.width > 0 && dimensions.height > 0);
 
   const onLocateClickRef = useRef(onLocateClick);
   onLocateClickRef.current = onLocateClick;
@@ -700,7 +665,7 @@ export const GlobeMap = memo(function GlobeMap({
     }
 
     scheduleSharpen();
-    tuneGlobeLighting(globe);
+    addGlobeOutline(globe);
 
     if (freezeFocus) {
       globe.pointOfView(decorative ? VIEWPOINTS.decorative : VIEWPOINTS.overview, 0);
@@ -740,10 +705,8 @@ export const GlobeMap = memo(function GlobeMap({
           height={dimensions.height}
           rendererConfig={{ alpha: true, antialias: true, powerPreference: 'high-performance' }}
           backgroundColor="rgba(0,0,0,0)"
-          globeImageUrl="/earth-day.jpg"
-          showAtmosphere
-          atmosphereAltitude={0.16}
-          atmosphereColor="#8cbef1"
+          globeMaterial={globeMaterial ?? undefined}
+          showAtmosphere={false}
           enablePointerInteraction={!decorative}
           polygonsData={polygonsData}
           polygonAltitude={(feature) => {
@@ -780,12 +743,12 @@ export const GlobeMap = memo(function GlobeMap({
           pathColor={(path: object) => {
             const alpha3 = (path as PathDatum).alpha3;
             const state = colorMap[alpha3] ?? 'default';
-            return state === 'default' ? 'rgba(255, 255, 255, 0.55)' : COLOR_STYLES[state].border;
+            return state === 'default' ? 'rgba(31, 26, 46, 0.55)' : COLOR_STYLES[state].border;
           }}
           pathStroke={(path: object) => {
             const alpha3 = (path as PathDatum).alpha3;
             const state = colorMap[alpha3] ?? 'default';
-            return state === 'default' ? 0.35 : COLOR_STYLES[state].borderWidth;
+            return state === 'default' ? null : COLOR_STYLES[state].borderWidth;
           }}
           pathResolution={1}
           pathTransitionDuration={0}
@@ -813,9 +776,10 @@ export const GlobeMap = memo(function GlobeMap({
             left: '50%',
             bottom: 24,
             transform: 'translateX(-50%)',
-            color: 'rgba(255,255,255,0.44)',
+            color: 'var(--ink)',
             fontFamily: 'var(--ff-u)',
-            fontSize: 10,
+            fontWeight: 800,
+            fontSize: 11,
             letterSpacing: '0.12em',
             textTransform: 'uppercase',
             pointerEvents: 'none',

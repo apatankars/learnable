@@ -30,14 +30,14 @@ const VIEW_H = 610;
 const FOCUS_MS = 520;
 
 const FILL_STYLES: Record<CountryColorState, { fill: string; stroke: string; strokeWidth: number }> = {
-  default:  { fill: 'rgba(132, 161, 118, 0.12)', stroke: 'rgba(244, 231, 205, 0.22)', strokeWidth: 0.5 },
-  current:  { fill: 'rgba(255, 206, 64, 0.94)',  stroke: '#3c2a06', strokeWidth: 1.4 },
-  correct:  { fill: 'rgba(86, 204, 116, 0.88)',  stroke: '#143d20', strokeWidth: 0.9 },
-  skipped:  { fill: 'rgba(224, 168, 70, 0.88)',  stroke: '#5c3d12', strokeWidth: 0.9 },
-  wrong:    { fill: 'rgba(226, 84, 84, 0.90)',   stroke: '#4d1717', strokeWidth: 0.9 },
-  teaching: { fill: 'rgba(78, 178, 252, 0.90)',  stroke: '#0f3658', strokeWidth: 1.4 },
+  default:  { fill: '#b9ec9a', stroke: '#1f1a2e', strokeWidth: 1 },
+  current:  { fill: '#ff4b52', stroke: '#1f1a2e', strokeWidth: 2 },
+  correct:  { fill: '#2fcf6b', stroke: '#1f1a2e', strokeWidth: 1.4 },
+  skipped:  { fill: '#ff9a1f', stroke: '#1f1a2e', strokeWidth: 1.4 },
+  wrong:    { fill: '#8f1d2c', stroke: '#1f1a2e', strokeWidth: 1.4 },
+  teaching: { fill: '#2b7bff', stroke: '#1f1a2e', strokeWidth: 2 },
   // Unused for US states (no border dataset), but required by the color union.
-  neighbor: { fill: 'rgba(96, 176, 168, 0.34)',  stroke: '#2f6a63', strokeWidth: 0.7 },
+  neighbor: { fill: '#c9a6ff', stroke: '#1f1a2e', strokeWidth: 1.2 },
 };
 
 let topologyPromise: Promise<StateShape[]> | null = null;
@@ -159,14 +159,13 @@ export const UsStatesMap = memo(function UsStatesMap({
             {shapes.map((s) => {
               const state = colorMap[s.id] ?? 'default';
               const style = FILL_STYLES[state];
-              const isActive = state === 'current' || state === 'teaching';
               const isHovered = Boolean(onLocateClick) && hoveredId === s.id && state === 'default';
               return (
                 <path
                   key={s.id}
                   d={s.d}
-                  fill={isHovered ? 'rgba(255, 226, 130, 0.45)' : style.fill}
-                  stroke={isHovered ? 'rgba(255, 240, 200, 0.7)' : style.stroke}
+                  fill={isHovered ? '#fff0a6' : style.fill}
+                  stroke={style.stroke}
                   strokeWidth={style.strokeWidth}
                   strokeLinejoin="round"
                   vectorEffect="non-scaling-stroke"
@@ -176,7 +175,6 @@ export const UsStatesMap = memo(function UsStatesMap({
                   style={{
                     transition: 'fill 0.2s ease',
                     cursor: onLocateClick ? 'pointer' : undefined,
-                    filter: isActive ? 'drop-shadow(0 0 6px rgba(255, 213, 74, 0.55))' : undefined,
                   }}
                 />
               );
@@ -186,7 +184,7 @@ export const UsStatesMap = memo(function UsStatesMap({
       ) : (
         <div
           style={{
-            color: 'rgba(255,255,255,0.44)',
+            color: 'var(--ink)', fontWeight: 800,
             fontFamily: 'var(--ff-u)',
             fontSize: 11,
             letterSpacing: '0.12em',

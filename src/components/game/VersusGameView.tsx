@@ -1,7 +1,7 @@
+import { PopBackdrop } from '../ui/PopBackdrop';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { GlobeMap as OrbisGlobe } from './GlobeMap';
 import { ResultFlash } from './ResultFlash';
-import { BotanicalCorner } from '../ui/BotanicalCorner';
 import type {
   CountryEntry,
   GamePrompt,
@@ -676,29 +676,19 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
     }
   }, [didUserWin, isMatchFinished, otherPlayers.length, recordVersusResult]);
 
-  const vineBg = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='72' viewBox='0 0 22 72'%3E%3Cpath d='M11,0 C10,18 12,36 11,54 C10,62 11,72 11,72' stroke='rgba(74,110,36,0.28)' stroke-width='0.9' fill='none'/%3E%3Cpath d='M11,18 C8,11 13,4 20,3 C13,7 9,13 11,18Z' fill='rgba(74,110,36,0.20)'/%3E%3Cpath d='M11,49 C14,42 9,35 2,34 C9,37 13,44 11,49Z' fill='rgba(74,110,36,0.18)'/%3E%3Ccircle cx='11' cy='17' r='1.6' fill='rgba(74,110,36,0.22)'/%3E%3C/svg%3E")`;
-
   return (
     <div className="responsive-split-shell gameplay-shell">
       <div className="responsive-side-panel" style={{
         flex: '0 0 38%', minWidth: 320, maxWidth: 480,
         display: 'flex', flexDirection: 'column',
-        borderRight: '1px solid var(--border)',
+        borderRight: '3px solid var(--ink)',
         background: 'var(--s1)',
         position: 'relative', overflow: 'hidden',
       }}>
-        <div style={{
-          position: 'absolute', top: '12%', bottom: '12%',
-          right: -11, width: 22, zIndex: 10, pointerEvents: 'none',
-          backgroundRepeat: 'repeat-y', backgroundPosition: 'center top',
-          backgroundImage: vineBg,
-        }} />
-        <BotanicalCorner />
-
         <div className="game-top-bar" style={{
           alignItems: 'center', gap: 12,
           padding: '15px 20px',
-          borderBottom: '1px solid var(--border)',
+          borderBottom: '2px solid var(--border)',
           background: 'var(--bg)',
           flexShrink: 0,
         }}>
@@ -707,7 +697,7 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
             style={{
               display: 'flex', alignItems: 'center', gap: 5,
               fontSize: 12, color: 'var(--t3)', letterSpacing: '0.05em',
-              padding: '4px 8px', borderRadius: 3, border: 'none', background: 'none',
+              padding: '4px 8px', borderRadius: 10, border: 'none', background: 'none',
               cursor: 'pointer', transition: 'color 0.14s', fontFamily: 'var(--ff-u)',
             }}
           >
@@ -719,7 +709,7 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
 
           <div style={{
             flex: 1, textAlign: 'center',
-            fontFamily: 'var(--ff-d)', fontSize: 15, fontWeight: 400,
+            fontFamily: 'var(--ff-d)', fontSize: 15, fontWeight: 700,
             letterSpacing: '0.09em', color: 'var(--t2)',
             minWidth: 120,
           }}>
@@ -729,7 +719,7 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
           {!settings.noTimeLimit && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, marginLeft: 10 }}>
               <span style={{
-                fontFamily: 'var(--ff-d)', fontWeight: 300, fontSize: 15,
+                fontFamily: 'var(--ff-d)', fontWeight: 700, fontSize: 15,
                 color: timeRemaining <= 10 ? 'var(--miss)' : 'var(--t2)',
               }}>
                 {Math.floor(timeRemaining / 60)}:{String(timeRemaining % 60).padStart(2, '0')}
@@ -740,8 +730,8 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
 
         <div className="game-progress-strip" style={{
           alignItems: 'stretch', justifyContent: 'space-between',
-          padding: '12px 20px', borderBottom: '1px solid var(--border)',
-          background: 'rgba(135,100,24,0.05)', flexShrink: 0,
+          padding: '12px 20px', borderBottom: '2px solid var(--border)',
+          background: 'var(--coral-soft)', flexShrink: 0,
           flexDirection: 'column', gap: 10,
         }}>
           <div style={{
@@ -785,9 +775,9 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     padding: '8px 10px',
-                    borderRadius: 3,
-                    border: isSelf ? '1px solid rgba(135,100,24,0.32)' : '1px solid var(--border)',
-                    background: isSelf ? 'rgba(135,100,24,0.08)' : 'var(--bg)',
+                    borderRadius: 10,
+                    border: isSelf ? '2px solid var(--ink)' : '2px solid var(--border)',
+                    background: isSelf ? 'var(--sun-soft)' : 'var(--bg)',
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
@@ -800,13 +790,13 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
                     </span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3, flexShrink: 0, minWidth: 88 }}>
-                    <div style={{ fontSize: 11, color: player.streak > 0 ? 'var(--gold)' : 'var(--t3)', letterSpacing: '0.04em', lineHeight: 1 }}>
+                    <div style={{ fontSize: 11, color: 'var(--t2)', letterSpacing: '0.04em', lineHeight: 1 }}>
                       x{player.streak}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: 4, lineHeight: 1 }}>
                       <span style={{
-                        fontFamily: 'var(--ff-d)', fontSize: 18, fontWeight: 300,
-                        color: isLeader ? 'var(--gold-hi)' : 'var(--t2)',
+                        fontFamily: 'var(--ff-d)', fontSize: 18, fontWeight: 700,
+                        color: isLeader ? 'var(--coral)' : 'var(--ink)',
                         lineHeight: 1,
                       }}>{player.score}</span>
                       <span style={{ fontSize: 10, color: 'var(--t3)', letterSpacing: '0.06em', lineHeight: 1 }}>pts</span>
@@ -828,9 +818,9 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
             <div style={{
               padding: '10px 12px',
               marginBottom: 14,
-              borderRadius: 3,
-              border: '1px solid rgba(135,100,24,0.24)',
-              background: 'rgba(135,100,24,0.08)',
+              borderRadius: 10,
+              border: '2px solid var(--ink)',
+              background: 'var(--coral-soft)',
               color: 'var(--t2)',
               fontSize: 12,
               fontFamily: 'var(--ff-u)',
@@ -859,7 +849,7 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
             <div style={{ display: 'flex', flexDirection: 'column', flex: 1, animation: 'fade-up 0.18s ease forwards' }}>
               <div style={{
                 fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase',
-                color: 'var(--t3)', marginBottom: 10, fontWeight: 500,
+                color: 'var(--t3)', marginBottom: 10, fontWeight: 700,
                 fontFamily: 'var(--ff-u)',
               }}>
                 {currentPrompt.promptType === 'country' ? 'Identify the highlighted country' : 'Name the capital'}
@@ -869,7 +859,7 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
                 <div style={{
                   flex: 1,
                   minWidth: 0,
-                  fontFamily: 'var(--ff-d)', fontSize: 27, fontWeight: 400,
+                  fontFamily: 'var(--ff-d)', fontSize: 27, fontWeight: 700,
                   color: 'var(--t1)', lineHeight: 1.2,
                   overflowWrap: 'anywhere',
                 }}>
@@ -883,7 +873,7 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
                   </div>
                   <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: 4, lineHeight: 1 }}>
                     <span style={{
-                      fontFamily: 'var(--ff-d)', fontSize: 26, fontWeight: 300,
+                      fontFamily: 'var(--ff-d)', fontSize: 26, fontWeight: 700,
                       color: 'var(--gold-hi)', lineHeight: 1,
                     }}>{session.score}</span>
                     <span style={{ fontSize: 11, color: 'var(--t3)', letterSpacing: '0.06em', lineHeight: 1 }}>pts</span>
@@ -895,8 +885,8 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
                 <div style={{
                   display: 'inline-flex', alignItems: 'center',
                   fontSize: 11, letterSpacing: '0.10em', textTransform: 'uppercase',
-                  color: 'var(--olive)', background: 'rgba(86,116,40,0.08)',
-                  border: '1px solid rgba(86,116,40,0.22)', borderRadius: 3,
+                  color: 'var(--olive)', background: 'var(--green-soft)',
+                  border: '2px solid var(--ink)', borderRadius: 10,
                   padding: '3px 9px', marginBottom: 12, alignSelf: 'flex-start',
                   fontFamily: 'var(--ff-u)',
                 }}>
@@ -911,9 +901,9 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
                   gap: 8,
                   padding: '7px 10px',
                   marginBottom: 14,
-                  borderRadius: 3,
-                  border: '1px solid rgba(86,116,40,0.22)',
-                  background: 'rgba(86,116,40,0.08)',
+                  borderRadius: 10,
+                  border: '2px solid var(--ink)',
+                  background: 'var(--green-soft)',
                   color: 'var(--olive)',
                   fontSize: 12,
                   fontFamily: 'var(--ff-u)',
@@ -928,9 +918,9 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
                   alignItems: 'center',
                   padding: '7px 10px',
                   marginBottom: 14,
-                  borderRadius: 3,
-                  border: '1px solid rgba(135,100,24,0.22)',
-                  background: 'rgba(135,100,24,0.08)',
+                  borderRadius: 10,
+                  border: '2px solid var(--ink)',
+                  background: 'var(--coral-soft)',
                   color: 'var(--gold-hi)',
                   fontSize: 12,
                   fontFamily: 'var(--ff-u)',
@@ -944,9 +934,9 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
                   display: 'flex', alignItems: 'center',
                   border: showWrongFeedback
                     ? '1px solid var(--miss)'
-                    : '1px solid var(--border-hi)',
-                  borderRadius: 3, overflow: 'hidden',
-                  background: showWrongFeedback ? 'rgba(132,40,32,0.06)' : 'var(--bg)',
+                    : '2px solid var(--border-hi)',
+                  borderRadius: 10, overflow: 'hidden',
+                  background: showWrongFeedback ? 'var(--coral-soft)' : 'var(--bg)',
                   transition: 'border-color 0.18s, box-shadow 0.18s',
                   boxShadow: showWrongFeedback ? 'none' : undefined,
                   marginBottom: 13,
@@ -986,9 +976,9 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
                     style={{
                       padding: '0 16px', height: 46,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: 'var(--olive)', borderLeft: '1px solid var(--border)',
+                      color: 'var(--olive)', borderLeft: '2px solid var(--border)',
                       cursor: (!isPlaying || promptLocked || freezeActive) ? 'default' : 'pointer',
-                      background: freezeActive ? 'rgba(132,40,32,0.08)' : 'none',
+                      background: freezeActive ? 'var(--coral-soft)' : 'none',
                       opacity: (!isPlaying || promptLocked || freezeActive) ? 0.35 : 1,
                       position: 'relative',
                       zIndex: 1,
@@ -1017,10 +1007,10 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
               {showFeedbackOk && (
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: 7,
-                  fontSize: 13, padding: '9px 13px', borderRadius: 3,
+                  fontSize: 13, padding: '9px 13px', borderRadius: 10,
                   marginBottom: 14,
-                  color: 'var(--ok-hi)', background: 'rgba(58,92,28,0.10)',
-                  border: '1px solid rgba(58,92,28,0.22)', fontWeight: 500,
+                  color: 'var(--ok-hi)', background: 'var(--green-soft)',
+                  border: '2px solid var(--ink)', fontWeight: 700,
                 }}>
                   Correct
                 </div>
@@ -1029,10 +1019,10 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
               {showFeedbackMiss && (
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: 7,
-                  padding: '9px 13px', borderRadius: 3, marginBottom: 14,
-                  color: 'var(--miss-hi)', background: 'rgba(132,40,32,0.10)',
-                  border: '1px solid rgba(132,40,32,0.20)',
-                  fontFamily: 'var(--ff-d)', fontSize: 16, fontWeight: 400,
+                  padding: '9px 13px', borderRadius: 10, marginBottom: 14,
+                  color: 'var(--miss-hi)', background: 'var(--coral-soft)',
+                  border: '2px solid var(--ink)',
+                  fontFamily: 'var(--ff-d)', fontSize: 16, fontWeight: 700,
                 }}>
                   {wrongAnswer}
                 </div>
@@ -1060,9 +1050,9 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
                         style={{
                           minHeight: 72,
                           padding: '10px 12px',
-                          borderRadius: 3,
-                          border: powerup ? '1px solid rgba(135,100,24,0.22)' : '1px dashed var(--border)',
-                          background: powerup ? 'rgba(135,100,24,0.06)' : 'var(--bg)',
+                          borderRadius: 10,
+                          border: powerup ? '2px solid var(--ink)' : '2px dashed var(--border)',
+                          background: powerup ? 'var(--sun-soft)' : 'var(--bg)',
                           textAlign: 'left',
                           opacity: disabled ? 0.6 : 1,
                           cursor: disabled ? 'default' : 'pointer',
@@ -1093,9 +1083,9 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
                   <button
                     onClick={handleSkip}
                     style={{
-                      flex: 1, padding: '10px 14px', borderRadius: 3,
-                      fontSize: 12, letterSpacing: '0.05em', fontWeight: 500,
-                      border: '1px solid var(--border)', color: 'var(--t2)',
+                      flex: 1, padding: '10px 14px', borderRadius: 10,
+                      fontSize: 12, letterSpacing: '0.05em', fontWeight: 700,
+                      border: '2px solid var(--border)', color: 'var(--t2)',
                       background: 'transparent', cursor: 'pointer',
                       fontFamily: 'var(--ff-u)',
                     }}
@@ -1123,10 +1113,11 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
 
       <div className="responsive-globe-panel" style={{
         flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        overflow: 'hidden', position: 'relative', background: '#05080d',
+        overflow: 'hidden', position: 'relative', background: 'var(--s1)',
         filter: fogActive && !isCapitalPrompt ? 'blur(4px)' : 'none',
         transition: 'filter 0.18s ease',
       }}>
+        <PopBackdrop />
         <button
           onClick={() => setRecenterToken((value) => value + 1)}
           title="Recenter globe"
@@ -1134,9 +1125,7 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
             position: 'absolute', top: 18, right: 18, zIndex: 12,
             display: 'inline-flex', alignItems: 'center', gap: 8,
             padding: '8px 12px', borderRadius: 999,
-            border: '1px solid rgba(255,255,255,0.14)',
-            background: 'rgba(7,10,15,0.68)', color: 'rgba(244,231,205,0.92)',
-            backdropFilter: 'blur(10px)', cursor: 'pointer',
+            border: '2px solid var(--ink)', background: 'var(--bg)', color: 'var(--ink)', fontWeight: 800, boxShadow: 'var(--pop-shadow)', cursor: 'pointer',
             fontFamily: 'var(--ff-u)', fontSize: 11, letterSpacing: '0.08em',
             textTransform: 'uppercase',
           }}
@@ -1162,14 +1151,14 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
       {isMatchFinished && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 100,
-          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)',
+          background: 'rgba(31,26,46,0.6)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           <div style={{
-            background: 'var(--bg)', border: '1px solid var(--border)',
-            borderRadius: 4, padding: '40px min(50px, 7vw)',
+            background: 'var(--bg)', border: '2px solid var(--border)',
+            borderRadius: 10, padding: '40px min(50px, 7vw)',
             width: 'min(420px, 92vw)', textAlign: 'center',
-            boxShadow: '0 12px 48px rgba(0,0,0,0.25)',
+            boxShadow: '6px 6px 0 var(--ink)',
           }}>
             <h2 style={{
               fontFamily: 'var(--ff-d)', fontSize: 36, color: 'var(--t1)', marginBottom: 8,
@@ -1196,14 +1185,14 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
                       alignItems: 'center',
                       padding: '12px',
                       background: 'var(--s1)',
-                      borderRadius: 4,
-                      border: isSelf ? '1px solid rgba(135,100,24,0.32)' : '1px solid transparent',
+                      borderRadius: 10,
+                      border: isSelf ? '2px solid var(--ink)' : '1px solid transparent',
                     }}
                   >
                     <span>
                       #{index + 1} {player.emoji} {player.username}{isSelf ? ' (You)' : ''}
                     </span>
-                    <span style={{ color: isLeader ? 'var(--gold-hi)' : 'var(--t2)' }}>
+                    <span style={{ color: isLeader ? 'var(--coral)' : 'var(--ink)' }}>
                       {player.score} · x{player.streak}
                     </span>
                   </div>
@@ -1215,8 +1204,8 @@ export function VersusGameView({ settings, user, onBackToMenu, versusHook, progr
               onClick={onBackToMenu}
               style={{
                 width: '100%', padding: '12px',
-                background: 'rgba(135,100,24,0.12)', border: '1px solid rgba(135,100,24,0.32)',
-                color: 'var(--gold-hi)', borderRadius: 3, cursor: 'pointer',
+                background: 'var(--coral-soft)', border: '2px solid var(--ink)',
+                color: 'var(--gold-hi)', borderRadius: 10, cursor: 'pointer',
                 fontFamily: 'var(--ff-u)', fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.1em',
               }}
             >

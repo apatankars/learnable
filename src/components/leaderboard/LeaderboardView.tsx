@@ -3,7 +3,6 @@ import type { User } from '@supabase/supabase-js';
 import { fetchLeaderboard, getTimeModeLabel } from '../../lib/leaderboard';
 import type { LeaderboardEntry, TimeMode } from '../../lib/leaderboard';
 import type { GameMode } from '../../types';
-import { BotanicalCorner } from '../ui/BotanicalCorner';
 
 const MODES: { value: GameMode; label: string; icon: string }[] = [
   { value: 'country', label: 'Country', icon: '🗺️' },
@@ -33,23 +32,11 @@ export function LeaderboardView({ user, onBack }: LeaderboardViewProps) {
   }, [mode, timeMode]);
 
   const currentUserId = user?.id;
-  const vineBg = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='72' viewBox='0 0 22 72'%3E%3Cpath d='M11,0 C10,18 12,36 11,54 C10,62 11,72 11,72' stroke='rgba(74,110,36,0.32)' stroke-width='0.9' fill='none'/%3E%3Cpath d='M11,18 C8,11 13,4 20,3 C13,7 9,13 11,18Z' fill='rgba(74,110,36,0.22)'/%3E%3Cpath d='M11,49 C14,42 9,35 2,34 C9,37 13,44 11,49Z' fill='rgba(74,110,36,0.20)'/%3E%3Ccircle cx='11' cy='17' r='1.6' fill='rgba(74,110,36,0.26)'/%3E%3Ccircle cx='11' cy='48' r='1.3' fill='rgba(74,110,36,0.20)'/%3E%3C/svg%3E")`;
-
   return (
     <div style={{
-      minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column',
+      minHeight: 'var(--app-height)', background: 'var(--s1)', backgroundImage: 'radial-gradient(rgba(31,26,46,0.12) 2px, transparent 2.4px)', backgroundSize: '26px 26px', display: 'flex', flexDirection: 'column',
       alignItems: 'center', padding: '52px clamp(16px, 4vw, 24px)', position: 'relative', overflow: 'hidden'
     }}>
-      <BotanicalCorner />
-      <BotanicalCorner flip />
-      <div style={{
-        position: 'absolute', top: 0, bottom: 0, left: 16, width: 22, zIndex: 0, pointerEvents: 'none',
-        backgroundRepeat: 'repeat-y', backgroundPosition: 'center top', backgroundImage: vineBg, opacity: 0.5
-      }} />
-      <div style={{
-        position: 'absolute', top: 0, bottom: 0, right: 16, width: 22, zIndex: 0, pointerEvents: 'none',
-        backgroundRepeat: 'repeat-y', backgroundPosition: 'center top', backgroundImage: vineBg, opacity: 0.5
-      }} />
 
       <div style={{ width: '100%', maxWidth: 540, position: 'relative', zIndex: 10 }}>
         {/* Header */}
@@ -57,16 +44,16 @@ export function LeaderboardView({ user, onBack }: LeaderboardViewProps) {
           <button
             onClick={onBack}
             style={{
-              color: 'var(--t3)', fontFamily: 'var(--ff-u)', fontSize: 13,
-              background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, width: 60
+              color: 'var(--ink)', fontFamily: 'var(--ff-u)', fontSize: 13, fontWeight: 800,
+              background: 'var(--bg)', border: '2px solid var(--ink)', borderRadius: 999, padding: '5px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, width: 'auto'
             }}
           >
             ← Back
           </button>
           <div style={{ flex: 1, textAlign: 'center' }}>
-            <h1 style={{ fontFamily: 'var(--ff-d)', fontWeight: 300, fontSize: 'clamp(2rem, 8vw, 2.25rem)', letterSpacing: '0.04em', color: 'var(--t1)' }}>Leaderboard</h1>
+            <h1 style={{ fontFamily: 'var(--ff-d)', fontWeight: 700, fontSize: 'clamp(2rem, 8vw, 2.25rem)', letterSpacing: '-0.02em', color: 'var(--ink)', textShadow: '3px 3px 0 var(--coral)' }}>Leaderboard</h1>
           </div>
-          <div style={{ width: 60 }} />
+          <div style={{ width: 70 }} />
         </div>
 
         {/* Mode tabs */}
@@ -76,10 +63,10 @@ export function LeaderboardView({ user, onBack }: LeaderboardViewProps) {
               key={m.value}
               onClick={() => setMode(m.value)}
               style={{
-                flex: 1, padding: '10px 0', borderRadius: 3, fontSize: 13, fontWeight: 500,
-                border: mode === m.value ? '1px solid var(--gold)' : '1px solid var(--border)',
-                background: mode === m.value ? 'var(--bg)' : 'var(--s1)',
-                color: mode === m.value ? 'var(--gold-hi)' : 'var(--t2)',
+                flex: 1, padding: '10px 0', borderRadius: 10, fontSize: 13, fontWeight: 700,
+                border: '2px solid var(--ink)',
+                background: mode === m.value ? 'var(--sun)' : 'var(--bg)',
+                color: 'var(--ink)',
                 cursor: 'pointer', transition: 'all 0.14s'
               }}
             >
@@ -95,10 +82,10 @@ export function LeaderboardView({ user, onBack }: LeaderboardViewProps) {
               key={tm}
               onClick={() => setTimeMode(tm)}
               style={{
-                flex: 1, padding: '8px 0', borderRadius: 3, fontSize: 12, fontWeight: 500,
-                border: timeMode === tm ? '1px solid var(--gold)' : '1px solid var(--border)',
-                background: timeMode === tm ? 'rgba(135,100,24,0.12)' : 'var(--bg)',
-                color: timeMode === tm ? 'var(--gold-hi)' : 'var(--t2)',
+                flex: 1, padding: '8px 0', borderRadius: 10, fontSize: 12, fontWeight: 700,
+                border: '2px solid var(--ink)',
+                background: timeMode === tm ? 'var(--sun)' : 'var(--bg)',
+                color: 'var(--ink)',
                 cursor: 'pointer', transition: 'all 0.14s', letterSpacing: '0.04em'
               }}
             >
@@ -108,21 +95,21 @@ export function LeaderboardView({ user, onBack }: LeaderboardViewProps) {
         </div>
 
         {/* Table */}
-        <div style={{ background: 'var(--bg)', borderRadius: 3, border: '1px solid var(--border)', overflowX: 'auto', overflowY: 'hidden' }}>
+        <div style={{ background: 'var(--bg)', borderRadius: 18, border: '3px solid var(--ink)', boxShadow: 'var(--pop-shadow-lg)', overflowX: 'auto', overflowY: 'hidden' }}>
           {loading ? (
             <div style={{ padding: '64px 0', textAlign: 'center', color: 'var(--t3)', fontFamily: 'var(--ff-u)', fontSize: 13 }}>Loading…</div>
           ) : entries.length === 0 ? (
             <div style={{ padding: '64px 0', textAlign: 'center', color: 'var(--t3)', fontFamily: 'var(--ff-u)', fontSize: 13 }}>
-              <div style={{ fontSize: 32, marginBottom: 8 }}>🌿</div>
+              <div style={{ fontSize: 32, marginBottom: 8 }}>🏆</div>
               No scores yet — be the first!
             </div>
           ) : (
             <table style={{ width: '100%', minWidth: 320, borderCollapse: 'collapse', fontFamily: 'var(--ff-u)' }}>
               <thead>
-                <tr style={{ background: 'var(--s1)', borderBottom: '1px solid var(--border)' }}>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 11, fontWeight: 500, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.08em', width: 40 }}>#</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 11, fontWeight: 500, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Player</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'right', fontSize: 11, fontWeight: 500, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Score</th>
+                <tr style={{ background: 'var(--sky-soft)', borderBottom: '3px solid var(--ink)' }}>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--ink)', textTransform: 'uppercase', letterSpacing: '0.08em', width: 40 }}>#</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Player</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'right', fontSize: 11, fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Score</th>
                 </tr>
               </thead>
               <tbody>
@@ -134,8 +121,8 @@ export function LeaderboardView({ user, onBack }: LeaderboardViewProps) {
                     <tr
                       key={entry.userId}
                       style={{
-                        borderBottom: '1px solid var(--border)',
-                        background: isMe ? 'rgba(135,100,24,0.06)' : 'transparent',
+                        borderBottom: '2px dashed rgba(31,26,46,0.25)',
+                        background: isMe ? 'rgba(255,90,95,0.06)' : 'transparent',
                         transition: 'background 0.14s'
                       }}
                     >

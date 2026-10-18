@@ -17,24 +17,24 @@ export function VersusLobby({ lobbyState, isHost, onStartGame, onLeave, error }:
   return (
     <div style={{
       display: 'flex', flexDirection: 'column',
-      width: '100%', height: '100vh',
+      width: '100%', height: 'var(--app-height)',
       background: 'var(--bg)', color: 'var(--t1)',
       alignItems: 'center', justifyContent: 'center',
       fontFamily: 'var(--ff-u)',
     }}>
       <div style={{
         background: 'var(--s1)',
-        border: '1px solid var(--border)',
-        borderRadius: 4,
+        border: '3px solid var(--ink)',
+        borderRadius: 22,
         padding: '40px',
         width: 460,
         maxWidth: '90%',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.05)',
+        boxShadow: '6px 6px 0 var(--ink)',
       }}>
         <h1 style={{
           fontFamily: 'var(--ff-d)',
           fontSize: 32,
-          fontWeight: 400,
+          fontWeight: 700,
           textAlign: 'center',
           marginBottom: 8,
           color: 'var(--t1)',
@@ -52,8 +52,8 @@ export function VersusLobby({ lobbyState, isHost, onStartGame, onLeave, error }:
 
         <div style={{
           background: 'var(--bg)',
-          border: '1px dashed var(--border-hi)',
-          borderRadius: 3,
+          border: '2px dashed var(--border-hi)',
+          borderRadius: 10,
           padding: '16px',
           textAlign: 'center',
           fontSize: 36,
@@ -67,11 +67,11 @@ export function VersusLobby({ lobbyState, isHost, onStartGame, onLeave, error }:
 
         {error && (
           <div style={{
-            background: 'rgba(200, 50, 50, 0.1)',
-            border: '1px solid rgba(200, 50, 50, 0.3)',
-            color: '#d44',
+            background: 'var(--coral-soft)',
+            border: '2px solid var(--ink)',
+            color: 'var(--ink)',
             padding: '12px',
-            borderRadius: 3,
+            borderRadius: 10,
             fontSize: 13,
             marginBottom: 24,
             textAlign: 'center',
@@ -85,8 +85,8 @@ export function VersusLobby({ lobbyState, isHost, onStartGame, onLeave, error }:
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             padding: '12px 16px',
             background: 'var(--bg)',
-            border: '1px solid var(--border)',
-            borderRadius: 3,
+            border: '2px solid var(--border)',
+            borderRadius: 10,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <span style={{ fontSize: 20 }}>{host?.emoji ?? '🌍'}</span>
@@ -104,8 +104,8 @@ export function VersusLobby({ lobbyState, isHost, onStartGame, onLeave, error }:
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               padding: '12px 16px',
               background: 'var(--bg)',
-              border: '1px solid var(--border)',
-              borderRadius: 3,
+              border: '2px solid var(--border)',
+              borderRadius: 10,
               opacity: 0.6,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -122,8 +122,8 @@ export function VersusLobby({ lobbyState, isHost, onStartGame, onLeave, error }:
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   padding: '12px 16px',
                   background: 'var(--bg)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 3,
+                  border: '2px solid var(--border)',
+                  borderRadius: 10,
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -154,8 +154,8 @@ export function VersusLobby({ lobbyState, isHost, onStartGame, onLeave, error }:
             onClick={onLeave}
             style={{
               flex: 1, padding: '12px 0',
-              background: 'transparent', border: '1px solid var(--border-hi)',
-              color: 'var(--t2)', borderRadius: 3, cursor: 'pointer',
+              background: 'transparent', border: '2px solid var(--border-hi)',
+              color: 'var(--t2)', borderRadius: 10, cursor: 'pointer',
               fontSize: 13, transition: 'background 0.14s',
             }}
           >
@@ -167,11 +167,11 @@ export function VersusLobby({ lobbyState, isHost, onStartGame, onLeave, error }:
               disabled={!canStart}
               style={{
                 flex: 2, padding: '12px 0',
-                background: canStart ? 'rgba(135,100,24,0.12)' : 'var(--bg)',
-                border: canStart ? '1px solid rgba(135,100,24,0.32)' : '1px solid var(--border)',
+                background: canStart ? 'var(--sun)' : 'var(--bg)',
+                border: canStart ? '2px solid var(--ink)' : '2px solid var(--border)',
                 color: canStart ? 'var(--gold-hi)' : 'var(--t3)',
-                borderRadius: 3, cursor: canStart ? 'pointer' : 'not-allowed',
-                fontSize: 13, fontWeight: 500, transition: 'all 0.14s',
+                borderRadius: 10, cursor: canStart ? 'pointer' : 'not-allowed',
+                fontSize: 13, fontWeight: 700, transition: 'all 0.14s',
               }}
             >
               Start Match
@@ -180,8 +180,8 @@ export function VersusLobby({ lobbyState, isHost, onStartGame, onLeave, error }:
           {!isHost && (
             <div style={{
               flex: 2, padding: '12px 0',
-              background: 'var(--bg)', border: '1px solid var(--border)',
-              color: 'var(--t3)', borderRadius: 3,
+              background: 'var(--bg)', border: '2px solid var(--border)',
+              color: 'var(--t3)', borderRadius: 10,
               fontSize: 13, textAlign: 'center',
             }}>
               Waiting for Host
@@ -211,16 +211,16 @@ export function JoinVersusModal({
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 100,
-      background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)',
+      background: 'rgba(31,26,46,0.6)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
       <div style={{
         background: 'var(--bg)',
-        border: '1px solid var(--border)',
-        borderRadius: 4,
+        border: '2px solid var(--border)',
+        borderRadius: 10,
         padding: '32px',
         width: 320,
-        boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
+        boxShadow: '6px 6px 0 var(--ink)',
         fontFamily: 'var(--ff-u)',
       }}>
         <h2 style={{ fontSize: 18, color: 'var(--t1)', marginBottom: 16, textAlign: 'center' }}>Join Versus Game</h2>
@@ -237,8 +237,8 @@ export function JoinVersusModal({
                   width: 36,
                   height: 36,
                   borderRadius: 18,
-                  border: emoji === option ? '1px solid var(--gold)' : '1px solid var(--border)',
-                  background: emoji === option ? 'rgba(135,100,24,0.08)' : 'var(--s1)',
+                  border: '2px solid var(--ink)',
+                  background: emoji === option ? 'var(--sun-soft)' : 'var(--s1)',
                   cursor: 'pointer',
                   fontSize: 18,
                 }}
@@ -256,8 +256,8 @@ export function JoinVersusModal({
           maxLength={6}
           style={{
             width: '100%', padding: '12px', boxSizing: 'border-box',
-            background: 'var(--s1)', border: '1px solid var(--border)',
-            color: 'var(--t1)', borderRadius: 3, marginBottom: 20,
+            background: 'var(--s1)', border: '2px solid var(--border)',
+            color: 'var(--t1)', borderRadius: 10, marginBottom: 20,
             fontSize: 16, textAlign: 'center', letterSpacing: '0.1em',
             outline: 'none',
           }}
@@ -267,8 +267,8 @@ export function JoinVersusModal({
             onClick={onClose}
             style={{
               flex: 1, padding: '10px 0',
-              background: 'transparent', border: '1px solid var(--border-hi)',
-              color: 'var(--t2)', borderRadius: 3, cursor: 'pointer',
+              background: 'transparent', border: '2px solid var(--border-hi)',
+              color: 'var(--t2)', borderRadius: 10, cursor: 'pointer',
             }}
           >
             Cancel
@@ -281,7 +281,7 @@ export function JoinVersusModal({
               background: code.length === 6 ? 'var(--t1)' : 'var(--s1)',
               border: 'none',
               color: code.length === 6 ? 'var(--bg)' : 'var(--t3)',
-              borderRadius: 3, cursor: code.length === 6 ? 'pointer' : 'not-allowed',
+              borderRadius: 10, cursor: code.length === 6 ? 'pointer' : 'not-allowed',
             }}
           >
             Join

@@ -14,15 +14,14 @@ interface GameOverModalProps {
 }
 
 const btn = (variant: 'gold' | 'ghost'): React.CSSProperties => ({
-  width: '100%', padding: '11px 0', borderRadius: 3, fontSize: 13,
-  fontWeight: 500, letterSpacing: '0.05em', cursor: 'pointer',
-  fontFamily: 'var(--ff-u)', transition: 'background 0.14s, border-color 0.14s',
+  width: '100%', padding: '11px 0 9px', borderRadius: 14, fontSize: 15,
+  fontWeight: 800, cursor: 'pointer',
+  fontFamily: 'var(--ff-u)',
+  border: '2px solid var(--ink)', borderBottomWidth: 5,
   ...(variant === 'gold' ? {
-    background: 'rgba(135,100,24,0.12)', border: '1px solid rgba(135,100,24,0.32)',
-    color: 'var(--gold-hi)',
+    background: 'var(--coral)', color: '#fff',
   } : {
-    background: 'transparent', border: '1px solid var(--border)',
-    color: 'var(--t3)',
+    background: 'var(--bg)', color: 'var(--ink)',
   }),
 });
 
@@ -58,14 +57,14 @@ export function GameOverModal({
   return (
     <div style={{
       position: 'fixed', inset: 0,
-      background: 'rgba(10,8,4,0.65)', backdropFilter: 'blur(4px)',
+      background: 'rgba(31,26,46,0.6)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       zIndex: 50, padding: 16,
     }}>
       <div style={{
-        background: 'var(--s1)', borderRadius: 4,
-        border: '1px solid var(--border)',
-        boxShadow: '0 16px 64px rgba(0,0,0,0.35)',
+        background: 'var(--s1)', borderRadius: 22,
+        border: '3px solid var(--ink)',
+        boxShadow: '7px 7px 0 var(--ink)',
         width: '100%', maxWidth: 420,
         animation: 'slide-up 0.3s ease-out',
         overflow: 'hidden',
@@ -73,29 +72,30 @@ export function GameOverModal({
         {/* Header */}
         <div style={{
           padding: '28px clamp(18px, 5vw, 32px) 24px',
-          borderBottom: '1px solid var(--border)',
+          borderBottom: '3px solid var(--ink)',
           textAlign: 'center',
-          background: 'var(--bg)',
+          background: 'var(--sun)',
         }}>
           <div style={{
-            fontFamily: 'var(--ff-d)', fontSize: 'clamp(3rem, 14vw, 4.5rem)', fontWeight: 300,
-            lineHeight: 1, color: 'var(--gold-hi)', letterSpacing: '-0.01em',
+            fontFamily: 'var(--ff-d)', fontSize: 'clamp(3rem, 14vw, 4.5rem)', fontWeight: 700,
+            lineHeight: 1, color: 'var(--ink)', letterSpacing: '-0.02em',
             marginBottom: 4,
           }}>
             {displayScore.toLocaleString()}
           </div>
           <div style={{
             fontSize: 11, letterSpacing: '0.13em', textTransform: 'uppercase',
-            color: 'var(--t3)', marginBottom: 10, fontFamily: 'var(--ff-u)',
+            color: 'var(--ink)', fontWeight: 800, marginBottom: 10, fontFamily: 'var(--ff-u)',
           }}>points</div>
           <div style={{
-            fontFamily: 'var(--ff-d)', fontSize: 22, fontWeight: 400,
+            fontFamily: 'var(--ff-d)', fontSize: 22, fontWeight: 700,
             color: 'var(--t1)', marginBottom: 4,
           }}>{grade}</div>
           {isNewBest && (
             <div style={{
-              fontSize: 12, color: 'var(--gold)', fontFamily: 'var(--ff-u)',
-              letterSpacing: '0.04em',
+              fontSize: 13, color: '#fff', fontFamily: 'var(--ff-u)', fontWeight: 800,
+              background: 'var(--coral)', border: '2px solid var(--ink)', borderRadius: 999,
+              padding: '2px 12px', display: 'inline-block',
             }}>
               ★ New personal best!
             </div>
@@ -115,11 +115,11 @@ export function GameOverModal({
             ].map(s => (
               <div key={s.label} style={{
                 textAlign: 'center', padding: '10px 6px',
-                background: 'var(--bg)', border: '1px solid var(--border)',
-                borderRadius: 3,
+                background: 'var(--bg)', border: '2px solid var(--ink)',
+                borderRadius: 14, boxShadow: '2px 2px 0 var(--ink)',
               }}>
                 <div style={{
-                  fontFamily: 'var(--ff-d)', fontSize: 22, fontWeight: 400,
+                  fontFamily: 'var(--ff-d)', fontSize: 22, fontWeight: 700,
                   color: 'var(--t1)',
                 }}>{s.value}</div>
                 <div style={{

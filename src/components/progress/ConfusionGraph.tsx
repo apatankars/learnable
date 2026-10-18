@@ -66,7 +66,7 @@ export function ConfusionGraph({ confusions, maxNodes = 12 }: ConfusionGraphProp
 
   return (
     <div style={{
-      background: 'var(--bg)', borderRadius: 3, border: '1px solid var(--border)',
+      background: 'var(--bg)', borderRadius: 10, border: '2px solid var(--border)',
       padding: '16px 18px 8px', marginBottom: 32,
     }}>
       <div style={{ fontFamily: 'var(--ff-d)', fontSize: 16, color: 'var(--t1)', marginBottom: 2 }}>

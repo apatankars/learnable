@@ -9,7 +9,7 @@ import countriesData from '../../data/countries.json';
 import type { CountryEntry } from '../../types';
 import { ProgressMap } from '../progress/ProgressMap';
 import { ConfusionGraph } from '../progress/ConfusionGraph';
-import { BotanicalDivider } from '../ui/BotanicalDivider';
+import { PopDivider } from '../ui/PopDivider';
 
 const countries = countriesData as CountryEntry[];
 const nameById = new Map(countries.map(c => [c.id, c.name]));
@@ -125,7 +125,7 @@ export function AccountLanding({
     if (m >= 0.8) return 'var(--olive-hi)';
     if (m >= 0.6) return 'var(--olive)';
     if (m >= 0.4) return 'var(--gold-hi)';
-    if (m >= 0.2) return '#d97706';
+    if (m >= 0.2) return '#ff9a1f';
     return 'var(--miss)';
   }
 
@@ -137,10 +137,10 @@ export function AccountLanding({
   const hasData = globalStats.totalSessions > 0 || studied.length > 0;
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: 'var(--app-height)', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
       <div style={{
-        background: 'var(--bg)', borderBottom: '1px solid var(--border)',
+        background: 'var(--bg)', borderBottom: '2px solid var(--border)',
         padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         position: 'sticky', top: 0, zIndex: 20,
       }} className="progress-header-row">
@@ -153,7 +153,7 @@ export function AccountLanding({
         >
           ← Back
         </button>
-        <h1 style={{ fontFamily: 'var(--ff-d)', fontWeight: 300, fontSize: 24, letterSpacing: '0.04em', color: 'var(--t1)' }}>
+        <h1 style={{ fontFamily: 'var(--ff-d)', fontWeight: 700, fontSize: 24, letterSpacing: '0.04em', color: 'var(--t1)' }}>
           Your Account
         </h1>
         <div style={{ width: 80, display: 'flex', justifyContent: 'flex-end' }}>
@@ -174,11 +174,11 @@ export function AccountLanding({
       <div style={{ flex: 1, padding: '32px clamp(16px, 4vw, 24px)', maxWidth: 840, margin: '0 auto', width: '100%' }}>
         {/* Account details */}
         <div style={{
-          background: 'var(--s1)', borderRadius: 3, border: '1px solid var(--border)',
+          background: 'var(--s1)', borderRadius: 10, border: '2px solid var(--border)',
           padding: '20px 22px', display: 'flex', alignItems: 'center', gap: 18, marginBottom: 32,
         }}>
           <div style={{
-            width: 56, height: 56, borderRadius: '50%', background: 'var(--olive)', color: '#fff',
+            width: 56, height: 56, borderRadius: '50%', background: 'var(--grape)', color: 'var(--ink)', border: '3px solid var(--ink)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontFamily: 'var(--ff-u)', fontWeight: 700, fontSize: 18, flexShrink: 0,
           }}>
@@ -187,7 +187,7 @@ export function AccountLanding({
           <div style={{ flex: 1, minWidth: 0 }}>
             {user ? (
               <>
-                <div style={{ fontFamily: 'var(--ff-u)', fontWeight: 600, fontSize: 16, color: 'var(--t1)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <div style={{ fontFamily: 'var(--ff-u)', fontWeight: 700, fontSize: 16, color: 'var(--t1)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {user.email}
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--t3)', fontFamily: 'var(--ff-u)', marginTop: 2 }}>
@@ -196,7 +196,7 @@ export function AccountLanding({
               </>
             ) : (
               <>
-                <div style={{ fontFamily: 'var(--ff-u)', fontWeight: 600, fontSize: 16, color: 'var(--t1)' }}>
+                <div style={{ fontFamily: 'var(--ff-u)', fontWeight: 700, fontSize: 16, color: 'var(--t1)' }}>
                   Guest
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--t3)', fontFamily: 'var(--ff-u)', marginTop: 2 }}>
@@ -208,8 +208,8 @@ export function AccountLanding({
           <button
             onClick={user ? onSignOut : onSignIn}
             style={{
-              padding: '9px 16px', borderRadius: 3, fontFamily: 'var(--ff-u)', fontSize: 13, fontWeight: 500,
-              border: '1px solid var(--border-hi)', cursor: 'pointer', whiteSpace: 'nowrap',
+              padding: '9px 16px', borderRadius: 10, fontFamily: 'var(--ff-u)', fontSize: 13, fontWeight: 700,
+              border: '2px solid var(--border-hi)', cursor: 'pointer', whiteSpace: 'nowrap',
               color: user ? 'var(--miss)' : 'var(--olive)',
               background: 'var(--bg)',
             }}
@@ -231,11 +231,11 @@ export function AccountLanding({
         </div>
 
         <div style={{ margin: '24px 0 28px', display: 'flex', justifyContent: 'center' }}>
-          <BotanicalDivider />
+          <PopDivider />
         </div>
 
         {/* Game-mode breakdown */}
-        <h2 style={{ fontFamily: 'var(--ff-d)', fontWeight: 400, fontSize: 18, color: 'var(--t1)', marginBottom: 14, letterSpacing: '0.03em' }}>
+        <h2 style={{ fontFamily: 'var(--ff-d)', fontWeight: 700, fontSize: 18, color: 'var(--t1)', marginBottom: 14, letterSpacing: '0.03em' }}>
           By Game Mode
         </h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: 12, marginBottom: 32 }}>
@@ -249,11 +249,11 @@ export function AccountLanding({
             const avg = ms && ms.sessions > 0 ? Math.round(ms.totalScore / ms.sessions) : 0;
             return (
               <div key={id} style={{
-                background: 'var(--bg)', borderRadius: 3, border: '1px solid var(--border)',
+                background: 'var(--bg)', borderRadius: 10, border: '2px solid var(--border)',
                 padding: '14px 16px', opacity: played ? 1 : 0.55,
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, marginBottom: 10 }}>
-                  <span style={{ fontFamily: 'var(--ff-u)', fontWeight: 600, fontSize: 14, color: 'var(--t1)', whiteSpace: 'nowrap' }}>{label}</span>
+                  <span style={{ fontFamily: 'var(--ff-u)', fontWeight: 700, fontSize: 14, color: 'var(--t1)', whiteSpace: 'nowrap' }}>{label}</span>
                   <span style={{ fontFamily: 'var(--ff-u)', fontSize: 11, color: 'var(--t3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{blurb}</span>
                 </div>
                 {played ? (
@@ -273,7 +273,7 @@ export function AccountLanding({
         </div>
 
         <div style={{ margin: '0 0 28px', display: 'flex', justifyContent: 'center' }}>
-          <BotanicalDivider />
+          <PopDivider />
         </div>
 
         {!hasData ? (
@@ -285,25 +285,25 @@ export function AccountLanding({
           <>
             {/* Map progress */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
-              <h2 style={{ fontFamily: 'var(--ff-d)', fontWeight: 400, fontSize: 18, color: 'var(--t1)', letterSpacing: '0.03em' }}>
+              <h2 style={{ fontFamily: 'var(--ff-d)', fontWeight: 700, fontSize: 18, color: 'var(--t1)', letterSpacing: '0.03em' }}>
                 Map Progress
               </h2>
               <span style={{ fontFamily: 'var(--ff-u)', fontSize: 12, color: 'var(--t3)' }}>
                 {studied.length} / {countries.length} countries studied
               </span>
             </div>
-            <div style={{ height: 'min(50vh, 560px)', minHeight: 280, marginBottom: 32, borderRadius: 3, border: '1px solid var(--border)', overflow: 'hidden' }}>
+            <div style={{ height: 'min(50vh, 560px)', minHeight: 280, marginBottom: 32, borderRadius: 10, border: '2px solid var(--border)', overflow: 'hidden' }}>
               <ProgressMap masteryMap={masteryMap} />
             </div>
 
             <div style={{ marginBottom: 28, display: 'flex', justifyContent: 'center' }}>
-              <BotanicalDivider />
+              <PopDivider />
             </div>
 
             {/* Adaptive insights */}
             {hasInsights && (
               <>
-                <h2 style={{ fontFamily: 'var(--ff-d)', fontWeight: 400, fontSize: 18, color: 'var(--t1)', marginBottom: 14, letterSpacing: '0.03em' }}>
+                <h2 style={{ fontFamily: 'var(--ff-d)', fontWeight: 700, fontSize: 18, color: 'var(--t1)', marginBottom: 14, letterSpacing: '0.03em' }}>
                   What Trips You Up
                 </h2>
                 <ConfusionGraph confusions={confusions} />
@@ -348,23 +348,23 @@ export function AccountLanding({
                 </div>
 
                 <div style={{ marginBottom: 28, display: 'flex', justifyContent: 'center' }}>
-                  <BotanicalDivider />
+                  <PopDivider />
                 </div>
               </>
             )}
 
             {/* Per-country list */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-              <div className="progress-tab-row" style={{ background: 'var(--s1)', borderRadius: 3, border: '1px solid var(--border)', padding: 4, fontFamily: 'var(--ff-u)', gap: 4 }}>
+              <div className="progress-tab-row" style={{ background: 'var(--s1)', borderRadius: 10, border: '2px solid var(--border)', padding: 4, fontFamily: 'var(--ff-u)', gap: 4 }}>
                 {(['all', 'needs_improvement', 'killing_it'] as const).map(tab => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
                     style={{
-                      flex: 1, padding: '10px 0', fontSize: 13, fontWeight: 500, borderRadius: 3,
+                      flex: 1, padding: '10px 0', fontSize: 13, fontWeight: 700, borderRadius: 10,
                       background: activeTab === tab ? 'var(--bg)' : 'transparent',
                       color: activeTab === tab ? (tab === 'needs_improvement' ? 'var(--miss)' : tab === 'killing_it' ? 'var(--olive)' : 'var(--t1)') : 'var(--t3)',
-                      border: activeTab === tab ? '1px solid var(--border)' : '1px solid transparent',
+                      border: activeTab === tab ? '2px solid var(--border)' : '1px solid transparent',
                       cursor: 'pointer', transition: 'all 0.14s',
                       textTransform: 'capitalize',
                     }}
@@ -382,12 +382,12 @@ export function AccountLanding({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {filteredCountries.map(({ country, cm, km }) => (
                     <div key={country.id} className="progress-country-row" style={{
-                      background: 'var(--bg)', borderRadius: 3, border: '1px solid var(--border)',
+                      background: 'var(--bg)', borderRadius: 10, border: '2px solid var(--border)',
                       padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 16,
                       transition: 'border-color 0.14s',
                     }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontFamily: 'var(--ff-u)', fontWeight: 500, fontSize: 15, color: 'var(--t1)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <div style={{ fontFamily: 'var(--ff-u)', fontWeight: 700, fontSize: 15, color: 'var(--t1)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {country.name}
                         </div>
                         <div style={{ fontSize: 12, color: 'var(--t3)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -413,10 +413,10 @@ export function AccountLanding({
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
     <div style={{
-      background: 'var(--bg)', borderRadius: 3, border: '1px solid var(--border)',
+      background: 'var(--bg)', borderRadius: 10, border: '2px solid var(--border)',
       padding: '16px', textAlign: 'center',
     }}>
-      <div style={{ fontFamily: 'var(--ff-d)', fontWeight: 600, fontSize: 24, color: 'var(--t1)', marginBottom: 4 }}>
+      <div style={{ fontFamily: 'var(--ff-d)', fontWeight: 700, fontSize: 24, color: 'var(--t1)', marginBottom: 4 }}>
         {value}
       </div>
       <div style={{ fontSize: 11, color: 'var(--t3)', fontFamily: 'var(--ff-u)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
@@ -429,7 +429,7 @@ function StatCard({ label, value }: { label: string; value: string }) {
 function InsightCard({ title, hint, children }: { title: string; hint: string; children: ReactNode }) {
   return (
     <div style={{
-      background: 'var(--bg)', borderRadius: 3, border: '1px solid var(--border)', padding: '16px 18px',
+      background: 'var(--bg)', borderRadius: 10, border: '2px solid var(--border)', padding: '16px 18px',
     }}>
       <div style={{ fontFamily: 'var(--ff-d)', fontSize: 16, color: 'var(--t1)', marginBottom: 2 }}>{title}</div>
       <div style={{ fontSize: 11, color: 'var(--t3)', fontFamily: 'var(--ff-u)', marginBottom: 12 }}>{hint}</div>
@@ -456,7 +456,7 @@ function InsightRow({ left, right, tag }: { left: string; right: string; tag?: s
 function ModeMetric({ label, value }: { label: string; value: string }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-      <span style={{ fontFamily: 'var(--ff-d)', fontWeight: 600, fontSize: 16, color: 'var(--t1)', lineHeight: 1.1, fontVariantNumeric: 'tabular-nums', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value}</span>
+      <span style={{ fontFamily: 'var(--ff-d)', fontWeight: 700, fontSize: 16, color: 'var(--t1)', lineHeight: 1.1, fontVariantNumeric: 'tabular-nums', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value}</span>
       <span style={{ fontFamily: 'var(--ff-u)', fontSize: 10, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 3 }}>{label}</span>
     </div>
   );
@@ -465,8 +465,8 @@ function ModeMetric({ label, value }: { label: string; value: string }) {
 function MasteryPip({ label, value, color }: { label: string; value: number; color: string }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, minWidth: 48 }}>
-      <div style={{ width: '100%', background: 'var(--s1)', borderRadius: 4, height: 6, overflow: 'hidden', border: '1px solid var(--border)' }}>
-        <div style={{ height: '100%', borderRadius: 4, background: color, transition: 'width 0.5s', width: `${Math.round(value * 100)}%` }} />
+      <div style={{ width: '100%', background: 'var(--s1)', borderRadius: 10, height: 6, overflow: 'hidden', border: '2px solid var(--border)' }}>
+        <div style={{ height: '100%', borderRadius: 10, background: color, transition: 'width 0.5s', width: `${Math.round(value * 100)}%` }} />
       </div>
       <span style={{ fontSize: 10, color: 'var(--t3)', fontFamily: 'var(--ff-u)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</span>
     </div>

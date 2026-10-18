@@ -25,6 +25,12 @@ const modeInfo: Record<GameMode, { icon: string; title: string; desc: string; co
     desc: 'Mix of countries and capitals — the real challenge',
     color: 'from-bark-400 to-bark-600',
   },
+  facts: {
+    icon: '💡',
+    title: 'Facts',
+    desc: 'Key stats and fun facts for every country',
+    color: 'from-bark-400 to-bark-600',
+  },
   versus: {
     icon: '⚔️',
     title: 'Versus',

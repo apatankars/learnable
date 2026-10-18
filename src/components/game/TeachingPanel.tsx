@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { CountryEntry } from '../../types';
+import { DidYouKnow, KeyStats } from '../facts/FactCard';
+import { pickFunFact } from '../../lib/facts';
 
 interface TeachingPanelProps {
   country: CountryEntry;
@@ -8,10 +10,12 @@ interface TeachingPanelProps {
   streak: number;
   confusedWith?: string; // name of the country this is most often mixed up with
   borders?: string[];    // names of bordering countries, for context
+  showFacts?: boolean;   // world topic: key stats + a fun fact alongside the lesson
   onAcknowledge: () => void;
 }
 
-export function TeachingPanel({ country, promptType, score, streak, confusedWith, borders, onAcknowledge }: TeachingPanelProps) {
+export function TeachingPanel({ country, promptType, score, streak, confusedWith, borders, showFacts, onAcknowledge }: TeachingPanelProps) {
+  const fact = showFacts ? pickFunFact(country.id, promptType === 'country' ? 0 : 1) : undefined;
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => { buttonRef.current?.focus(); }, [country, promptType]);
@@ -24,15 +28,16 @@ export function TeachingPanel({ country, promptType, score, streak, confusedWith
     <div style={{
       display: 'flex', flexDirection: 'column',
       padding: '24px 20px',
-      background: 'rgba(58,92,140,0.08)',
-      border: '1px solid rgba(58,92,140,0.22)',
-      borderRadius: 3,
+      background: 'var(--sky-soft)',
+      border: '3px solid var(--ink)',
+      boxShadow: 'var(--pop-shadow-lg)',
+      borderRadius: 18,
       animation: 'fade-up 0.36s ease forwards',
     }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 10 }}>
         <div style={{
           fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase',
-          color: 'rgba(58,92,140,0.8)', fontWeight: 500,
+          color: 'var(--ink)', fontWeight: 800,
           fontFamily: 'var(--ff-u)',
         }}>
           Learn
@@ -43,7 +48,7 @@ export function TeachingPanel({ country, promptType, score, streak, confusedWith
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: 4, lineHeight: 1 }}>
             <span style={{
-              fontFamily: 'var(--ff-d)', fontSize: 26, fontWeight: 300,
+              fontFamily: 'var(--ff-d)', fontSize: 26, fontWeight: 700,
               color: 'var(--gold-hi)', lineHeight: 1,
             }}>{score}</span>
             <span style={{ fontSize: 11, color: 'var(--t3)', letterSpacing: '0.06em', lineHeight: 1 }}>pts</span>
@@ -58,11 +63,11 @@ export function TeachingPanel({ country, promptType, score, streak, confusedWith
             width={44}
             height={44}
             loading="lazy"
-            style={{ flexShrink: 0, borderRadius: '50%', boxShadow: '0 1px 6px rgba(0,0,0,0.18)' }}
+            style={{ flexShrink: 0, borderRadius: '50%', border: '2px solid var(--ink)', objectFit: 'cover' }}
           />
         )}
         <h3 style={{
-          fontFamily: 'var(--ff-d)', fontSize: 24, fontWeight: 400,
+          fontFamily: 'var(--ff-d)', fontSize: 24, fontWeight: 700,
           color: 'var(--t1)', lineHeight: 1.25,
         }}>
           {promptType === 'country'
@@ -91,11 +96,11 @@ export function TeachingPanel({ country, promptType, score, streak, confusedWith
           <div style={{
             display: 'flex', alignItems: 'center', gap: 7, marginBottom: 9,
             fontSize: 10, letterSpacing: '0.13em', textTransform: 'uppercase',
-            color: 'rgba(47,106,99,0.9)', fontWeight: 500, fontFamily: 'var(--ff-u)',
+            color: 'var(--ink)', fontWeight: 800, fontFamily: 'var(--ff-u)',
           }}>
             <span style={{
               width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
-              background: 'rgba(96,176,168,0.55)', border: '1px solid #2f6a63',
+              background: '#c9a6ff', border: '2px solid var(--ink)',
             }} />
             Borders {borders.length} {borders.length === 1 ? 'country' : 'countries'}
           </div>
@@ -105,9 +110,9 @@ export function TeachingPanel({ country, promptType, score, streak, confusedWith
                 key={name}
                 style={{
                   fontSize: 12, color: 'var(--t2)', fontFamily: 'var(--ff-u)',
-                  padding: '3px 9px', borderRadius: 3, lineHeight: 1.4,
-                  background: 'rgba(96,176,168,0.10)',
-                  border: '1px solid rgba(58,118,112,0.30)',
+                  padding: '3px 9px', borderRadius: 10, lineHeight: 1.4,
+                  background: 'var(--grape-soft)', fontWeight: 700,
+                  border: '2px solid var(--ink)',
                 }}
               >
                 {name}
@@ -124,16 +129,21 @@ export function TeachingPanel({ country, promptType, score, streak, confusedWith
           No land borders — it's an island nation.
         </p>
       )}
+      {showFacts && (
+        <div style={{ marginBottom: 22, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <KeyStats country={country} compact />
+          {fact && <DidYouKnow country={country} fact={fact} />}
+        </div>
+      )}
       <button
         ref={buttonRef}
         onClick={onAcknowledge}
         onKeyDown={handleKeyDown}
         style={{
-          padding: '10px 20px', borderRadius: 3, alignSelf: 'flex-start',
-          background: 'rgba(58,92,140,0.12)', border: '1px solid rgba(58,92,140,0.30)',
-          color: 'rgba(40,70,130,0.9)', fontSize: 13, fontWeight: 500,
-          letterSpacing: '0.05em', cursor: 'pointer', fontFamily: 'var(--ff-u)',
-          transition: 'background 0.14s', outline: 'none',
+          padding: '10px 22px 8px', borderRadius: 14, alignSelf: 'flex-start',
+          background: 'var(--coral)', border: '2px solid var(--ink)', borderBottomWidth: 5,
+          color: '#fff', fontSize: 15, fontWeight: 800,
+          cursor: 'pointer', fontFamily: 'var(--ff-u)', outline: 'none',
         }}
       >
         Got it →

@@ -1,4 +1,4 @@
-export type GameMode = 'country' | 'capital' | 'both' | 'practice' | 'learn' | 'review' | 'versus';
+export type GameMode = 'country' | 'capital' | 'both' | 'practice' | 'learn' | 'review' | 'versus' | 'facts';
 export type PromptType = 'country' | 'capital';
 export type Topic = 'world' | 'us-states';
 export type GamePhase = 'idle' | 'playing' | 'paused' | 'gameover' | 'teaching';

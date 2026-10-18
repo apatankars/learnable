@@ -16,7 +16,7 @@ import {
 } from './lib/preload';
 import type { GameSettings } from './types';
 
-type View = 'home' | 'game' | 'account' | 'leaderboard' | 'versus-lobby';
+type View = 'home' | 'game' | 'account' | 'leaderboard' | 'versus-lobby' | 'facts';
 import { useVersusMultiplayer } from './hooks/useVersusMultiplayer';
 import { buildQueue } from './hooks/useGameEngine';
 
@@ -25,6 +25,7 @@ const AccountLanding = lazy(() => loadAccountModule().then((module) => ({ defaul
 const LeaderboardView = lazy(() => loadLeaderboardViewModule().then((module) => ({ default: module.LeaderboardView })));
 const VersusGameView = lazy(() => loadVersusGameViewModule().then((module) => ({ default: module.VersusGameView })));
 const VersusLobby = lazy(() => loadVersusLobbyModule().then((module) => ({ default: module.VersusLobby })));
+const FactsView = lazy(() => import('./components/facts/FactsView').then((module) => ({ default: module.FactsView })));
 const JoinVersusModal = lazy(() => loadVersusLobbyModule().then((module) => ({ default: module.JoinVersusModal })));
 
 const DEFAULT_SETTINGS: GameSettings = {
@@ -77,7 +78,7 @@ function scheduleIdleWork(task: () => void): () => void {
 
 function FullscreenFallback({ label }: { label: string }) {
   return (
-    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
+    <div style={{ height: 'var(--app-height)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
       <div style={{ color: 'var(--t3)', fontFamily: 'var(--ff-u)', fontSize: 13 }}>{label}</div>
     </div>
   );
@@ -127,6 +128,14 @@ export default function App() {
       navigateTo('versus-lobby');
       return;
     }
+    if (settings.mode === 'facts') {
+      // Facts are world-only (fun facts are written per country).
+      settings = { ...settings, topic: 'world' };
+      saveSettings(settings);
+      setActiveSettings(settings);
+      navigateTo('facts');
+      return;
+    }
     if (settings.mode === 'review') {
       // Reviews are self-paced — draining the due queue is the goal, not speed.
       settings = { ...settings, noTimeLimit: true };
@@ -167,7 +176,7 @@ export default function App() {
 
   if (authLoading) {
     return (
-      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
+      <div style={{ height: 'var(--app-height)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
         <div style={{ color: 'var(--t3)', fontFamily: 'var(--ff-u)', fontSize: 13 }}>Loading…</div>
       </div>
     );
@@ -215,6 +224,12 @@ export default function App() {
             user={user}
             onSubmitScore={(score) => submitSessionScore(score, activeSettings)}
           />
+        </Suspense>
+      )}
+
+      {view === 'facts' && (
+        <Suspense fallback={<FullscreenFallback label="Loading facts…" />}>
+          <FactsView settings={activeSettings} onBackToMenu={() => navigateTo('home')} />
         </Suspense>
       )}
 
@@ -272,12 +287,12 @@ export default function App() {
               />
             )
           ) : versusHook.error ? (
-            <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', color: 'var(--miss-hi)', fontFamily: 'var(--ff-u)' }}>
+            <div style={{ height: 'var(--app-height)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', color: 'var(--miss-hi)', fontFamily: 'var(--ff-u)' }}>
               <div style={{ marginBottom: 16, fontSize: 16 }}>{versusHook.error}</div>
-              <button onClick={() => { versusHook.leaveLobby(); navigateTo('home'); }} style={{ padding: '8px 16px', borderRadius: 3, border: '1px solid var(--border)', background: 'var(--s1)', color: 'var(--t2)', cursor: 'pointer' }}>Back to Home</button>
+              <button onClick={() => { versusHook.leaveLobby(); navigateTo('home'); }} style={{ padding: '8px 16px', borderRadius: 10, border: '2px solid var(--border)', background: 'var(--s1)', color: 'var(--t2)', cursor: 'pointer' }}>Back to Home</button>
             </div>
           ) : (
-            <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', color: 'var(--t3)', fontFamily: 'var(--ff-u)' }}>
+            <div style={{ height: 'var(--app-height)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', color: 'var(--t3)', fontFamily: 'var(--ff-u)' }}>
               <div className="animate-spin" style={{ width: 18, height: 18, borderRadius: '50%', border: '1.5px solid var(--border-hi)', borderTopColor: 'var(--olive)', marginRight: 10 }} />
               Connecting to lobby...
             </div>

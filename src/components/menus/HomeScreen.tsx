@@ -1,11 +1,10 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import type { User } from "@supabase/supabase-js";
 import { SettingsPanel } from "./SettingsPanel";
 import { UserMenu } from "../auth/UserMenu";
-import { BotanicalCorner } from "../ui/BotanicalCorner";
-import { BotanicalDivider } from "../ui/BotanicalDivider";
-import { SpaceBackdrop } from "../ui/SpaceBackdrop";
+import { PopBackdrop } from "../ui/PopBackdrop";
+import { PopDivider } from "../ui/PopDivider";
 import { getTimeMode } from "../../lib/leaderboard";
 import { loadGlobeMapModule } from "../../lib/preload";
 import { learnPoolCounts } from "../../lib/learnScope";
@@ -53,7 +52,7 @@ function ModeIcon({ type }: { type: string }) {
     height: 20,
     fill: "none",
     stroke: "currentColor",
-    strokeWidth: 1.35,
+    strokeWidth: 1.9,
     strokeLinecap: "round" as const,
     strokeLinejoin: "round" as const,
   };
@@ -107,6 +106,13 @@ function ModeIcon({ type }: { type: string }) {
       <svg viewBox="0 0 24 24" {...s}>
         <circle cx="12" cy="12" r="9" />
         <path d="M12,7 L12,12 L15.5,14" />
+      </svg>
+    );
+  if (type === "spark")
+    return (
+      <svg viewBox="0 0 24 24" {...s}>
+        <path d="M9,18 L15,18 M10,21 L14,21" />
+        <path d="M12,3 C8.5,3 6,5.6 6,8.8 C6,11 7.2,12.6 8.6,13.8 C9.3,14.4 9.6,15.1 9.6,16 L14.4,16 C14.4,15.1 14.7,14.4 15.4,13.8 C16.8,12.6 18,11 18,8.8 C18,5.6 15.5,3 12,3 Z" />
       </svg>
     );
   if (type === "users")
@@ -168,6 +174,12 @@ const MODES: {
     requiresLogin: true,
   },
   {
+    id: "facts",
+    label: "Facts",
+    desc: "Key stats & fun facts for every country",
+    icon: "spark",
+  },
+  {
     id: "review",
     label: "Daily Review",
     desc: "Catch items before you forget them",
@@ -185,6 +197,7 @@ const US_STATE_MODE_OVERRIDES: Partial<Record<GameMode, { label: string; desc: s
   country: { label: "States", desc: "Name the highlighted state" },
   capital: { label: "Capitals", desc: "Identify state capitals" },
   both: { label: "Both", desc: "States & capitals combined" },
+  facts: { label: "Facts", desc: "World countries only (for now)" },
 };
 
 function getModeMeta(
@@ -201,44 +214,24 @@ function getModeMeta(
 //  • Quick Quiz  — pick what you're tested on (a segmented control)
 //  • Study       — the structured, login-gated modes (an even 2×2)
 const QUIZ_IDS: GameMode[] = ["country", "capital", "both"];
-const STUDY_IDS: GameMode[] = ["learn", "practice", "review", "versus"];
+const STUDY_IDS: GameMode[] = ["learn", "practice", "review", "versus", "facts"];
 
-// A pop of color per study mode — kept earthy so it stays calm, not loud.
-const STUDY_ACCENT: Record<
-  string,
-  { line: string; text: string; tint: string; glow: string }
-> = {
-  learn: {
-    line: "rgba(86,116,40,0.55)",
-    text: "#4a6a22",
-    tint: "rgba(86,116,40,0.10)",
-    glow: "rgba(86,116,40,0.20)",
-  },
-  practice: {
-    line: "rgba(135,100,24,0.55)",
-    text: "#8a5f12",
-    tint: "rgba(135,100,24,0.10)",
-    glow: "rgba(135,100,24,0.20)",
-  },
-  review: {
-    line: "rgba(198,124,22,0.6)",
-    text: "#b06e14",
-    tint: "rgba(214,133,20,0.12)",
-    glow: "rgba(214,133,20,0.22)",
-  },
-  versus: {
-    line: "rgba(47,111,126,0.55)",
-    text: "#2b6472",
-    tint: "rgba(47,111,126,0.10)",
-    glow: "rgba(47,111,126,0.20)",
-  },
+// Each study mode owns one candy color: it floods the card when selected.
+const STUDY_ACCENT: Record<string, { fill: string; soft: string }> = {
+  learn: { fill: "#7ed957", soft: "var(--green-soft)" },
+  practice: { fill: "#ffd23f", soft: "var(--sun-soft)" },
+  review: { fill: "#ffb86b", soft: "#ffe6cc" },
+  facts: { fill: "#5cc3f5", soft: "var(--sky-soft)" },
+  versus: { fill: "#c78bff", soft: "var(--grape-soft)" },
 };
 
 function modeById(id: GameMode) {
   return MODES.find((m) => m.id === id)!;
 }
 
-// A small uppercase label with a fading rule — quiet structure between groups.
+const POP_SHADOW = "3px 3px 0 var(--ink)";
+
+// Small bold label that names a group of choices.
 function SectionLabel({ children }: { children: ReactNode }) {
   return (
     <div
@@ -246,16 +239,16 @@ function SectionLabel({ children }: { children: ReactNode }) {
         display: "flex",
         alignItems: "center",
         gap: 10,
-        marginBottom: 11,
+        marginBottom: 10,
       }}
     >
       <span
         style={{
-          fontSize: 10.5,
-          fontWeight: 600,
-          letterSpacing: "0.16em",
+          fontSize: 12,
+          fontWeight: 800,
+          letterSpacing: "0.12em",
           textTransform: "uppercase",
-          color: "var(--t3)",
+          color: "var(--ink)",
           fontFamily: "var(--ff-u)",
           whiteSpace: "nowrap",
         }}
@@ -265,89 +258,61 @@ function SectionLabel({ children }: { children: ReactNode }) {
       <span
         style={{
           flex: 1,
-          height: 1,
-          background: "linear-gradient(90deg, var(--border), transparent)",
+          height: 0,
+          borderTop: "3px dotted var(--ink)",
+          opacity: 0.35,
         }}
       />
     </div>
   );
 }
 
-// Segmented control with a single highlight that glides between options.
+// Row of chunky toggle buttons; the chosen one lights up sunshine-yellow.
 function Segmented({
   options,
   value,
   onChange,
-  serif = false,
+  big = false,
 }: {
   options: { id: string; label: string; sub?: string }[];
   value: string | null;
   onChange: (id: string) => void;
-  serif?: boolean;
+  big?: boolean;
 }) {
-  const count = options.length;
-  const activeIndex = options.findIndex((o) => o.id === value);
-  const hasActive = activeIndex >= 0;
   return (
     <div
       style={{
-        position: "relative",
         display: "grid",
-        gridTemplateColumns: `repeat(${count}, 1fr)`,
-        background: "var(--s2)",
-        border: "1px solid var(--border)",
-        borderRadius: 9,
-        padding: 4,
+        gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))`,
+        gap: 8,
       }}
     >
-      <div
-        aria-hidden
-        style={{
-          position: "absolute",
-          top: 4,
-          bottom: 4,
-          left: 4,
-          width: `calc((100% - 8px) / ${count})`,
-          transform: `translateX(${Math.max(activeIndex, 0) * 100}%)`,
-          background: "var(--bg)",
-          border: "1px solid var(--gold)",
-          borderRadius: 6,
-          boxShadow: "0 1px 7px rgba(80,60,10,0.10)",
-          opacity: hasActive ? 1 : 0,
-          transition:
-            "transform 0.32s cubic-bezier(0.34, 1.32, 0.36, 1), opacity 0.2s ease",
-          pointerEvents: "none",
-        }}
-      />
       {options.map((o) => {
         const active = o.id === value;
         return (
           <button
             key={o.id}
             onClick={() => onChange(o.id)}
+            className="pop-btn"
             style={{
-              position: "relative",
-              zIndex: 1,
-              background: "transparent",
-              border: "none",
-              padding: serif ? "8px 6px" : "7px 6px",
-              cursor: "pointer",
+              background: active ? "var(--sun)" : "var(--bg)",
+              padding: big ? "11px 6px 9px" : "9px 6px 7px",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
               gap: 1,
-              fontFamily: "var(--ff-u)",
+              transform: active ? "translateY(2px)" : undefined,
+              borderBottomWidth: active ? 3 : undefined,
             }}
           >
             <span
               style={{
-                fontFamily: serif ? "var(--ff-d)" : "var(--ff-u)",
-                fontSize: serif ? 18 : 13,
-                fontWeight: serif ? 500 : 500,
+                fontFamily: "var(--ff-d)",
+                fontSize: big ? 18 : 15,
+                fontWeight: 800,
                 lineHeight: 1.1,
-                letterSpacing: serif ? "0.01em" : "0.02em",
-                color: active ? "var(--gold-hi)" : "var(--t1)",
-                transition: "color 0.22s ease",
+                letterSpacing: "-0.01em",
+                color: "var(--ink)",
               }}
             >
               {o.label}
@@ -355,10 +320,9 @@ function Segmented({
             {o.sub && (
               <span
                 style={{
-                  fontSize: 10.5,
-                  fontWeight: 400,
-                  color: active ? "var(--gold)" : "var(--t3)",
-                  transition: "color 0.22s ease",
+                  fontSize: 11.5,
+                  fontWeight: 700,
+                  color: "var(--t2)",
                 }}
               >
                 {o.sub}
@@ -370,6 +334,46 @@ function Segmented({
     </div>
   );
 }
+
+function IconSquareButton({
+  title,
+  onClick,
+  children,
+}: {
+  title: string;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      aria-label={title}
+      className="pop-btn"
+      style={{
+        width: 52,
+        flexShrink: 0,
+        background: "var(--bg)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+const iconProps = {
+  viewBox: "0 0 24 24",
+  width: 22,
+  height: 22,
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 2,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
+};
 
 export function HomeScreen({
   defaultSettings,
@@ -389,7 +393,6 @@ export function HomeScreen({
 }: HomeScreenProps) {
   const [settings, setSettings] = useState<GameSettings>(defaultSettings);
   const [showSettings, setShowSettings] = useState(false);
-  const [hoveredMode, setHoveredMode] = useState<GameMode | null>(null);
   const [showDecorativeGlobe, setShowDecorativeGlobe] = useState(false);
   const topic: Topic = settings.topic ?? "world";
   const versusPromptLabel =
@@ -415,7 +418,7 @@ export function HomeScreen({
   );
   const modeKey = `${settings.mode}_${currentTimeMode}`;
   const personalBest =
-    settings.mode !== "practice" && settings.mode !== "learn" && settings.mode !== "review"
+    settings.mode !== "practice" && settings.mode !== "learn" && settings.mode !== "review" && settings.mode !== "facts"
       ? (personalBests[modeKey] ?? null)
       : null;
 
@@ -427,10 +430,13 @@ export function HomeScreen({
     return () => window.clearTimeout(timeoutId);
   }, []);
 
-  const vineBg = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='72' viewBox='0 0 22 72'%3E%3Cpath d='M11,0 C10,18 12,36 11,54 C10,62 11,72 11,72' stroke='rgba(74,110,36,0.32)' stroke-width='0.9' fill='none'/%3E%3Cpath d='M11,18 C8,11 13,4 20,3 C13,7 9,13 11,18Z' fill='rgba(74,110,36,0.22)'/%3E%3Cpath d='M11,49 C14,42 9,35 2,34 C9,37 13,44 11,49Z' fill='rgba(74,110,36,0.20)'/%3E%3Ccircle cx='11' cy='17' r='1.6' fill='rgba(74,110,36,0.26)'/%3E%3Ccircle cx='11' cy='48' r='1.3' fill='rgba(74,110,36,0.20)'/%3E%3C/svg%3E")`;
+  const startLabel = (() => {
+    const m = MODES.find((mm) => mm.id === settings.mode);
+    return m ? getModeMeta(m, topic).label : settings.mode;
+  })();
 
   return (
-    <div className="responsive-split-shell">
+    <div className="responsive-split-shell home-shell">
       {/* ── LEFT PANEL ── */}
       <div
         className="responsive-side-panel"
@@ -438,33 +444,18 @@ export function HomeScreen({
           flex: "0 0 44%",
           display: "flex",
           flexDirection: "column",
-          justifyContent: "center",
-          padding: "52px clamp(20px, 4vw, 56px) 52px clamp(18px, 4vw, 52px)",
-          borderRight: "1px solid var(--border)",
+          justifyContent: "safe center",
+          padding: "40px clamp(20px, 4vw, 52px)",
+          borderRight: "3px solid var(--ink)",
           position: "relative",
           overflowX: "hidden",
           overflowY: "auto",
-          background: "var(--s1)",
+          background: "var(--bg)",
+          backgroundImage:
+            "radial-gradient(rgba(31,26,46,0.08) 1.4px, transparent 1.6px)",
+          backgroundSize: "22px 22px",
         }}
       >
-        {/* Vine border */}
-        <div
-          style={{
-            position: "absolute",
-            top: "8%",
-            bottom: "8%",
-            right: -11,
-            width: 22,
-            zIndex: 10,
-            pointerEvents: "none",
-            backgroundRepeat: "repeat-y",
-            backgroundPosition: "center top",
-            backgroundImage: vineBg,
-          }}
-        />
-
-        <BotanicalCorner />
-
         {/* Auth — top right of panel */}
         <div className="home-auth-slot">
           {user ? (
@@ -472,17 +463,12 @@ export function HomeScreen({
           ) : (
             <button
               onClick={onSignIn}
+              className="pop-btn"
               style={{
-                fontSize: 12,
-                letterSpacing: "0.04em",
-                color: "var(--t3)",
-                border: "1px solid var(--border)",
-                borderRadius: 3,
-                padding: "5px 12px",
-                background: "var(--bg)",
-                cursor: "pointer",
-                transition: "color 0.14s, border-color 0.14s",
-                fontFamily: "var(--ff-u)",
+                fontSize: 13,
+                padding: "6px 14px",
+                background: "var(--sun)",
+                borderBottomWidth: 4,
               }}
             >
               Sign in
@@ -492,8 +478,9 @@ export function HomeScreen({
 
         {/* Header */}
         <header
+          className="home-header"
           style={{
-            marginBottom: 40,
+            marginBottom: 22,
             paddingRight: user ? 0 : 96,
             textAlign: "center",
           }}
@@ -501,41 +488,34 @@ export function HomeScreen({
           <div
             style={{
               fontFamily: "var(--ff-d)",
-              fontWeight: 300,
-              fontSize: "clamp(3rem, 9vw, 4.75rem)",
-              letterSpacing: "0.14em",
-              lineHeight: 1,
-              color: "var(--t1)",
-              marginBottom: 16,
+              fontWeight: 800,
+              fontSize: "clamp(3.4rem, 9vw, 5.2rem)",
+              letterSpacing: "-0.035em",
+              lineHeight: 0.95,
+              color: "var(--ink)",
+              textShadow: "4px 4px 0 var(--coral)",
+              marginBottom: 12,
             }}
           >
-            ORBIS
+            orbis
+          </div>
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
+            <PopDivider />
           </div>
           <div
             style={{
-              marginBottom: 13,
-              display: "flex",
-              justifyContent: "center",
-            }}
-          >
-            <BotanicalDivider />
-          </div>
-          <div
-            style={{
-              fontFamily: "var(--ff-d)",
-              fontWeight: 300,
-              fontStyle: "italic",
+              fontFamily: "var(--ff-u)",
+              fontWeight: 800,
               fontSize: 16,
               color: "var(--t2)",
-              letterSpacing: "0.03em",
             }}
           >
-            Learn the world, one place at a time
+            Learn the world. Keep your streak.
           </div>
         </header>
 
         {/* Topic toggle — World vs US States */}
-        <div style={{ marginBottom: 20 }}>
+        <div style={{ marginBottom: 18 }}>
           <Segmented
             options={TOPICS.map((t) => ({
               id: t.id,
@@ -553,33 +533,39 @@ export function HomeScreen({
           />
         </div>
 
-        {/* Stats bar */}
+        {/* Stats chips */}
         {user && globalStats.totalSessions > 0 && (
           <div
             className="home-stats-row"
-            style={{
-              gap: 12,
-              marginBottom: 16,
-              fontSize: 12,
-              color: "var(--t3)",
-              fontFamily: "var(--ff-u)",
-            }}
+            style={{ gap: 8, marginBottom: 16, flexWrap: "wrap" }}
           >
-            <span>
-              Best:{" "}
-              <strong style={{ color: "var(--gold-hi)" }}>
-                {globalStats.bestScore.toLocaleString()}
-              </strong>
-            </span>
-            <span style={{ color: "var(--border-hi)" }}>·</span>
-            <span>
-              Streak:{" "}
-              <strong style={{ color: "var(--gold)" }}>
-                ×{globalStats.bestStreak}
-              </strong>
-            </span>
-            <span style={{ color: "var(--border-hi)" }}>·</span>
-            <span>{globalStats.daysPlayed.length} days played</span>
+            {[
+              { label: "Best", value: globalStats.bestScore.toLocaleString(), bg: "var(--sun)" },
+              { label: "Streak", value: `×${globalStats.bestStreak}`, bg: "var(--coral-soft)" },
+              { label: "Days", value: String(globalStats.daysPlayed.length), bg: "var(--sky-soft)" },
+            ].map((chip) => (
+              <span
+                key={chip.label}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "baseline",
+                  gap: 6,
+                  background: chip.bg,
+                  border: "2px solid var(--ink)",
+                  borderRadius: 999,
+                  padding: "3px 12px",
+                  fontFamily: "var(--ff-u)",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: "var(--t2)",
+                }}
+              >
+                {chip.label}
+                <strong style={{ fontSize: 15, fontWeight: 800, color: "var(--ink)" }}>
+                  {chip.value}
+                </strong>
+              </span>
+            ))}
           </div>
         )}
         {user && personalBest !== null && (
@@ -589,26 +575,25 @@ export function HomeScreen({
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 5,
-                fontSize: 11,
-                color: "var(--olive)",
-                letterSpacing: "0.04em",
-                background: "rgba(86,116,40,0.08)",
-                border: "1px solid rgba(86,116,40,0.22)",
-                borderRadius: 3,
-                padding: "3px 9px",
+                fontSize: 12,
+                fontWeight: 700,
+                color: "var(--ink)",
+                background: "var(--green-soft)",
+                border: "2px solid var(--ink)",
+                borderRadius: 999,
+                padding: "3px 12px",
               }}
             >
-              Best in this mode:{" "}
-              <strong>{personalBest.toLocaleString()}</strong>
+              Best in this mode: <strong>{personalBest.toLocaleString()}</strong>
             </span>
           </div>
         )}
 
         {/* ── Quick Quiz — pick what you're tested on ── */}
-        <div style={{ marginBottom: 22 }}>
-          <SectionLabel>Quick Quiz</SectionLabel>
+        <div style={{ marginBottom: 20 }}>
+          <SectionLabel>Quick quiz</SectionLabel>
           <Segmented
-            serif
+            big
             options={QUIZ_IDS.map((id) => ({
               id,
               label: getModeMeta(modeById(id), topic).label,
@@ -620,59 +605,39 @@ export function HomeScreen({
           />
         </div>
 
-        {/* ── Study — the structured modes, an even 2×2 ── */}
-        <div style={{ marginBottom: 26 }}>
+        {/* ── Study — the structured modes ── */}
+        <div style={{ marginBottom: 22 }}>
           <SectionLabel>Study</SectionLabel>
           <div className="home-mode-grid">
             {STUDY_IDS.map((id, i) => {
               const m = modeById(id);
               const locked = m.requiresLogin && !user;
               const selected = settings.mode === id;
-              const hovered = hoveredMode === id;
               const meta = getModeMeta(m, topic);
               const accent = STUDY_ACCENT[id];
               return (
                 <button
                   key={id}
                   disabled={locked}
-                  onMouseEnter={() => !locked && setHoveredMode(id)}
-                  onMouseLeave={() => setHoveredMode(null)}
                   onClick={() =>
                     !locked && setSettings((s) => ({ ...s, mode: id }))
                   }
-                  className={`menu-card-in${
-                    selected && !locked ? " menu-accent-pulse" : ""
-                  }`}
+                  className="pop-btn menu-card-in"
                   style={{
-                    "--accent-glow": accent.glow,
-                    animationDelay: `${i * 70}ms`,
+                    animationDelay: `${i * 60}ms`,
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "flex-start",
                     gap: 8,
-                    padding: "13px 14px",
+                    padding: "11px 13px",
                     minHeight: 92,
-                    background: selected ? accent.tint : "var(--bg)",
-                    border: selected
-                      ? `1px solid ${accent.line}`
-                      : hovered
-                        ? `1px solid ${accent.line}`
-                        : "1px solid var(--border)",
-                    borderRadius: 8,
+                    background: selected ? accent.fill : "var(--bg)",
                     textAlign: "left",
-                    cursor: locked ? "not-allowed" : "pointer",
-                    opacity: locked ? 0.5 : 1,
-                    transition:
-                      "background 0.18s, border-color 0.18s, box-shadow 0.18s, transform 0.18s",
-                    transform:
-                      hovered && !locked ? "translateY(-2px)" : "none",
-                    boxShadow:
-                      hovered && !locked
-                        ? `0 6px 18px ${accent.glow}`
-                        : "none",
-                    fontFamily: "var(--ff-u)",
+                    opacity: locked ? 0.55 : 1,
                     position: "relative",
-                  } as CSSProperties}
+                    transform: selected ? "translateY(2px)" : undefined,
+                    borderBottomWidth: selected ? 3 : undefined,
+                  }}
                 >
                   <div
                     style={{
@@ -684,17 +649,15 @@ export function HomeScreen({
                   >
                     <div
                       style={{
-                        width: 30,
-                        height: 30,
+                        width: 34,
+                        height: 34,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        borderRadius: 7,
-                        background: accent.tint,
-                        color: accent.text,
-                        transition: "transform 0.18s",
-                        transform:
-                          hovered && !locked ? "scale(1.08)" : "none",
+                        borderRadius: 11,
+                        background: selected ? "var(--bg)" : accent.soft,
+                        border: "2px solid var(--ink)",
+                        color: "var(--ink)",
                       }}
                     >
                       <ModeIcon type={m.icon} />
@@ -702,13 +665,15 @@ export function HomeScreen({
                     {locked && (
                       <span
                         style={{
-                          fontSize: 8.5,
-                          letterSpacing: "0.12em",
+                          fontSize: 10,
+                          fontWeight: 800,
+                          letterSpacing: "0.08em",
                           textTransform: "uppercase",
-                          color: "var(--t3)",
-                          border: "1px solid var(--border)",
-                          borderRadius: 3,
-                          padding: "2px 5px",
+                          color: "var(--ink)",
+                          border: "2px solid var(--ink)",
+                          borderRadius: 999,
+                          padding: "1px 8px",
+                          background: "var(--bg)",
                         }}
                       >
                         Login
@@ -717,14 +682,16 @@ export function HomeScreen({
                     {id === "review" && !locked && (
                       <span
                         style={{
-                          fontSize: 8.5,
-                          letterSpacing: "0.08em",
+                          fontSize: 10.5,
+                          fontWeight: 800,
+                          letterSpacing: "0.04em",
                           textTransform: "uppercase",
-                          color: dueToday > 0 ? accent.text : "var(--t3)",
-                          border: `1px solid ${dueToday > 0 ? accent.line : "var(--border)"}`,
-                          background: dueToday > 0 ? accent.tint : "transparent",
-                          borderRadius: 3,
-                          padding: "2px 5px",
+                          color: "var(--ink)",
+                          border: "2px solid var(--ink)",
+                          background: dueToday > 0 ? "var(--coral)" : "var(--bg)",
+                          ...(dueToday > 0 ? { color: "#fff" } : {}),
+                          borderRadius: 999,
+                          padding: "1px 8px",
                           whiteSpace: "nowrap",
                         }}
                       >
@@ -732,13 +699,7 @@ export function HomeScreen({
                       </span>
                     )}
                     {selected && !locked && !(id === "review" && dueToday > 0) && (
-                      <span
-                        style={{
-                          color: accent.text,
-                          fontSize: 13,
-                          lineHeight: 1,
-                        }}
-                      >
+                      <span style={{ color: "var(--ink)", fontSize: 16, fontWeight: 800, lineHeight: 1 }}>
                         ✓
                       </span>
                     )}
@@ -747,21 +708,21 @@ export function HomeScreen({
                     <div
                       style={{
                         fontFamily: "var(--ff-d)",
-                        fontWeight: 500,
+                        fontWeight: 800,
                         fontSize: 17,
-                        color: selected ? accent.text : "var(--t1)",
+                        color: "var(--ink)",
                         lineHeight: 1.15,
                         marginBottom: 2,
-                        transition: "color 0.18s",
+                        letterSpacing: "-0.01em",
                       }}
                     >
                       {meta.label}
                     </div>
                     <div
                       style={{
-                        fontSize: 11,
-                        color: "var(--t3)",
-                        fontWeight: 300,
+                        fontSize: 12,
+                        color: selected ? "var(--ink)" : "var(--t2)",
+                        fontWeight: 700,
                         lineHeight: 1.3,
                       }}
                     >
@@ -778,75 +739,36 @@ export function HomeScreen({
             remain) or start over from scratch. Only shown once some of the
             current filter has been learned. */}
         {showLearnScope && learnCounts && (
-          <div style={{ marginBottom: 10 }}>
-            <div
-              style={{
-                fontSize: 10,
-                fontWeight: 500,
-                color: "var(--t3)",
-                textTransform: "uppercase",
-                letterSpacing: "0.1em",
-                marginBottom: 6,
-                fontFamily: "var(--ff-u)",
-              }}
-            >
-              Session
-            </div>
-            <div style={{ display: "flex", gap: 8 }}>
-              {(
-                [
-                  {
-                    id: "resume" as const,
-                    label: "⟳ Resume",
-                    sub: learnCounts.remaining > 0
+          <div style={{ marginBottom: 14 }}>
+            <SectionLabel>Session</SectionLabel>
+            <Segmented
+              options={[
+                {
+                  id: "resume",
+                  label: "Resume",
+                  sub:
+                    learnCounts.remaining > 0
                       ? `${learnCounts.remaining} ${placeNounFor(learnCounts.remaining)} left`
                       : "all learned · refresher",
-                  },
-                  {
-                    id: "scratch" as const,
-                    label: "✦ From scratch",
-                    sub: `all ${learnCounts.total} ${placeNounFor(learnCounts.total)}`,
-                  },
-                ]
-              ).map((opt) => {
-                const active = (settings.learnScope ?? "resume") === opt.id;
-                return (
-                  <button
-                    key={opt.id}
-                    onClick={() => setSettings({ ...settings, learnScope: opt.id })}
-                    style={{
-                      flex: 1,
-                      padding: "9px 8px",
-                      borderRadius: 3,
-                      border: active ? "1px solid var(--gold)" : "1px solid var(--border)",
-                      background: active ? "var(--bg)" : "var(--s1)",
-                      color: active ? "var(--gold-hi)" : "var(--t2)",
-                      fontSize: 13,
-                      fontWeight: 500,
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      gap: 2,
-                      cursor: "pointer",
-                      transition: "all 0.14s",
-                      fontFamily: "var(--ff-u)",
-                    }}
-                  >
-                    <span>{opt.label}</span>
-                    <span style={{ fontSize: 11, color: active ? "var(--gold)" : "var(--t3)", fontWeight: 400 }}>
-                      {opt.sub}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+                },
+                {
+                  id: "scratch",
+                  label: "From scratch",
+                  sub: `all ${learnCounts.total} ${placeNounFor(learnCounts.total)}`,
+                },
+              ]}
+              value={settings.learnScope ?? "resume"}
+              onChange={(id) =>
+                setSettings({ ...settings, learnScope: id as "resume" | "scratch" })
+              }
+            />
           </div>
         )}
 
         {/* Action buttons */}
         <div
           className="home-action-row"
-          style={{ gap: 8, marginTop: showSettings ? 0 : 4 }}
+          style={{ gap: 10, marginTop: showSettings ? 0 : 2 }}
         >
           {settings.mode === "versus" ? (
             <div
@@ -864,20 +786,21 @@ export function HomeScreen({
                   justifyContent: "space-between",
                   gap: 12,
                   padding: "10px 12px",
-                  border: "1px solid var(--border)",
-                  borderRadius: 3,
-                  background: "var(--bg)",
+                  border: "2px solid var(--ink)",
+                  borderRadius: 14,
+                  background: "var(--grape-soft)",
                 }}
               >
                 <span
                   style={{
-                    fontSize: 11,
-                    color: "var(--t3)",
-                    letterSpacing: "0.08em",
+                    fontSize: 12,
+                    fontWeight: 800,
+                    color: "var(--ink)",
+                    letterSpacing: "0.06em",
                     textTransform: "uppercase",
                   }}
                 >
-                  Versus Emoji
+                  Your emoji
                 </span>
                 <div
                   style={{
@@ -892,17 +815,13 @@ export function HomeScreen({
                       key={emoji}
                       onClick={() => onVersusEmojiChange(emoji)}
                       style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: 16,
-                        border:
-                          versusEmoji === emoji
-                            ? "1px solid var(--gold)"
-                            : "1px solid var(--border)",
+                        width: 34,
+                        height: 34,
+                        borderRadius: 17,
+                        border: "2px solid var(--ink)",
                         background:
-                          versusEmoji === emoji
-                            ? "rgba(135,100,24,0.08)"
-                            : "var(--s1)",
+                          versusEmoji === emoji ? "var(--sun)" : "var(--bg)",
+                        boxShadow: versusEmoji === emoji ? "2px 2px 0 var(--ink)" : "none",
                         cursor: "pointer",
                         fontSize: 16,
                       }}
@@ -913,87 +832,57 @@ export function HomeScreen({
                   ))}
                 </div>
               </div>
-              <div className="home-action-row" style={{ gap: 8 }}>
+              <div className="home-action-row" style={{ gap: 10 }}>
                 <button
                   onClick={() => onStart(settings)} // onStart handles hosting
+                  className="pop-btn"
                   style={{
                     flex: 1,
-                    padding: "12px 20px",
-                    borderRadius: 3,
-                    background: "rgba(135,100,24,0.12)",
-                    border: "1px solid rgba(135,100,24,0.32)",
-                    color: "var(--gold-hi)",
-                    fontSize: 13,
-                    fontWeight: 500,
-                    letterSpacing: "0.06em",
-                    cursor: "pointer",
-                    fontFamily: "var(--ff-u)",
-                    transition: "background 0.14s, border-color 0.14s",
+                    padding: "13px 20px",
+                    background: "var(--coral)",
+                    color: "#fff",
+                    fontSize: 15,
                   }}
                 >
-                  Host {versusPromptLabel} Match
+                  Host {versusPromptLabel} match
                 </button>
                 <button
                   onClick={onVersusMode} // onVersusMode handles joining
+                  className="pop-btn"
                   style={{
                     flex: 1,
-                    padding: "12px 20px",
-                    borderRadius: 3,
-                    background: "var(--s1)",
-                    border: "1px solid var(--border)",
-                    color: "var(--t2)",
-                    fontSize: 13,
-                    fontWeight: 500,
-                    letterSpacing: "0.06em",
-                    cursor: "pointer",
-                    fontFamily: "var(--ff-u)",
-                    transition: "background 0.14s, border-color 0.14s",
+                    padding: "13px 20px",
+                    background: "var(--bg)",
+                    fontSize: 15,
                   }}
                 >
-                  Join Match
+                  Join match
                 </button>
               </div>
             </div>
           ) : (
             <button
               onClick={() => onStart(settings)}
-              className="home-start-btn"
+              className="pop-btn home-start-btn"
               style={{
                 flex: 1,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: 9,
-                padding: "13px 20px",
-                borderRadius: 6,
-                background:
-                  "linear-gradient(180deg, rgba(172,132,40,0.18), rgba(135,100,24,0.14))",
-                border: "1px solid rgba(135,100,24,0.42)",
-                color: "var(--gold-hi)",
-                cursor: "pointer",
-                fontFamily: "var(--ff-u)",
-                transition:
-                  "background 0.16s, border-color 0.16s, box-shadow 0.16s",
-              }}
-              onMouseEnter={(e) => {
-                const el = e.currentTarget;
-                el.style.background =
-                  "linear-gradient(180deg, rgba(172,132,40,0.30), rgba(135,100,24,0.22))";
-                el.style.boxShadow = "0 4px 16px rgba(135,100,24,0.20)";
-              }}
-              onMouseLeave={(e) => {
-                const el = e.currentTarget;
-                el.style.background =
-                  "linear-gradient(180deg, rgba(172,132,40,0.18), rgba(135,100,24,0.14))";
-                el.style.boxShadow = "none";
+                gap: 10,
+                padding: "13px 20px 11px",
+                background: "var(--coral)",
+                color: "#fff",
               }}
             >
               <span
                 style={{
-                  fontSize: 10.5,
-                  letterSpacing: "0.16em",
+                  fontFamily: "var(--ff-u)",
+                  fontSize: 12,
+                  fontWeight: 800,
+                  letterSpacing: "0.14em",
                   textTransform: "uppercase",
-                  color: "var(--gold)",
+                  opacity: 0.9,
                 }}
               >
                 Start
@@ -1001,99 +890,36 @@ export function HomeScreen({
               <span
                 style={{
                   fontFamily: "var(--ff-d)",
-                  fontSize: 18,
-                  fontWeight: 500,
-                  color: "var(--gold-hi)",
-                  letterSpacing: "0.01em",
+                  fontSize: 22,
+                  fontWeight: 800,
+                  letterSpacing: "-0.01em",
                 }}
               >
-                {(() => {
-                  const m = MODES.find((mm) => mm.id === settings.mode);
-                  return m ? getModeMeta(m, topic).label : settings.mode;
-                })()}
+                {startLabel}
               </span>
               <span className="home-start-arrow" aria-hidden style={{ display: "inline-flex" }}>
-                <svg
-                  viewBox="0 0 24 24"
-                  width={16}
-                  height={16}
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={1.6}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
+                <svg {...iconProps} width={20} height={20} strokeWidth={2.6}>
                   <line x1="4" y1="12" x2="19" y2="12" />
                   <polyline points="13 6 19 12 13 18" />
                 </svg>
               </span>
             </button>
           )}
-          <button
-            onClick={onViewLeaderboard}
-            title="Leaderboard"
-            style={{
-              padding: "12px 14px",
-              borderRadius: 3,
-              border: "1px solid var(--border-hi)",
-              color: "var(--t2)",
-              background: "transparent",
-              cursor: "pointer",
-              fontFamily: "var(--ff-u)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              transition: "border-color 0.14s, color 0.14s",
-            }}
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width={20}
-              height={20}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.35}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
+          <IconSquareButton title="Leaderboard" onClick={onViewLeaderboard}>
+            <svg {...iconProps}>
               <path d="M7 4h10l-1 9c0 2.2-1.8 4-4 4s-4-1.8-4-4Z" />
               <path d="M7.2 7c-2.2 0-3.2 1.5-2 3" />
               <path d="M16.8 7c2.2 0 3.2 1.5 2 3" />
               <line x1="12" y1="17" x2="12" y2="20" />
               <line x1="9" y1="20" x2="15" y2="20" />
             </svg>
-          </button>
-          <button
-            onClick={onViewProgress}
-            title="Account"
-            style={{
-              padding: "12px 14px",
-              borderRadius: 3,
-              border: "1px solid var(--border-hi)",
-              color: "var(--t2)",
-              background: "transparent",
-              cursor: "pointer",
-              fontFamily: "var(--ff-u)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              transition: "border-color 0.14s, color 0.14s",
-            }}
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width={20}
-              height={20}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.35}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
+          </IconSquareButton>
+          <IconSquareButton title="Account" onClick={onViewProgress}>
+            <svg {...iconProps}>
               <circle cx="12" cy="8" r="3.4" />
               <path d="M5.5 19c0-3.3 2.9-5.5 6.5-5.5s6.5 2.2 6.5 5.5" />
             </svg>
-          </button>
+          </IconSquareButton>
         </div>
 
         {/* Settings toggle */}
@@ -1102,8 +928,9 @@ export function HomeScreen({
           style={{
             width: "100%",
             textAlign: "center",
-            fontSize: 11,
-            color: "var(--t3)",
+            fontSize: 12,
+            fontWeight: 800,
+            color: "var(--t2)",
             letterSpacing: "0.08em",
             textTransform: "uppercase",
             padding: "10px 0 8px",
@@ -1115,21 +942,18 @@ export function HomeScreen({
             alignItems: "center",
             justifyContent: "center",
             gap: 6,
-            transition: "color 0.14s",
-            marginTop: 14,
+            marginTop: 12,
             marginBottom: showSettings ? 10 : 0,
           }}
         >
           <span>{showSettings ? "▲" : "▼"}</span>
-          <span>{showSettings ? "Hide" : "Show"} Settings</span>
+          <span>{showSettings ? "Hide" : "Show"} settings</span>
         </button>
 
         {showSettings && (
           <div
+            className="pop-card"
             style={{
-              background: "var(--bg)",
-              border: "1px solid var(--border)",
-              borderRadius: 3,
               padding: "16px clamp(14px, 3vw, 18px)",
               marginBottom: 16,
             }}
@@ -1137,40 +961,20 @@ export function HomeScreen({
             <SettingsPanel settings={settings} onChange={setSettings} />
           </div>
         )}
-
-        {/* Footer */}
-        {/* <footer className="home-footer-row" style={{
-          alignItems: 'center', gap: 10,
-          fontSize: 11, color: 'var(--t3)', letterSpacing: '0.05em',
-          marginTop: 20, fontFamily: 'var(--ff-u)',
-        }}>
-          <span>{(countriesData as CountryEntry[]).length}+ countries</span>
-          <span style={{ color: 'var(--border-hi)' }}>·</span>
-          <span>5 game modes</span>
-          <span style={{ color: 'var(--border-hi)' }}>·</span>
-          <span>Drag the globe</span>
-        </footer> */}
       </div>
 
       {/* ── RIGHT PANEL — globe ── */}
       <div
-        className="responsive-globe-panel"
+        className="responsive-globe-panel home-globe-panel"
         style={{
           flex: 1,
           position: "relative",
           overflow: "hidden",
-          background: "#05080d",
+          background: "var(--s1)",
         }}
       >
-        <SpaceBackdrop />
-        <BotanicalCorner flip />
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            filter: "drop-shadow(0 10px 64px rgba(0,0,0,0.28))",
-          }}
-        >
+        <PopBackdrop />
+        <div style={{ position: "absolute", inset: 0 }}>
           <Suspense fallback={null}>
             {showDecorativeGlobe ? <OrbisGlobe decorative /> : null}
           </Suspense>
@@ -1178,18 +982,25 @@ export function HomeScreen({
         <div
           style={{
             position: "absolute",
-            bottom: 28,
+            bottom: 26,
             left: "50%",
             transform: "translateX(-50%)",
-            fontSize: 11,
-            letterSpacing: "0.13em",
+            fontSize: 12,
+            fontWeight: 800,
+            letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: "rgba(255,255,255,0.30)",
+            color: "var(--ink)",
+            background: "var(--bg)",
+            border: "2px solid var(--ink)",
+            borderRadius: 999,
+            padding: "5px 16px",
+            boxShadow: POP_SHADOW,
             pointerEvents: "none",
             fontFamily: "var(--ff-u)",
+            whiteSpace: "nowrap",
           }}
         >
-          drag to explore
+          Drag to explore
         </div>
       </div>
     </div>

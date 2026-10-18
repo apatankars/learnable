@@ -4,8 +4,7 @@ import { UsStatesMap } from './UsStatesMap';
 import { ResultFlash } from './ResultFlash';
 import { GameOverModal } from './GameOverModal';
 import { TeachingPanel } from './TeachingPanel';
-import { BotanicalCorner } from '../ui/BotanicalCorner';
-import { SpaceBackdrop } from '../ui/SpaceBackdrop';
+import { PopBackdrop } from '../ui/PopBackdrop';
 import type { GamePrompt, GameSettings, GlobalStats } from '../../types';
 import { useGameEngine, buildAdaptiveQueue, buildReviewQueue } from '../../hooks/useGameEngine';
 import { useLearnEngine } from '../../hooks/useLearnEngine';
@@ -16,6 +15,8 @@ import { getTimeMode } from '../../lib/leaderboard';
 import type { User } from '@supabase/supabase-js';
 import { getDataset, getBorders, normalizeTopic } from '../../lib/dataset';
 import { learnPoolCounts } from '../../lib/learnScope';
+import { pickFunFact } from '../../lib/facts';
+import { DidYouKnow } from '../facts/FactCard';
 
 interface GameViewProps {
   settings: GameSettings;
@@ -69,6 +70,9 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
   const [locateFlash, setLocateFlash]       = useState<Record<string, import('../../types').CountryColorState>>({});
   const [hintMsg, setHintMsg]               = useState('');
   const [lastPoints, setLastPoints]         = useState<number | null>(null);
+  // A fun fact about the country just answered, shown while the next prompt is up.
+  const [recentFact, setRecentFact]         = useState<{ id: string; text: string } | null>(null);
+  const factSaltRef = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const timerStartedRef = useRef(false);
   const pendingPromptRef = useRef<GamePrompt | null>(null);
@@ -274,6 +278,16 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
     }
   }
 
+  // Sprinkle facts into quiz modes (world only; Learn has its own in the
+  // teaching card). Untimed sessions get one after every answer; timed ones
+  // only after a miss, when a memorable hook helps most and costs least.
+  const showFactFor = useCallback((countryId: string, missed: boolean) => {
+    if (topic !== 'world' || isLearnMode) return;
+    if (!settings.noTimeLimit && !missed) return;
+    const text = pickFunFact(countryId, factSaltRef.current++);
+    setRecentFact(text ? { id: countryId, text } : null);
+  }, [topic, isLearnMode, settings.noTimeLimit]);
+
   const handleSubmit = useCallback(() => {
     if (!currentPrompt || session.phase !== 'playing') return;
     const trimmed = inputRef.current?.value.trim() ?? '';
@@ -281,6 +295,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
 
     const result = submitAnswer(trimmed, currentPrompt, session.streak, hintUsed);
     if (!result) return;
+    showFactFor(currentPrompt.countryId, result.tier === 'wrong');
 
     if (result.tier === 'wrong') {
       setInputState('wrong');
@@ -312,7 +327,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
         setPromptIndex(i => i + 1);
       }, FEEDBACK_DELAY_MS);
     }
-  }, [currentPrompt, session.phase, session.streak, submitAnswer, hintUsed, queuePromptForRender]);
+  }, [currentPrompt, session.phase, session.streak, submitAnswer, hintUsed, queuePromptForRender, showFactFor]);
 
   function handleHint() {
     if (hintUsed || !currentPrompt || session.phase !== 'playing') return;
@@ -336,6 +351,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
 
     const result = standardEngine.submitLocate(clickedId, prompt, session.streak, hintUsed);
     if (!result) return;
+    showFactFor(prompt.countryId, result.tier === 'wrong');
 
     if (result.tier === 'wrong') {
       setInputState('wrong');
@@ -360,12 +376,13 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
         setPromptIndex(i => i + 1);
       }, FEEDBACK_DELAY_MS);
     }
-  }, [currentPrompt, session.phase, session.streak, isPromptRendering, showWrongFeedback, standardEngine, hintUsed, queuePromptForRender]);
+  }, [currentPrompt, session.phase, session.streak, isPromptRendering, showWrongFeedback, standardEngine, hintUsed, queuePromptForRender, showFactFor]);
 
   function handleSkip() {
     if (!currentPrompt || session.phase !== 'playing') return;
     const result = submitSkip(currentPrompt);
     if (result) {
+      showFactFor(currentPrompt.countryId, true);
       setWrongAnswer(result.correctAnswer);
       setShowWrongFeedback(true);
       triggerFlash({ type: 'skip' });
@@ -428,8 +445,6 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
   const streak           = session.streak;
   const progressPercent = queueTotal > 0 ? Math.min((completed / queueTotal) * 100, 100) : 0;
 
-  const vineBg = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='72' viewBox='0 0 22 72'%3E%3Cpath d='M11,0 C10,18 12,36 11,54 C10,62 11,72 11,72' stroke='rgba(74,110,36,0.28)' stroke-width='0.9' fill='none'/%3E%3Cpath d='M11,18 C8,11 13,4 20,3 C13,7 9,13 11,18Z' fill='rgba(74,110,36,0.20)'/%3E%3Cpath d='M11,49 C14,42 9,35 2,34 C9,37 13,44 11,49Z' fill='rgba(74,110,36,0.18)'/%3E%3Ccircle cx='11' cy='17' r='1.6' fill='rgba(74,110,36,0.22)'/%3E%3C/svg%3E")`;
-
   return (
     <div className="responsive-split-shell gameplay-shell">
 
@@ -437,25 +452,15 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
       <div className="responsive-side-panel" style={{
         flex: '0 0 38%', minWidth: 320, maxWidth: 480,
         display: 'flex', flexDirection: 'column',
-        borderRight: '1px solid var(--border)',
+        borderRight: '3px solid var(--ink)',
         background: 'var(--s1)',
         position: 'relative', overflow: 'hidden',
       }}>
-        {/* Vine border */}
-        <div style={{
-          position: 'absolute', top: '12%', bottom: '12%',
-          right: -11, width: 22, zIndex: 10, pointerEvents: 'none',
-          backgroundRepeat: 'repeat-y', backgroundPosition: 'center top',
-          backgroundImage: vineBg,
-        }} />
-
-        <BotanicalCorner />
-
         {/* Top bar */}
         <div className="game-top-bar" style={{
           alignItems: 'center', gap: 12,
           padding: '15px 20px',
-          borderBottom: '1px solid var(--border)',
+          borderBottom: '2px solid var(--border)',
           background: 'var(--bg)',
           flexShrink: 0,
         }}>
@@ -464,7 +469,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
             style={{
               display: 'flex', alignItems: 'center', gap: 5,
               fontSize: 12, color: 'var(--t3)', letterSpacing: '0.05em',
-              padding: '4px 8px', borderRadius: 3, border: 'none', background: 'none',
+              padding: '4px 8px', borderRadius: 10, border: 'none', background: 'none',
               cursor: 'pointer', transition: 'color 0.14s', fontFamily: 'var(--ff-u)',
             }}
           >
@@ -476,7 +481,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
 
           <div style={{
             flex: 1, textAlign: 'center',
-            fontFamily: 'var(--ff-d)', fontSize: 15, fontWeight: 400,
+            fontFamily: 'var(--ff-d)', fontSize: 15, fontWeight: 700,
             letterSpacing: '0.09em', color: 'var(--t2)',
             minWidth: 120,
           }}>
@@ -509,7 +514,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
             title="End game"
             style={{
               fontSize: 11, color: 'var(--t3)', cursor: 'pointer',
-              border: '1px solid var(--border)', borderRadius: 3,
+              border: '2px solid var(--border)', borderRadius: 10,
               background: 'none', padding: '3px 7px', flexShrink: 0,
               fontFamily: 'var(--ff-u)', letterSpacing: '0.04em',
             }}
@@ -522,7 +527,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
         {session.phase !== 'gameover' && (
           <div className="game-progress-strip" style={{
             alignItems: 'center', gap: 14,
-            padding: '11px 20px', borderBottom: '1px solid var(--border)',
+            padding: '11px 20px', borderBottom: '2px solid var(--border)',
             background: 'var(--s1)', flexShrink: 0,
           }}>
             <div style={{
@@ -531,13 +536,13 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
               height: 6,
               borderRadius: 999,
               overflow: 'hidden',
-              background: 'rgba(86,116,40,0.14)',
+              background: 'var(--green-soft)',
             }}>
               <div style={{
                 width: `${progressPercent}%`,
                 height: '100%',
                 borderRadius: 999,
-                background: 'repeating-linear-gradient(90deg, var(--olive) 0 16px, rgba(86,116,40,0.45) 16px 22px)',
+                background: 'repeating-linear-gradient(90deg, var(--olive) 0 16px, rgba(47,158,68,0.45) 16px 22px)',
                 transition: 'width 0.25s ease',
               }} />
             </div>
@@ -568,8 +573,8 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
                 onClick={onBackToMenu}
                 style={{
                   fontSize: 12, letterSpacing: '0.06em', fontFamily: 'var(--ff-u)',
-                  padding: '9px 20px', borderRadius: 4, cursor: 'pointer',
-                  border: '1px solid var(--border-hi)', background: 'var(--bg)', color: 'var(--t2)',
+                  padding: '9px 20px', borderRadius: 10, cursor: 'pointer',
+                  border: '2px solid var(--border-hi)', background: 'var(--bg)', color: 'var(--t2)',
                 }}
               >
                 Back to menu
@@ -594,6 +599,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
               streak={session.streak}
               confusedWith={teachingConfusedWith}
               borders={topic === 'world' ? teachingBorders : undefined}
+              showFacts={topic === 'world'}
               onAcknowledge={handleAcknowledge}
             />
           ) : currentPrompt ? (
@@ -601,7 +607,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
               {/* Eyebrow */}
               <div style={{
                 fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase',
-                color: 'var(--t3)', marginBottom: 10, fontWeight: 500,
+                color: 'var(--t3)', marginBottom: 10, fontWeight: 700,
                 fontFamily: 'var(--ff-u)',
               }}>
                 {isLocate
@@ -628,7 +634,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
                 <div style={{
                   flex: 1,
                   minWidth: 0,
-                  fontFamily: 'var(--ff-d)', fontSize: 27, fontWeight: 400,
+                  fontFamily: 'var(--ff-d)', fontSize: 27, fontWeight: 700,
                   color: 'var(--t1)', lineHeight: 1.2,
                   overflowWrap: 'anywhere',
                 }}>
@@ -646,7 +652,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
                   </div>
                   <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: 4, lineHeight: 1 }}>
                     <span style={{
-                      fontFamily: 'var(--ff-d)', fontSize: 26, fontWeight: 300,
+                      fontFamily: 'var(--ff-d)', fontSize: 26, fontWeight: 700,
                       color: 'var(--gold-hi)', lineHeight: 1,
                     }}>{session.score}</span>
                     <span style={{ fontSize: 11, color: 'var(--t3)', letterSpacing: '0.06em', lineHeight: 1 }}>pts</span>
@@ -659,8 +665,8 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
                 <div style={{
                   display: 'inline-flex', alignItems: 'center',
                   fontSize: 11, letterSpacing: '0.10em', textTransform: 'uppercase',
-                  color: 'var(--olive)', background: 'rgba(86,116,40,0.08)',
-                  border: '1px solid rgba(86,116,40,0.22)', borderRadius: 3,
+                  color: 'var(--olive)', background: 'var(--green-soft)',
+                  border: '2px solid var(--ink)', borderRadius: 10,
                   padding: '3px 9px', marginBottom: 22, alignSelf: 'flex-start',
                   fontFamily: 'var(--ff-u)',
                 }}>
@@ -674,9 +680,9 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
                   display: 'flex', alignItems: 'center',
                   border: showWrongFeedback
                     ? '1px solid var(--miss)'
-                    : '1px solid var(--border-hi)',
-                  borderRadius: 3, overflow: 'hidden',
-                  background: showWrongFeedback ? 'rgba(132,40,32,0.06)' : 'var(--bg)',
+                    : '2px solid var(--border-hi)',
+                  borderRadius: 10, overflow: 'hidden',
+                  background: showWrongFeedback ? 'rgba(217,43,58,0.06)' : 'var(--bg)',
                   transition: 'border-color 0.18s, box-shadow 0.18s',
                   boxShadow: showWrongFeedback ? 'none' : undefined,
                   marginBottom: 13,
@@ -705,7 +711,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
                     style={{
                       padding: '0 16px', height: 46,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: 'var(--olive)', borderLeft: '1px solid var(--border)',
+                      color: 'var(--olive)', borderLeft: '2px solid var(--border)',
                       cursor: (!isPlaying || promptLocked) ? 'default' : 'pointer',
                       background: 'none', opacity: (!isPlaying || promptLocked) ? 0.35 : 1,
                       transition: 'color 0.14s',
@@ -733,10 +739,10 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
               {showFeedbackOk && (
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: 7,
-                  fontSize: 13, padding: '9px 13px', borderRadius: 3,
+                  fontSize: 13, padding: '9px 13px', borderRadius: 10,
                   marginBottom: 14,
-                  color: 'var(--ok-hi)', background: 'rgba(58,92,28,0.10)',
-                  border: '1px solid rgba(58,92,28,0.22)', fontWeight: 500,
+                  color: 'var(--ok-hi)', background: 'var(--green-soft)',
+                  border: '2px solid var(--ink)', fontWeight: 700,
                 }}>
                   <svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M3,9 L7,13 L15,5" strokeLinecap="round"/>
@@ -745,14 +751,14 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
                   {lastPoints != null && lastPoints > 0 && (
                     <span style={{
                       marginLeft: 'auto',
-                      fontFamily: 'var(--ff-d)', fontSize: 18, fontWeight: 600,
+                      fontFamily: 'var(--ff-d)', fontSize: 18, fontWeight: 700,
                       color: 'var(--gold-hi)', letterSpacing: '0.02em',
                     }}>
                       +{lastPoints}
                     </span>
                   )}
                   {streak >= 2 && (
-                    <span style={{ fontWeight: 600, color: 'var(--gold-hi)', fontSize: 12 }}>
+                    <span style={{ fontWeight: 700, color: 'var(--gold-hi)', fontSize: 12 }}>
                       ×{streak}
                     </span>
                   )}
@@ -763,10 +769,10 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
               {showFeedbackMiss && (
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: 7,
-                  padding: '9px 13px', borderRadius: 3, marginBottom: 14,
-                  color: 'var(--miss-hi)', background: 'rgba(132,40,32,0.10)',
-                  border: '1px solid rgba(132,40,32,0.20)',
-                  fontFamily: 'var(--ff-d)', fontSize: 16, fontWeight: 400,
+                  padding: '9px 13px', borderRadius: 10, marginBottom: 14,
+                  color: 'var(--miss-hi)', background: 'var(--coral-soft)',
+                  border: '2px solid var(--ink)',
+                  fontFamily: 'var(--ff-d)', fontSize: 16, fontWeight: 700,
                 }}>
                   {wrongAnswer}
                 </div>
@@ -776,12 +782,25 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
               {hintMsg && !showFeedbackOk && !showFeedbackMiss && (
                 <div style={{
                   fontSize: 12, color: 'var(--t2)', letterSpacing: '0.03em',
-                  padding: '8px 0', borderTop: '1px solid var(--border)',
+                  padding: '8px 0', borderTop: '2px solid var(--border)',
                   marginBottom: 14, fontStyle: 'italic',
                   fontFamily: 'var(--ff-u)',
                 }}>
                   {hintMsg}
                 </div>
+              )}
+
+              {/* Did you know? — about the previous country. Hidden when the
+                  current prompt is the same country (it could give away the
+                  capital) and while answer feedback is showing. */}
+              {recentFact && recentFact.id !== currentPrompt.countryId
+                && !showFeedbackOk && !showFeedbackMiss && !showWrongFeedback && countryMap.get(recentFact.id) && (
+                <DidYouKnow
+                  key={recentFact.text}
+                  country={countryMap.get(recentFact.id)!}
+                  fact={recentFact.text}
+                  style={{ marginTop: 8 }}
+                />
               )}
 
               {/* Hint + Skip buttons */}
@@ -791,9 +810,9 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
                     onClick={handleHint}
                     disabled={hintUsed}
                     style={{
-                      flex: 1, padding: '10px 14px', borderRadius: 3,
-                      fontSize: 12, letterSpacing: '0.05em', fontWeight: 500,
-                      border: '1px solid var(--border-hi)', color: 'var(--t2)',
+                      flex: 1, padding: '10px 14px', borderRadius: 10,
+                      fontSize: 12, letterSpacing: '0.05em', fontWeight: 700,
+                      border: '2px solid var(--border-hi)', color: 'var(--t2)',
                       background: 'var(--bg)', cursor: hintUsed ? 'default' : 'pointer',
                       opacity: hintUsed ? 0.4 : 1, fontFamily: 'var(--ff-u)',
                       transition: 'background 0.14s, border-color 0.14s',
@@ -804,9 +823,9 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
                   <button
                     onClick={handleSkip}
                     style={{
-                      flex: 1, padding: '10px 14px', borderRadius: 3,
-                      fontSize: 12, letterSpacing: '0.05em', fontWeight: 500,
-                      border: '1px solid var(--border)', color: 'var(--t3)',
+                      flex: 1, padding: '10px 14px', borderRadius: 10,
+                      fontSize: 12, letterSpacing: '0.05em', fontWeight: 700,
+                      border: '2px solid var(--border)', color: 'var(--t3)',
                       background: 'transparent', cursor: 'pointer',
                       fontFamily: 'var(--ff-u)',
                       transition: 'color 0.14s, border-color 0.14s',
@@ -836,9 +855,9 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
       {/* ── RIGHT PANEL — Globe ── */}
       <div className="responsive-globe-panel" style={{
         flex: 1, position: 'relative', overflow: 'hidden',
-        background: '#05080d',
+        background: 'var(--s1)',
       }}>
-        <SpaceBackdrop />
+        <PopBackdrop />
         {!isUsStates && (
         <button
           onClick={() => setRecenterToken((value) => value + 1)}
@@ -847,9 +866,7 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
             position: 'absolute', top: 18, right: 18, zIndex: 12,
             display: 'inline-flex', alignItems: 'center', gap: 8,
             padding: '8px 12px', borderRadius: 999,
-            border: '1px solid rgba(255,255,255,0.14)',
-            background: 'rgba(7,10,15,0.68)', color: 'rgba(244,231,205,0.92)',
-            backdropFilter: 'blur(10px)', cursor: 'pointer',
+            border: '2px solid var(--ink)', background: 'var(--bg)', color: 'var(--ink)', fontWeight: 800, boxShadow: 'var(--pop-shadow)', cursor: 'pointer',
             fontFamily: 'var(--ff-u)', fontSize: 11, letterSpacing: '0.08em',
             textTransform: 'uppercase',
           }}
@@ -895,26 +912,26 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
         {isPaused && (
           <div style={{
             position: 'absolute', inset: 0,
-            background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+            background: 'rgba(31,26,46,0.6)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 30,
           }}>
             <div style={{
-              background: 'var(--s1)', borderRadius: 4, padding: '32px min(40px, 7vw)',
-              textAlign: 'center', border: '1px solid var(--border)',
-              boxShadow: '0 8px 40px rgba(0,0,0,0.3)',
+              background: 'var(--s1)', borderRadius: 22, padding: '32px min(40px, 7vw)',
+              textAlign: 'center', border: '3px solid var(--ink)',
+              boxShadow: '7px 7px 0 var(--ink)',
               width: 'min(92vw, 360px)',
             }}>
               <div style={{ fontSize: 36, marginBottom: 12 }}>⏸</div>
               <h2 style={{
-                fontFamily: 'var(--ff-d)', fontSize: 24, fontWeight: 400,
+                fontFamily: 'var(--ff-d)', fontSize: 24, fontWeight: 700,
                 color: 'var(--t1)', marginBottom: 20,
               }}>Paused</h2>
               <button
                 onClick={handleResume}
                 style={{
-                  background: 'rgba(135,100,24,0.12)', border: '1px solid rgba(135,100,24,0.32)',
-                  color: 'var(--gold-hi)', fontSize: 13, fontWeight: 500,
-                  letterSpacing: '0.06em', padding: '10px 24px', borderRadius: 3,
+                  background: 'var(--coral)', border: '2px solid var(--ink)', borderBottomWidth: 5,
+                  color: '#fff', fontSize: 16, fontWeight: 800,
+                  padding: '10px 26px 8px', borderRadius: 14,
                   cursor: 'pointer', fontFamily: 'var(--ff-u)',
                 }}
               >
@@ -925,9 +942,9 @@ export function GameView({ settings, globalStats, personalBests, onBackToMenu, o
         )}
 
         <div style={{
-          position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)',
-          fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase',
-          color: 'rgba(255,255,255,0.25)', pointerEvents: 'none',
+          position: 'absolute', bottom: 14, left: '50%', transform: 'translateX(-50%)', background: 'var(--bg)', border: '2px solid var(--ink)', borderRadius: 999, padding: '4px 14px', boxShadow: 'var(--pop-shadow)',
+          fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase',
+          color: 'var(--ink)', fontWeight: 800, pointerEvents: 'none',
           fontFamily: 'var(--ff-u)',
         }}>
           {isLocate
@@ -959,7 +976,7 @@ function TimerRing({ timeRemaining, totalSeconds }: { timeRemaining: number; tot
   const dash     = circ * pct;
   const isLow    = timeRemaining <= 30;
   const isCrit   = timeRemaining <= 10;
-  const color    = isCrit ? '#a83428' : isLow ? '#876418' : 'var(--olive)';
+  const color    = isCrit ? '#ff4b52' : isLow ? '#ff9a1f' : '#2fcf6b';
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -976,7 +993,7 @@ function TimerRing({ timeRemaining, totalSeconds }: { timeRemaining: number; tot
         />
       </svg>
       <span style={{
-        fontFamily: 'var(--ff-d)', fontWeight: 300, fontSize: 15,
+        fontFamily: 'var(--ff-d)', fontWeight: 700, fontSize: 15,
         color: isCrit ? 'var(--miss)' : isLow ? 'var(--gold)' : 'var(--t2)',
         letterSpacing: '0.02em', minWidth: '2.8rem',
       }}>

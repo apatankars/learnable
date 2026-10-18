@@ -42,36 +42,36 @@ export function AuthModal({ onClose, onSignIn, onSignUp }: AuthModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-bark-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden border border-bark-200">
+    <div className="fixed inset-0 bg-[rgba(31,26,46,0.6)] flex items-center justify-center z-50 p-4">
+      <div className="bg-[var(--bg)] rounded-3xl w-full max-w-sm overflow-hidden border-[3px] border-[var(--ink)] shadow-[7px_7px_0_var(--ink)]">
         {/* Header */}
-        <div className="bg-leaf-600 px-6 pt-6 pb-4">
+        <div className="bg-[var(--sun)] px-6 pt-5 pb-4 border-b-[3px] border-[var(--ink)]">
           <button
             type="button"
             onClick={onClose}
-            className="ml-auto block text-leaf-100 hover:text-white transition-colors"
+            className="ml-auto block text-[var(--ink)] text-2xl leading-none font-bold cursor-pointer"
             aria-label="Close authentication dialog"
           >
             ×
           </button>
-          <h2 className="font-playfair font-bold text-2xl text-white text-center">
+          <h2 className="font-playfair font-extrabold text-3xl text-[var(--ink)] text-center">
             {tab === 'signin' ? 'Welcome back' : 'Create account'}
           </h2>
-          <p className="text-leaf-100 text-sm text-center font-dm mt-1">
+          <p className="text-[var(--t2)] text-sm text-center font-dm font-bold mt-1">
             {tab === 'signin' ? 'Sign in to sync your progress' : 'Save progress across devices'}
           </p>
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-bark-100">
+        <div className="flex border-b-[3px] border-[var(--ink)]">
           {(['signin', 'signup'] as Tab[]).map(t => (
             <button
               key={t}
               onClick={() => { setTab(t); setError(''); setSuccessMsg(''); }}
-              className={`flex-1 py-3 text-sm font-dm font-medium transition-colors ${
+              className={`flex-1 py-3 text-sm font-dm font-extrabold transition-colors cursor-pointer ${
                 tab === t
-                  ? 'text-leaf-700 border-b-2 border-leaf-500'
-                  : 'text-bark-400 hover:text-bark-600'
+                  ? 'text-[var(--ink)] bg-[var(--sky-soft)]'
+                  : 'text-[var(--t3)] hover:text-[var(--ink)]'
               }`}
             >
               {t === 'signin' ? 'Sign In' : 'Sign Up'}
@@ -82,38 +82,38 @@ export function AuthModal({ onClose, onSignIn, onSignUp }: AuthModalProps) {
         {/* Form */}
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
           {successMsg && (
-            <div className="bg-leaf-50 border border-leaf-200 text-leaf-700 text-sm rounded-lg px-4 py-3 font-dm">
+            <div className="bg-[var(--green-soft)] border-2 border-[var(--ink)] text-[var(--ink)] text-sm rounded-xl px-4 py-3 font-dm font-bold">
               {successMsg}
             </div>
           )}
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 font-dm">
+            <div className="bg-[var(--coral-soft)] border-2 border-[var(--ink)] text-[var(--ink)] text-sm rounded-xl px-4 py-3 font-dm font-bold">
               {error}
             </div>
           )}
 
           <div>
-            <label className="block text-xs font-dm font-medium text-bark-500 mb-1">Email</label>
+            <label className="block text-xs font-dm font-extrabold uppercase tracking-wider text-[var(--ink)] mb-1">Email</label>
             <input
               ref={emailRef}
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
               required
-              className="w-full border border-bark-200 rounded-lg px-3 py-2.5 text-sm font-dm text-bark-800 focus:outline-none focus:ring-2 focus:ring-leaf-400 focus:border-transparent"
+              className="w-full border-2 border-[var(--ink)] bg-white rounded-xl px-3 py-2.5 text-sm font-dm font-semibold text-[var(--ink)] focus:outline-none focus:shadow-[3px_3px_0_var(--sky)]"
               placeholder="you@example.com"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-dm font-medium text-bark-500 mb-1">Password</label>
+            <label className="block text-xs font-dm font-extrabold uppercase tracking-wider text-[var(--ink)] mb-1">Password</label>
             <input
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
               minLength={6}
-              className="w-full border border-bark-200 rounded-lg px-3 py-2.5 text-sm font-dm text-bark-800 focus:outline-none focus:ring-2 focus:ring-leaf-400 focus:border-transparent"
+              className="w-full border-2 border-[var(--ink)] bg-white rounded-xl px-3 py-2.5 text-sm font-dm font-semibold text-[var(--ink)] focus:outline-none focus:shadow-[3px_3px_0_var(--sky)]"
               placeholder="••••••••"
             />
           </div>
@@ -121,7 +121,7 @@ export function AuthModal({ onClose, onSignIn, onSignUp }: AuthModalProps) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-leaf-600 hover:bg-leaf-700 disabled:opacity-60 text-white font-dm font-medium py-2.5 rounded-lg transition-colors text-sm"
+            className="pop-btn w-full !bg-[var(--coral)] disabled:opacity-60 !text-white py-2.5 text-base"
           >
             {loading ? 'Please wait…' : tab === 'signin' ? 'Sign In' : 'Create Account'}
           </button>

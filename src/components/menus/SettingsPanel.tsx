@@ -37,7 +37,7 @@ export function SettingsPanel({ settings, onChange }: SettingsPanelProps) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20, fontFamily: 'var(--ff-u)' }}>
       {/* Time limit */}
       <div>
-        <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Time Limit</div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Time Limit</div>
         <div className="settings-option-row" style={{ gap: 8 }}>
           {TIME_OPTIONS.map(opt => {
             const active = opt.noLimit
@@ -48,14 +48,14 @@ export function SettingsPanel({ settings, onChange }: SettingsPanelProps) {
                 key={opt.label}
                 onClick={() => update({ timeLimitSeconds: opt.seconds, noTimeLimit: opt.noLimit })}
                 style={{
-                  flex: 1, padding: '10px 8px', borderRadius: 3, border: active ? '1px solid var(--gold)' : '1px solid var(--border)',
-                  background: active ? 'var(--bg)' : 'var(--s1)', color: active ? 'var(--gold-hi)' : 'var(--t2)',
-                  fontSize: 13, fontWeight: 500, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                  flex: 1, padding: '10px 8px', borderRadius: 10, border: '2px solid var(--ink)',
+                  background: active ? 'var(--sun)' : 'var(--bg)', color: 'var(--ink)',
+                  fontSize: 13, fontWeight: 700, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
                   cursor: 'pointer', transition: 'all 0.14s'
                 }}
               >
                 <span>{opt.label}</span>
-                <span style={{ fontSize: 11, color: active ? 'var(--gold)' : 'var(--t3)', fontWeight: 400 }}>{opt.sub}</span>
+                <span style={{ fontSize: 11, color: 'var(--t2)', fontWeight: 400 }}>{opt.sub}</span>
               </button>
             );
           })}
@@ -64,13 +64,13 @@ export function SettingsPanel({ settings, onChange }: SettingsPanelProps) {
 
       {/* Region filter */}
       <div>
-        <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Regions</div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Regions</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           <button
             onClick={() => update({ regionFilter: [] })}
             style={{
-              padding: '6px 12px', borderRadius: 16, fontSize: 13, border: settings.regionFilter.length === 0 ? '1px solid var(--gold)' : '1px solid var(--border)',
-              background: settings.regionFilter.length === 0 ? 'var(--bg)' : 'var(--s1)', color: settings.regionFilter.length === 0 ? 'var(--gold-hi)' : 'var(--t2)',
+              padding: '6px 12px', borderRadius: 16, fontSize: 13, border: '2px solid var(--ink)',
+              background: settings.regionFilter.length === 0 ? 'var(--sun)' : 'var(--bg)', color: 'var(--ink)',
               cursor: 'pointer', transition: 'all 0.14s'
             }}
           >
@@ -81,8 +81,8 @@ export function SettingsPanel({ settings, onChange }: SettingsPanelProps) {
               key={r}
               onClick={() => toggleRegion(r)}
               style={{
-                padding: '6px 12px', borderRadius: 16, fontSize: 13, border: settings.regionFilter.includes(r) ? '1px solid var(--gold)' : '1px solid var(--border)',
-                background: settings.regionFilter.includes(r) ? 'var(--bg)' : 'var(--s1)', color: settings.regionFilter.includes(r) ? 'var(--gold-hi)' : 'var(--t2)',
+                padding: '6px 12px', borderRadius: 16, fontSize: 13, border: '2px solid var(--ink)',
+                background: settings.regionFilter.includes(r) ? 'var(--sun)' : 'var(--bg)', color: 'var(--ink)',
                 cursor: 'pointer', transition: 'all 0.14s'
               }}
             >
@@ -108,8 +108,8 @@ export function SettingsPanel({ settings, onChange }: SettingsPanelProps) {
       {/* Answer format — typed, click-the-map, or a mix. Not for versus (no
           locate UI there) or learn (teach→test flow is typed for now). */}
       {settings.mode !== 'versus' && settings.mode !== 'learn' && (
-        <div style={{ paddingTop: 8, borderTop: '1px solid var(--border)' }}>
-          <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+        <div style={{ paddingTop: 8, borderTop: '2px solid var(--border)' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
             Answer By
           </div>
           <div className="settings-option-row" style={{ gap: 8 }}>
@@ -125,14 +125,14 @@ export function SettingsPanel({ settings, onChange }: SettingsPanelProps) {
                   key={opt.id}
                   onClick={() => update({ answerFormats: opt.id })}
                   style={{
-                    flex: 1, padding: '10px 8px', borderRadius: 3, border: active ? '1px solid var(--gold)' : '1px solid var(--border)',
-                    background: active ? 'var(--bg)' : 'var(--s1)', color: active ? 'var(--gold-hi)' : 'var(--t2)',
-                    fontSize: 13, fontWeight: 500, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                    flex: 1, padding: '10px 8px', borderRadius: 10, border: '2px solid var(--ink)',
+                    background: active ? 'var(--sun)' : 'var(--bg)', color: 'var(--ink)',
+                    fontSize: 13, fontWeight: 700, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
                     cursor: 'pointer', transition: 'all 0.14s'
                   }}
                 >
                   <span>{opt.label}</span>
-                  <span style={{ fontSize: 11, color: active ? 'var(--gold)' : 'var(--t3)', fontWeight: 400 }}>{opt.sub}</span>
+                  <span style={{ fontSize: 11, color: 'var(--t2)', fontWeight: 400 }}>{opt.sub}</span>
                 </button>
               );
             })}
@@ -145,8 +145,8 @@ export function SettingsPanel({ settings, onChange }: SettingsPanelProps) {
 
       {/* Prompt selection */}
       {(settings.mode === 'practice' || settings.mode === 'learn' || settings.mode === 'versus') && (
-        <div style={{ paddingTop: 8, borderTop: '1px solid var(--border)' }}>
-          <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+        <div style={{ paddingTop: 8, borderTop: '2px solid var(--border)' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
             {settings.mode === 'versus' ? 'Versus Prompts' : 'Learn Content'}
           </div>
           <div className="settings-option-row" style={{ gap: 8 }}>
@@ -155,10 +155,10 @@ export function SettingsPanel({ settings, onChange }: SettingsPanelProps) {
                 key={p}
                 onClick={() => update(settings.mode === 'versus' ? { versusPrompts: p } : { practicePrompts: p })}
                 style={{
-                  flex: 1, padding: '8px', borderRadius: 3, fontSize: 13, textTransform: 'capitalize',
-                  border: promptSetting === p ? '1px solid var(--gold)' : '1px solid var(--border)',
-                  background: promptSetting === p ? 'var(--bg)' : 'var(--s1)',
-                  color: promptSetting === p ? 'var(--gold-hi)' : 'var(--t2)',
+                  flex: 1, padding: '8px', borderRadius: 10, fontSize: 13, textTransform: 'capitalize',
+                  border: '2px solid var(--ink)',
+                  background: promptSetting === p ? 'var(--sun)' : 'var(--bg)',
+                  color: 'var(--ink)',
                   cursor: 'pointer', transition: 'all 0.14s'
                 }}
               >

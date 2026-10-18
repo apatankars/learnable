@@ -27,12 +27,12 @@ export function Timer({ timeRemaining, totalSeconds, noLimit }: TimerProps) {
   const isLow = timeRemaining <= 30;
   const isCritical = timeRemaining <= 10;
 
-  const color = isCritical ? '#d95f5f' : isLow ? '#e8a020' : '#4a9a36';
+  const color = isCritical ? '#ff4b52' : isLow ? '#ff9a1f' : '#2fcf6b';
 
   return (
     <div className={`flex items-center gap-2 ${isCritical ? 'animate-pulse' : ''}`}>
       <svg width="52" height="52" className="rotate-[-90deg]">
-        <circle cx="26" cy="26" r={radius} fill="none" stroke="#e8e0d0" strokeWidth="4" />
+        <circle cx="26" cy="26" r={radius} fill="none" stroke="#ffe5b3" strokeWidth="4" />
         <circle
           cx="26" cy="26" r={radius}
           fill="none"

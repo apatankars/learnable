@@ -40,13 +40,13 @@ interface TooltipState {
 
 // Mastery → fill colour. Mirrors the ramp used across the dashboard.
 function masteryFill(m: number | undefined): string {
-  if (m === undefined) return '#d4c9a8';        // not studied
-  if (m >= 0.85) return '#4a9a36';
-  if (m >= 0.7) return '#6fb55a';
-  if (m >= 0.55) return '#a7c34a';
-  if (m >= 0.4) return '#fbbf24';
-  if (m >= 0.2) return '#fb923c';
-  return '#f87171';
+  if (m === undefined) return '#ffeed6';        // not studied
+  if (m >= 0.85) return '#2fcf6b';
+  if (m >= 0.7) return '#7ed957';
+  if (m >= 0.55) return '#c9e84a';
+  if (m >= 0.4) return '#ffd23f';
+  if (m >= 0.2) return '#ff9a1f';
+  return '#ff5a5f';
 }
 
 export function ProgressMap({ masteryMap }: ProgressMapProps) {
@@ -125,7 +125,7 @@ export function ProgressMap({ masteryMap }: ProgressMapProps) {
   }, [mapData, masteryMap, handleEnter, handleMove, handleLeave]);
 
   return (
-    <div className="w-full h-full relative" style={{ background: '#c8dff0' }}>
+    <div className="w-full h-full relative" style={{ background: '#5cc3f5' }}>
       {mapData ? (
         <svg
           viewBox={`0 0 ${VB_W} ${VB_H}`}
@@ -133,13 +133,13 @@ export function ProgressMap({ masteryMap }: ProgressMapProps) {
           style={{ width: '100%', height: '100%', display: 'block' }}
         >
           {/* Ocean sphere */}
-          <path d={mapData.sphere} fill="#c8dff0" stroke="#a9c6dd" strokeWidth={0.8} />
+          <path d={mapData.sphere} fill="#c8dff0" stroke="#1f1a2e" strokeWidth={1.4} />
           {/* Graticule */}
-          <path d={mapData.graticule} fill="none" stroke="#b3cde0" strokeWidth={0.4} opacity={0.7} />
+          <path d={mapData.graticule} fill="none" stroke="#ffffff" strokeWidth={0.3} opacity={0.0} />
           {/* Country fills */}
           {paths}
           {/* Crisp internal borders, drawn once on top */}
-          <path d={mapData.borders} fill="none" stroke="#8a7c5c" strokeWidth={0.5} strokeOpacity={0.7} pointerEvents="none" />
+          <path d={mapData.borders} fill="none" stroke="#1f1a2e" strokeWidth={0.6} strokeOpacity={0.85} pointerEvents="none" />
         </svg>
       ) : (
         <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--t3)', fontFamily: 'var(--ff-u)', fontSize: 13 }}>

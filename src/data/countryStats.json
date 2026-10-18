@@ -1,0 +1,2479 @@
+{
+"AFG":{
+"population":42647492,
+"government":"Theocratic emirate (Taliban)",
+"area":652230,
+"languages":[
+"Dari",
+"Pashto",
+"Turkmen"
+],
+"currency":"Afghan afghani",
+"demonym":"Afghan",
+"landlocked":true,
+"subregion":"Southern Asia"
+},
+"ALB":{
+"population":2377128,
+"government":"Parliamentary republic",
+"area":28748,
+"languages":[
+"Albanian"
+],
+"currency":"Albanian lek",
+"demonym":"Albanian",
+"landlocked":false,
+"subregion":"Southeast Europe"
+},
+"DZA":{
+"population":46814308,
+"government":"Semi-presidential republic",
+"area":2381741,
+"languages":[
+"Arabic"
+],
+"currency":"Algerian dinar",
+"demonym":"Algerian",
+"landlocked":false,
+"subregion":"Northern Africa"
+},
+"AND":{
+"population":81938,
+"government":"Parliamentary co-principality",
+"area":468,
+"languages":[
+"Catalan"
+],
+"currency":"Euro",
+"demonym":"Andorran",
+"landlocked":true,
+"subregion":"Southern Europe"
+},
+"AGO":{
+"population":37885849,
+"government":"Presidential republic",
+"area":1246700,
+"languages":[
+"Portuguese"
+],
+"currency":"Angolan kwanza",
+"demonym":"Angolan",
+"landlocked":false,
+"subregion":"Middle Africa"
+},
+"ATG":{
+"population":93772,
+"government":"Constitutional monarchy",
+"area":442,
+"languages":[
+"English"
+],
+"currency":"Eastern Caribbean dollar",
+"demonym":"Antiguan, Barbudan",
+"landlocked":false,
+"subregion":"Caribbean"
+},
+"ARG":{
+"population":45696159,
+"government":"Federal presidential republic",
+"area":2780400,
+"languages":[
+"Spanish"
+],
+"currency":"Argentine peso",
+"demonym":"Argentine",
+"landlocked":false,
+"subregion":"South America"
+},
+"ARM":{
+"population":3033500,
+"government":"Parliamentary republic",
+"area":29743,
+"languages":[
+"Armenian"
+],
+"currency":"Armenian dram",
+"demonym":"Armenian",
+"landlocked":true,
+"subregion":"Western Asia"
+},
+"AUS":{
+"population":27194286,
+"government":"Federal constitutional monarchy",
+"area":7692024,
+"languages":[
+"English"
+],
+"currency":"Australian dollar",
+"demonym":"Australian",
+"landlocked":false,
+"subregion":"Australia and New Zealand"
+},
+"AUT":{
+"population":9177982,
+"government":"Federal parliamentary republic",
+"area":83871,
+"languages":[
+"German"
+],
+"currency":"Euro",
+"demonym":"Austrian",
+"landlocked":true,
+"subregion":"Central Europe"
+},
+"AZE":{
+"population":10202830,
+"government":"Presidential republic",
+"area":86600,
+"languages":[
+"Azerbaijani",
+"Russian"
+],
+"currency":"Azerbaijani manat",
+"demonym":"Azerbaijani",
+"landlocked":true,
+"subregion":"Western Asia"
+},
+"BHS":{
+"population":401283,
+"government":"Constitutional monarchy",
+"area":13943,
+"languages":[
+"English"
+],
+"currency":"Bahamian dollar",
+"demonym":"Bahamian",
+"landlocked":false,
+"subregion":"Caribbean"
+},
+"BHR":{
+"population":1588670,
+"government":"Constitutional monarchy",
+"area":765,
+"languages":[
+"Arabic"
+],
+"currency":"Bahraini dinar",
+"demonym":"Bahraini",
+"landlocked":false,
+"subregion":"Western Asia"
+},
+"BGD":{
+"population":173562364,
+"government":"Parliamentary republic",
+"area":147570,
+"languages":[
+"Bengali"
+],
+"currency":"Bangladeshi taka",
+"demonym":"Bangladeshi",
+"landlocked":false,
+"subregion":"Southern Asia"
+},
+"BRB":{
+"population":282467,
+"government":"Parliamentary republic",
+"area":430,
+"languages":[
+"English"
+],
+"currency":"Barbadian dollar",
+"demonym":"Barbadian",
+"landlocked":false,
+"subregion":"Caribbean"
+},
+"BLR":{
+"population":9132629,
+"government":"Presidential republic (authoritarian)",
+"area":207600,
+"languages":[
+"Belarusian",
+"Russian"
+],
+"currency":"Belarusian ruble",
+"demonym":"Belarusian",
+"landlocked":true,
+"subregion":"Eastern Europe"
+},
+"BEL":{
+"population":11858610,
+"government":"Federal constitutional monarchy",
+"area":30528,
+"languages":[
+"German",
+"French",
+"Dutch"
+],
+"currency":"Euro",
+"demonym":"Belgian",
+"landlocked":false,
+"subregion":"Western Europe"
+},
+"BLZ":{
+"population":417072,
+"government":"Constitutional monarchy",
+"area":22966,
+"languages":[
+"English"
+],
+"currency":"Belize dollar",
+"demonym":"Belizean",
+"landlocked":false,
+"subregion":"Central America"
+},
+"BEN":{
+"population":14462724,
+"government":"Presidential republic",
+"area":112622,
+"languages":[
+"French"
+],
+"currency":"West African CFA franc",
+"demonym":"Beninese",
+"landlocked":false,
+"subregion":"Western Africa"
+},
+"BTN":{
+"population":791524,
+"government":"Constitutional monarchy",
+"area":38394,
+"languages":[
+"Dzongkha"
+],
+"currency":"Bhutanese ngultrum",
+"demonym":"Bhutanese",
+"landlocked":true,
+"subregion":"Southern Asia"
+},
+"BOL":{
+"population":12413315,
+"government":"Presidential republic",
+"area":1098581,
+"languages":[
+"Aymara",
+"Guaraní",
+"Quechua",
+"Spanish"
+],
+"currency":"Bolivian boliviano",
+"demonym":"Bolivian",
+"landlocked":true,
+"subregion":"South America"
+},
+"BIH":{
+"population":3164253,
+"government":"Federal parliamentary republic",
+"area":51209,
+"languages":[
+"Bosnian",
+"Croatian",
+"Serbian"
+],
+"currency":"Bosnia and Herzegovina convertible mark",
+"demonym":"Bosnian, Herzegovinian",
+"landlocked":false,
+"subregion":"Southeast Europe"
+},
+"BWA":{
+"population":2521139,
+"government":"Parliamentary republic",
+"area":582000,
+"languages":[
+"English",
+"Tswana"
+],
+"currency":"Botswana pula",
+"demonym":"Motswana",
+"landlocked":true,
+"subregion":"Southern Africa"
+},
+"BRA":{
+"population":211998573,
+"government":"Federal presidential republic",
+"area":8515767,
+"languages":[
+"Portuguese"
+],
+"currency":"Brazilian real",
+"demonym":"Brazilian",
+"landlocked":false,
+"subregion":"South America"
+},
+"BRN":{
+"population":462721,
+"government":"Absolute monarchy (sultanate)",
+"area":5765,
+"languages":[
+"Malay"
+],
+"currency":"Brunei dollar",
+"demonym":"Bruneian",
+"landlocked":false,
+"subregion":"South-Eastern Asia"
+},
+"BGR":{
+"population":6441421,
+"government":"Parliamentary republic",
+"area":110879,
+"languages":[
+"Bulgarian"
+],
+"currency":"Euro",
+"demonym":"Bulgarian",
+"landlocked":false,
+"subregion":"Southeast Europe"
+},
+"BFA":{
+"population":23548781,
+"government":"Military junta",
+"area":272967,
+"languages":[
+"French"
+],
+"currency":"West African CFA franc",
+"demonym":"Burkinabe",
+"landlocked":true,
+"subregion":"Western Africa"
+},
+"BDI":{
+"population":14047786,
+"government":"Presidential republic",
+"area":27834,
+"languages":[
+"French",
+"Kirundi"
+],
+"currency":"Burundian franc",
+"demonym":"Burundian",
+"landlocked":true,
+"subregion":"Eastern Africa"
+},
+"CPV":{
+"population":524877,
+"government":"Semi-presidential republic",
+"area":4033,
+"languages":[
+"Portuguese"
+],
+"currency":"Cape Verdean escudo",
+"demonym":"Cape Verdian",
+"landlocked":false,
+"subregion":"Western Africa"
+},
+"KHM":{
+"population":17638801,
+"government":"Constitutional monarchy",
+"area":181035,
+"languages":[
+"Khmer"
+],
+"currency":"Cambodian riel",
+"demonym":"Cambodian",
+"landlocked":false,
+"subregion":"South-Eastern Asia"
+},
+"CMR":{
+"population":29123744,
+"government":"Presidential republic",
+"area":475442,
+"languages":[
+"English",
+"French"
+],
+"currency":"Central African CFA franc",
+"demonym":"Cameroonian",
+"landlocked":false,
+"subregion":"Middle Africa"
+},
+"CAN":{
+"population":41262329,
+"government":"Federal constitutional monarchy",
+"area":9984670,
+"languages":[
+"English",
+"French"
+],
+"currency":"Canadian dollar",
+"demonym":"Canadian",
+"landlocked":false,
+"subregion":"North America"
+},
+"CAF":{
+"population":5330690,
+"government":"Presidential republic",
+"area":622984,
+"languages":[
+"French",
+"Sango"
+],
+"currency":"Central African CFA franc",
+"demonym":"Central African",
+"landlocked":true,
+"subregion":"Middle Africa"
+},
+"TCD":{
+"population":20299123,
+"government":"Presidential republic",
+"area":1284000,
+"languages":[
+"Arabic",
+"French"
+],
+"currency":"Central African CFA franc",
+"demonym":"Chadian",
+"landlocked":true,
+"subregion":"Middle Africa"
+},
+"CHL":{
+"population":19764771,
+"government":"Presidential republic",
+"area":756102,
+"languages":[
+"Spanish"
+],
+"currency":"Chilean peso",
+"demonym":"Chilean",
+"landlocked":false,
+"subregion":"South America"
+},
+"CHN":{
+"population":1408975000,
+"government":"One-party communist state",
+"area":9706961,
+"languages":[
+"Mandarin Chinese"
+],
+"currency":"Chinese yuan",
+"demonym":"Chinese",
+"landlocked":false,
+"subregion":"Eastern Asia"
+},
+"COL":{
+"population":52886363,
+"government":"Presidential republic",
+"area":1141748,
+"languages":[
+"Spanish"
+],
+"currency":"Colombian peso",
+"demonym":"Colombian",
+"landlocked":false,
+"subregion":"South America"
+},
+"COM":{
+"population":866628,
+"government":"Federal presidential republic",
+"area":1862,
+"languages":[
+"Arabic",
+"French",
+"Comorian"
+],
+"currency":"Comorian franc",
+"demonym":"Comoran",
+"landlocked":false,
+"subregion":"Eastern Africa"
+},
+"COG":{
+"population":6332961,
+"government":"Presidential republic",
+"area":342000,
+"languages":[
+"French",
+"Kikongo",
+"Lingala"
+],
+"currency":"Central African CFA franc",
+"demonym":"Congolese",
+"landlocked":false,
+"subregion":"Middle Africa"
+},
+"COD":{
+"population":109276265,
+"government":"Semi-presidential republic",
+"area":2344858,
+"languages":[
+"French",
+"Kikongo",
+"Lingala",
+"Tshiluba",
+"Swahili"
+],
+"currency":"Congolese franc",
+"demonym":"Congolese",
+"landlocked":false,
+"subregion":"Middle Africa"
+},
+"CRI":{
+"population":5129910,
+"government":"Presidential republic",
+"area":51100,
+"languages":[
+"Spanish"
+],
+"currency":"Costa Rican colón",
+"demonym":"Costa Rican",
+"landlocked":false,
+"subregion":"Central America"
+},
+"HRV":{
+"population":3866200,
+"government":"Parliamentary republic",
+"area":56594,
+"languages":[
+"Croatian"
+],
+"currency":"Euro",
+"demonym":"Croatian",
+"landlocked":false,
+"subregion":"Southeast Europe"
+},
+"CUB":{
+"population":10979783,
+"government":"One-party communist state",
+"area":109884,
+"languages":[
+"Spanish"
+],
+"currency":"Cuban peso",
+"demonym":"Cuban",
+"landlocked":false,
+"subregion":"Caribbean"
+},
+"CIV":{
+"population":31934230,
+"government":"Presidential republic",
+"area":322463,
+"languages":[
+"French"
+],
+"currency":"West African CFA franc",
+"demonym":"Ivorian",
+"landlocked":false,
+"subregion":"Western Africa"
+},
+"CYP":{
+"population":1358282,
+"government":"Presidential republic",
+"area":9251,
+"languages":[
+"Greek",
+"Turkish"
+],
+"currency":"Euro",
+"demonym":"Cypriot",
+"landlocked":false,
+"subregion":"Southern Europe"
+},
+"CZE":{
+"population":10905028,
+"government":"Parliamentary republic",
+"area":78865,
+"languages":[
+"Czech"
+],
+"currency":"Czech koruna",
+"demonym":"Czech",
+"landlocked":true,
+"subregion":"Central Europe"
+},
+"DNK":{
+"population":5976992,
+"government":"Constitutional monarchy",
+"area":43094,
+"languages":[
+"Danish"
+],
+"currency":"Danish krone",
+"demonym":"Danish",
+"landlocked":false,
+"subregion":"Northern Europe"
+},
+"DJI":{
+"population":1168722,
+"government":"Presidential republic",
+"area":23200,
+"languages":[
+"Arabic",
+"French"
+],
+"currency":"Djiboutian franc",
+"demonym":"Djibouti",
+"landlocked":false,
+"subregion":"Eastern Africa"
+},
+"DMA":{
+"population":66205,
+"government":"Parliamentary republic",
+"area":751,
+"languages":[
+"English"
+],
+"currency":"Eastern Caribbean dollar",
+"demonym":"Dominican",
+"landlocked":false,
+"subregion":"Caribbean"
+},
+"DOM":{
+"population":11427557,
+"government":"Presidential republic",
+"area":48671,
+"languages":[
+"Spanish"
+],
+"currency":"Dominican peso",
+"demonym":"Dominican",
+"landlocked":false,
+"subregion":"Caribbean"
+},
+"ECU":{
+"population":18135478,
+"government":"Presidential republic",
+"area":276841,
+"languages":[
+"Spanish"
+],
+"currency":"United States dollar",
+"demonym":"Ecuadorean",
+"landlocked":false,
+"subregion":"South America"
+},
+"EGY":{
+"population":116538258,
+"government":"Semi-presidential republic",
+"area":1002450,
+"languages":[
+"Arabic"
+],
+"currency":"Egyptian pound",
+"demonym":"Egyptian",
+"landlocked":false,
+"subregion":"Northern Africa"
+},
+"SLV":{
+"population":6338193,
+"government":"Presidential republic",
+"area":21041,
+"languages":[
+"Spanish"
+],
+"currency":"United States dollar",
+"demonym":"Salvadoran",
+"landlocked":false,
+"subregion":"Central America"
+},
+"GNQ":{
+"population":1892516,
+"government":"Presidential republic",
+"area":28051,
+"languages":[
+"French",
+"Portuguese",
+"Spanish"
+],
+"currency":"Central African CFA franc",
+"demonym":"Equatorial Guinean",
+"landlocked":false,
+"subregion":"Middle Africa"
+},
+"ERI":{
+"population":3535603,
+"government":"One-party presidential state",
+"area":117600,
+"languages":[
+"Arabic",
+"English",
+"Tigrinya"
+],
+"currency":"Eritrean nakfa",
+"demonym":"Eritrean",
+"landlocked":false,
+"subregion":"Eastern Africa"
+},
+"EST":{
+"population":1372341,
+"government":"Parliamentary republic",
+"area":45227,
+"languages":[
+"Estonian"
+],
+"currency":"Euro",
+"demonym":"Estonian",
+"landlocked":false,
+"subregion":"Northern Europe"
+},
+"SWZ":{
+"population":1242822,
+"government":"Absolute monarchy",
+"area":17364,
+"languages":[
+"English",
+"Swazi"
+],
+"currency":"Swazi lilangeni",
+"demonym":"Swazi",
+"landlocked":true,
+"subregion":"Southern Africa"
+},
+"ETH":{
+"population":132059767,
+"government":"Federal parliamentary republic",
+"area":1104300,
+"languages":[
+"Amharic"
+],
+"currency":"Ethiopian birr",
+"demonym":"Ethiopian",
+"landlocked":true,
+"subregion":"Eastern Africa"
+},
+"FJI":{
+"population":928784,
+"government":"Parliamentary republic",
+"area":18272,
+"languages":[
+"English",
+"Fijian",
+"Fiji Hindi"
+],
+"currency":"Fijian dollar",
+"demonym":"Fijian",
+"landlocked":false,
+"subregion":"Melanesia"
+},
+"FIN":{
+"population":5619911,
+"government":"Parliamentary republic",
+"area":338424,
+"languages":[
+"Finnish",
+"Swedish"
+],
+"currency":"Euro",
+"demonym":"Finnish",
+"landlocked":false,
+"subregion":"Northern Europe"
+},
+"FRA":{
+"population":68551653,
+"government":"Semi-presidential republic",
+"area":551695,
+"languages":[
+"French"
+],
+"currency":"Euro",
+"demonym":"French",
+"landlocked":false,
+"subregion":"Western Europe"
+},
+"GAB":{
+"population":2538952,
+"government":"Presidential republic",
+"area":267668,
+"languages":[
+"French"
+],
+"currency":"Central African CFA franc",
+"demonym":"Gabonese",
+"landlocked":false,
+"subregion":"Middle Africa"
+},
+"GMB":{
+"population":2759988,
+"government":"Presidential republic",
+"area":10689,
+"languages":[
+"English"
+],
+"currency":"Gambian dalasi",
+"demonym":"Gambian",
+"landlocked":false,
+"subregion":"Western Africa"
+},
+"GEO":{
+"population":3812518,
+"government":"Parliamentary republic",
+"area":69700,
+"languages":[
+"Georgian"
+],
+"currency":"Georgian lari",
+"demonym":"Georgian",
+"landlocked":false,
+"subregion":"Western Asia"
+},
+"DEU":{
+"population":83516593,
+"government":"Federal parliamentary republic",
+"area":357114,
+"languages":[
+"German"
+],
+"currency":"Euro",
+"demonym":"German",
+"landlocked":false,
+"subregion":"Western Europe"
+},
+"GHA":{
+"population":34427414,
+"government":"Presidential republic",
+"area":238533,
+"languages":[
+"English"
+],
+"currency":"Ghanaian cedi",
+"demonym":"Ghanaian",
+"landlocked":false,
+"subregion":"Western Africa"
+},
+"GRC":{
+"population":10405134,
+"government":"Parliamentary republic",
+"area":131990,
+"languages":[
+"Greek"
+],
+"currency":"Euro",
+"demonym":"Greek",
+"landlocked":false,
+"subregion":"Southern Europe"
+},
+"GRD":{
+"population":117207,
+"government":"Constitutional monarchy",
+"area":344,
+"languages":[
+"English"
+],
+"currency":"Eastern Caribbean dollar",
+"demonym":"Grenadian",
+"landlocked":false,
+"subregion":"Caribbean"
+},
+"GTM":{
+"population":18406359,
+"government":"Presidential republic",
+"area":108889,
+"languages":[
+"Spanish"
+],
+"currency":"Guatemalan quetzal",
+"demonym":"Guatemalan",
+"landlocked":false,
+"subregion":"Central America"
+},
+"GIN":{
+"population":14754785,
+"government":"Presidential republic",
+"area":245857,
+"languages":[
+"French"
+],
+"currency":"Guinean franc",
+"demonym":"Guinean",
+"landlocked":false,
+"subregion":"Western Africa"
+},
+"GNB":{
+"population":2201352,
+"government":"Semi-presidential republic",
+"area":36125,
+"languages":[
+"Portuguese",
+"Upper Guinea Creole"
+],
+"currency":"West African CFA franc",
+"demonym":"Guinea-Bissauan",
+"landlocked":false,
+"subregion":"Western Africa"
+},
+"GUY":{
+"population":831087,
+"government":"Parliamentary republic with an executive president",
+"area":214969,
+"languages":[
+"English"
+],
+"currency":"Guyanese dollar",
+"demonym":"Guyanese",
+"landlocked":false,
+"subregion":"South America"
+},
+"HTI":{
+"population":11772557,
+"government":"Transitional government",
+"area":27750,
+"languages":[
+"French",
+"Haitian Creole"
+],
+"currency":"Haitian gourde",
+"demonym":"Haitian",
+"landlocked":false,
+"subregion":"Caribbean"
+},
+"HND":{
+"population":10825703,
+"government":"Presidential republic",
+"area":112492,
+"languages":[
+"Spanish"
+],
+"currency":"Honduran lempira",
+"demonym":"Honduran",
+"landlocked":false,
+"subregion":"Central America"
+},
+"HUN":{
+"population":9562065,
+"government":"Parliamentary republic",
+"area":93028,
+"languages":[
+"Hungarian"
+],
+"currency":"Hungarian forint",
+"demonym":"Hungarian",
+"landlocked":true,
+"subregion":"Central Europe"
+},
+"ISL":{
+"population":386506,
+"government":"Parliamentary republic",
+"area":103000,
+"languages":[
+"Icelandic"
+],
+"currency":"Icelandic króna",
+"demonym":"Icelander",
+"landlocked":false,
+"subregion":"Northern Europe"
+},
+"IND":{
+"population":1450935791,
+"government":"Federal parliamentary republic",
+"area":3287590,
+"languages":[
+"Hindi",
+"English"
+],
+"currency":"Indian rupee",
+"demonym":"Indian",
+"landlocked":false,
+"subregion":"Southern Asia"
+},
+"IDN":{
+"population":283487931,
+"government":"Presidential republic",
+"area":1904569,
+"languages":[
+"Indonesian"
+],
+"currency":"Indonesian rupiah",
+"demonym":"Indonesian",
+"landlocked":false,
+"subregion":"South-Eastern Asia"
+},
+"IRN":{
+"population":91567738,
+"government":"Theocratic Islamic republic",
+"area":1648195,
+"languages":[
+"Persian"
+],
+"currency":"Iranian rial",
+"demonym":"Iranian",
+"landlocked":false,
+"subregion":"Southern Asia"
+},
+"IRQ":{
+"population":46042015,
+"government":"Federal parliamentary republic",
+"area":438317,
+"languages":[
+"Arabic",
+"Kurdish"
+],
+"currency":"Iraqi dinar",
+"demonym":"Iraqi",
+"landlocked":false,
+"subregion":"Western Asia"
+},
+"IRL":{
+"population":5395790,
+"government":"Parliamentary republic",
+"area":70273,
+"languages":[
+"English",
+"Irish"
+],
+"currency":"Euro",
+"demonym":"Irish",
+"landlocked":false,
+"subregion":"Northern Europe"
+},
+"ISR":{
+"population":10002200,
+"government":"Parliamentary republic",
+"area":20770,
+"languages":[
+"Hebrew"
+],
+"currency":"Israeli new shekel",
+"demonym":"Israeli",
+"landlocked":false,
+"subregion":"Western Asia"
+},
+"ITA":{
+"population":58952704,
+"government":"Parliamentary republic",
+"area":301336,
+"languages":[
+"Italian"
+],
+"currency":"Euro",
+"demonym":"Italian",
+"landlocked":false,
+"subregion":"Southern Europe"
+},
+"JAM":{
+"population":2839175,
+"government":"Constitutional monarchy",
+"area":10991,
+"languages":[
+"English",
+"Jamaican Patois"
+],
+"currency":"Jamaican dollar",
+"demonym":"Jamaican",
+"landlocked":false,
+"subregion":"Caribbean"
+},
+"JPN":{
+"population":123975371,
+"government":"Constitutional monarchy",
+"area":377930,
+"languages":[
+"Japanese"
+],
+"currency":"Japanese yen",
+"demonym":"Japanese",
+"landlocked":false,
+"subregion":"Eastern Asia"
+},
+"JOR":{
+"population":11552876,
+"government":"Constitutional monarchy",
+"area":89342,
+"languages":[
+"Arabic"
+],
+"currency":"Jordanian dinar",
+"demonym":"Jordanian",
+"landlocked":false,
+"subregion":"Western Asia"
+},
+"KAZ":{
+"population":20592571,
+"government":"Presidential republic",
+"area":2724900,
+"languages":[
+"Kazakh",
+"Russian"
+],
+"currency":"Kazakhstani tenge",
+"demonym":"Kazakhstani",
+"landlocked":true,
+"subregion":"Central Asia"
+},
+"KEN":{
+"population":56432944,
+"government":"Presidential republic",
+"area":580367,
+"languages":[
+"English",
+"Swahili"
+],
+"currency":"Kenyan shilling",
+"demonym":"Kenyan",
+"landlocked":false,
+"subregion":"Eastern Africa"
+},
+"KIR":{
+"population":134518,
+"government":"Parliamentary republic with an executive president",
+"area":811,
+"languages":[
+"English",
+"Gilbertese"
+],
+"currency":"Australian dollar",
+"demonym":"I-Kiribati",
+"landlocked":false,
+"subregion":"Micronesia"
+},
+"PRK":{
+"population":26498823,
+"government":"One-party totalitarian state",
+"area":120538,
+"languages":[
+"Korean"
+],
+"currency":"North Korean won",
+"demonym":"North Korean",
+"landlocked":false,
+"subregion":"Eastern Asia"
+},
+"KOR":{
+"population":51751065,
+"government":"Presidential republic",
+"area":100210,
+"languages":[
+"Korean"
+],
+"currency":"South Korean won",
+"demonym":"South Korean",
+"landlocked":false,
+"subregion":"Eastern Asia"
+},
+"XKX":{
+"population":1594353,
+"government":"Parliamentary republic",
+"area":10908,
+"languages":[
+"Albanian",
+"Serbian"
+],
+"currency":"Euro",
+"demonym":"Kosovar",
+"landlocked":true,
+"subregion":"Southeast Europe"
+},
+"KWT":{
+"population":4897263,
+"government":"Constitutional monarchy (emirate)",
+"area":17818,
+"languages":[
+"Arabic"
+],
+"currency":"Kuwaiti dinar",
+"demonym":"Kuwaiti",
+"landlocked":false,
+"subregion":"Western Asia"
+},
+"KGZ":{
+"population":7221868,
+"government":"Presidential republic",
+"area":199951,
+"languages":[
+"Kyrgyz",
+"Russian"
+],
+"currency":"Kyrgyzstani som",
+"demonym":"Kirghiz",
+"landlocked":true,
+"subregion":"Central Asia"
+},
+"LAO":{
+"population":7769819,
+"government":"One-party communist state",
+"area":236800,
+"languages":[
+"Lao"
+],
+"currency":"Lao kip",
+"demonym":"Laotian",
+"landlocked":true,
+"subregion":"South-Eastern Asia"
+},
+"LVA":{
+"population":1866124,
+"government":"Parliamentary republic",
+"area":64559,
+"languages":[
+"Latvian"
+],
+"currency":"Euro",
+"demonym":"Latvian",
+"landlocked":false,
+"subregion":"Northern Europe"
+},
+"LBN":{
+"population":5805962,
+"government":"Parliamentary republic",
+"area":10452,
+"languages":[
+"Arabic",
+"French"
+],
+"currency":"Lebanese pound",
+"demonym":"Lebanese",
+"landlocked":false,
+"subregion":"Western Asia"
+},
+"LSO":{
+"population":2337423,
+"government":"Constitutional monarchy",
+"area":30355,
+"languages":[
+"English",
+"Sotho"
+],
+"currency":"Lesotho loti",
+"demonym":"Mosotho",
+"landlocked":true,
+"subregion":"Southern Africa"
+},
+"LBR":{
+"population":5612817,
+"government":"Presidential republic",
+"area":111369,
+"languages":[
+"English"
+],
+"currency":"Liberian dollar",
+"demonym":"Liberian",
+"landlocked":false,
+"subregion":"Western Africa"
+},
+"LBY":{
+"population":7381023,
+"government":"Provisional government (divided)",
+"area":1759540,
+"languages":[
+"Arabic"
+],
+"currency":"Libyan dinar",
+"demonym":"Libyan",
+"landlocked":false,
+"subregion":"Northern Africa"
+},
+"LIE":{
+"population":40450,
+"government":"Constitutional monarchy (principality)",
+"area":160,
+"languages":[
+"German"
+],
+"currency":"Swiss franc",
+"demonym":"Liechtensteiner",
+"landlocked":true,
+"subregion":"Western Europe"
+},
+"LTU":{
+"population":2888278,
+"government":"Semi-presidential republic",
+"area":65300,
+"languages":[
+"Lithuanian"
+],
+"currency":"Euro",
+"demonym":"Lithuanian",
+"landlocked":false,
+"subregion":"Northern Europe"
+},
+"LUX":{
+"population":677012,
+"government":"Constitutional monarchy (grand duchy)",
+"area":2586,
+"languages":[
+"German",
+"French",
+"Luxembourgish"
+],
+"currency":"Euro",
+"demonym":"Luxembourger",
+"landlocked":true,
+"subregion":"Western Europe"
+},
+"MDG":{
+"population":31964956,
+"government":"Military transitional government",
+"area":587041,
+"languages":[
+"French",
+"Malagasy"
+],
+"currency":"Malagasy ariary",
+"demonym":"Malagasy",
+"landlocked":false,
+"subregion":"Eastern Africa"
+},
+"MWI":{
+"population":21655286,
+"government":"Presidential republic",
+"area":118484,
+"languages":[
+"English",
+"Chewa"
+],
+"currency":"Malawian kwacha",
+"demonym":"Malawian",
+"landlocked":true,
+"subregion":"Eastern Africa"
+},
+"MYS":{
+"population":35557673,
+"government":"Federal constitutional elective monarchy",
+"area":330803,
+"languages":[
+"English",
+"Malay"
+],
+"currency":"Malaysian ringgit",
+"demonym":"Malaysian",
+"landlocked":false,
+"subregion":"South-Eastern Asia"
+},
+"MDV":{
+"population":527799,
+"government":"Presidential republic",
+"area":300,
+"languages":[
+"Dhivehi"
+],
+"currency":"Maldivian rufiyaa",
+"demonym":"Maldivan",
+"landlocked":false,
+"subregion":"Southern Asia"
+},
+"MLI":{
+"population":24478595,
+"government":"Military junta",
+"area":1240192,
+"languages":[
+"French"
+],
+"currency":"West African CFA franc",
+"demonym":"Malian",
+"landlocked":true,
+"subregion":"Western Africa"
+},
+"MLT":{
+"population":568847,
+"government":"Parliamentary republic",
+"area":316,
+"languages":[
+"English",
+"Maltese"
+],
+"currency":"Euro",
+"demonym":"Maltese",
+"landlocked":false,
+"subregion":"Southern Europe"
+},
+"MHL":{
+"population":37548,
+"government":"Parliamentary republic with an executive president",
+"area":181,
+"languages":[
+"English",
+"Marshallese"
+],
+"currency":"United States dollar",
+"demonym":"Marshallese",
+"landlocked":false,
+"subregion":"Micronesia"
+},
+"MRT":{
+"population":5169395,
+"government":"Presidential republic",
+"area":1030700,
+"languages":[
+"Arabic"
+],
+"currency":"Mauritanian ouguiya",
+"demonym":"Mauritanian",
+"landlocked":false,
+"subregion":"Western Africa"
+},
+"MUS":{
+"population":1245779,
+"government":"Parliamentary republic",
+"area":2040,
+"languages":[
+"English",
+"French",
+"Mauritian Creole"
+],
+"currency":"Mauritian rupee",
+"demonym":"Mauritian",
+"landlocked":false,
+"subregion":"Eastern Africa"
+},
+"MEX":{
+"population":130861007,
+"government":"Federal presidential republic",
+"area":1964375,
+"languages":[
+"Spanish"
+],
+"currency":"Mexican peso",
+"demonym":"Mexican",
+"landlocked":false,
+"subregion":"North America"
+},
+"FSM":{
+"population":113160,
+"government":"Federal republic",
+"area":702,
+"languages":[
+"English"
+],
+"currency":"United States dollar",
+"demonym":"Micronesian",
+"landlocked":false,
+"subregion":"Micronesia"
+},
+"MDA":{
+"population":2402306,
+"government":"Parliamentary republic",
+"area":33846,
+"languages":[
+"Romanian"
+],
+"currency":"Moldovan leu",
+"demonym":"Moldovan",
+"landlocked":true,
+"subregion":"Eastern Europe"
+},
+"MCO":{
+"population":38631,
+"government":"Constitutional monarchy (principality)",
+"area":2.02,
+"languages":[
+"French"
+],
+"currency":"Euro",
+"demonym":"Monegasque",
+"landlocked":false,
+"subregion":"Western Europe"
+},
+"MNG":{
+"population":3524788,
+"government":"Semi-presidential republic",
+"area":1564110,
+"languages":[
+"Mongolian"
+],
+"currency":"Mongolian tögrög",
+"demonym":"Mongolian",
+"landlocked":true,
+"subregion":"Eastern Asia"
+},
+"MNE":{
+"population":623525,
+"government":"Parliamentary republic",
+"area":13812,
+"languages":[
+"Montenegrin"
+],
+"currency":"Euro",
+"demonym":"Montenegrin",
+"landlocked":false,
+"subregion":"Southeast Europe"
+},
+"MAR":{
+"population":38081173,
+"government":"Constitutional monarchy",
+"area":446550,
+"languages":[
+"Arabic",
+"Berber"
+],
+"currency":"Moroccan dirham",
+"demonym":"Moroccan",
+"landlocked":false,
+"subregion":"Northern Africa"
+},
+"MOZ":{
+"population":34631766,
+"government":"Presidential republic",
+"area":801590,
+"languages":[
+"Portuguese"
+],
+"currency":"Mozambican metical",
+"demonym":"Mozambican",
+"landlocked":false,
+"subregion":"Eastern Africa"
+},
+"MMR":{
+"population":54500091,
+"government":"Military junta",
+"area":676578,
+"languages":[
+"Burmese"
+],
+"currency":"Burmese kyat",
+"demonym":"Burmese",
+"landlocked":false,
+"subregion":"South-Eastern Asia"
+},
+"NAM":{
+"population":3030131,
+"government":"Presidential republic",
+"area":825615,
+"languages":[
+"Afrikaans",
+"German",
+"English",
+"Herero",
+"Khoekhoe",
+"Kwangali",
+"Lozi",
+"Ndonga",
+"Tswana"
+],
+"currency":"Namibian dollar",
+"demonym":"Namibian",
+"landlocked":false,
+"subregion":"Southern Africa"
+},
+"NRU":{
+"population":11947,
+"government":"Parliamentary republic with an executive president",
+"area":21,
+"languages":[
+"Nauruan",
+"English"
+],
+"currency":"Australian dollar",
+"demonym":"Nauruan",
+"landlocked":false,
+"subregion":"Micronesia"
+},
+"NPL":{
+"population":29651054,
+"government":"Federal parliamentary republic",
+"area":147181,
+"languages":[
+"Nepali"
+],
+"currency":"Nepalese rupee",
+"demonym":"Nepalese",
+"landlocked":true,
+"subregion":"Southern Asia"
+},
+"NLD":{
+"population":17993485,
+"government":"Constitutional monarchy",
+"area":41850,
+"languages":[
+"Dutch"
+],
+"currency":"Euro",
+"demonym":"Dutch",
+"landlocked":false,
+"subregion":"Western Europe"
+},
+"NZL":{
+"population":5290000,
+"government":"Constitutional monarchy",
+"area":270467,
+"languages":[
+"English",
+"Māori",
+"New Zealand Sign Language"
+],
+"currency":"New Zealand dollar",
+"demonym":"New Zealander",
+"landlocked":false,
+"subregion":"Australia and New Zealand"
+},
+"NIC":{
+"population":6916140,
+"government":"Presidential republic (authoritarian)",
+"area":130373,
+"languages":[
+"Spanish"
+],
+"currency":"Nicaraguan córdoba",
+"demonym":"Nicaraguan",
+"landlocked":false,
+"subregion":"Central America"
+},
+"NER":{
+"population":27032412,
+"government":"Military junta",
+"area":1267000,
+"languages":[
+"French"
+],
+"currency":"West African CFA franc",
+"demonym":"Nigerien",
+"landlocked":true,
+"subregion":"Western Africa"
+},
+"NGA":{
+"population":232679478,
+"government":"Federal presidential republic",
+"area":923768,
+"languages":[
+"English"
+],
+"currency":"Nigerian naira",
+"demonym":"Nigerian",
+"landlocked":false,
+"subregion":"Western Africa"
+},
+"MKD":{
+"population":1824359,
+"government":"Parliamentary republic",
+"area":25713,
+"languages":[
+"Macedonian"
+],
+"currency":"Macedonian denar",
+"demonym":"Macedonian",
+"landlocked":true,
+"subregion":"Southeast Europe"
+},
+"NOR":{
+"population":5572279,
+"government":"Constitutional monarchy",
+"area":323802,
+"languages":[
+"Norwegian",
+"Sami"
+],
+"currency":"Norwegian krone",
+"demonym":"Norwegian",
+"landlocked":false,
+"subregion":"Northern Europe"
+},
+"OMN":{
+"population":5281538,
+"government":"Absolute monarchy (sultanate)",
+"area":309500,
+"languages":[
+"Arabic"
+],
+"currency":"Omani rial",
+"demonym":"Omani",
+"landlocked":false,
+"subregion":"Western Asia"
+},
+"PAK":{
+"population":251269164,
+"government":"Federal parliamentary republic",
+"area":881912,
+"languages":[
+"English",
+"Urdu"
+],
+"currency":"Pakistani rupee",
+"demonym":"Pakistani",
+"landlocked":false,
+"subregion":"Southern Asia"
+},
+"PLW":{
+"population":17695,
+"government":"Presidential republic",
+"area":459,
+"languages":[
+"English",
+"Palauan"
+],
+"currency":"United States dollar",
+"demonym":"Palauan",
+"landlocked":false,
+"subregion":"Micronesia"
+},
+"PAN":{
+"population":4515577,
+"government":"Presidential republic",
+"area":75417,
+"languages":[
+"Spanish"
+],
+"currency":"Panamanian balboa",
+"demonym":"Panamanian",
+"landlocked":false,
+"subregion":"Central America"
+},
+"PNG":{
+"population":10576502,
+"government":"Constitutional monarchy",
+"area":462840,
+"languages":[
+"English",
+"Hiri Motu",
+"Tok Pisin"
+],
+"currency":"Papua New Guinean kina",
+"demonym":"Papua New Guinean",
+"landlocked":false,
+"subregion":"Melanesia"
+},
+"PRY":{
+"population":6929153,
+"government":"Presidential republic",
+"area":406752,
+"languages":[
+"Guaraní",
+"Spanish"
+],
+"currency":"Paraguayan guaraní",
+"demonym":"Paraguayan",
+"landlocked":true,
+"subregion":"South America"
+},
+"PER":{
+"population":34217848,
+"government":"Presidential republic",
+"area":1285216,
+"languages":[
+"Aymara",
+"Quechua",
+"Spanish"
+],
+"currency":"Peruvian sol",
+"demonym":"Peruvian",
+"landlocked":false,
+"subregion":"South America"
+},
+"PHL":{
+"population":115843670,
+"government":"Presidential republic",
+"area":342353,
+"languages":[
+"English",
+"Filipino"
+],
+"currency":"Philippine peso",
+"demonym":"Filipino",
+"landlocked":false,
+"subregion":"South-Eastern Asia"
+},
+"POL":{
+"population":36559233,
+"government":"Parliamentary republic",
+"area":312679,
+"languages":[
+"Polish"
+],
+"currency":"Polish złoty",
+"demonym":"Polish",
+"landlocked":false,
+"subregion":"Central Europe"
+},
+"PRT":{
+"population":10694681,
+"government":"Semi-presidential republic",
+"area":92090,
+"languages":[
+"Portuguese"
+],
+"currency":"Euro",
+"demonym":"Portuguese",
+"landlocked":false,
+"subregion":"Southern Europe"
+},
+"QAT":{
+"population":2857822,
+"government":"Absolute monarchy (emirate)",
+"area":11586,
+"languages":[
+"Arabic"
+],
+"currency":"Qatari riyal",
+"demonym":"Qatari",
+"landlocked":false,
+"subregion":"Western Asia"
+},
+"ROU":{
+"population":19051804,
+"government":"Semi-presidential republic",
+"area":238391,
+"languages":[
+"Romanian"
+],
+"currency":"Romanian leu",
+"demonym":"Romanian",
+"landlocked":false,
+"subregion":"Southeast Europe"
+},
+"RUS":{
+"population":143669648,
+"government":"Federal semi-presidential republic (authoritarian)",
+"area":17098242,
+"languages":[
+"Russian"
+],
+"currency":"Russian ruble",
+"demonym":"Russian",
+"landlocked":false,
+"subregion":"Eastern Europe"
+},
+"RWA":{
+"population":14256567,
+"government":"Presidential republic",
+"area":26338,
+"languages":[
+"English",
+"French",
+"Kinyarwanda"
+],
+"currency":"Rwandan franc",
+"demonym":"Rwandan",
+"landlocked":true,
+"subregion":"Eastern Africa"
+},
+"KNA":{
+"population":46843,
+"government":"Federal constitutional monarchy",
+"area":261,
+"languages":[
+"English"
+],
+"currency":"Eastern Caribbean dollar",
+"demonym":"Kittitian or Nevisian",
+"landlocked":false,
+"subregion":"Caribbean"
+},
+"LCA":{
+"population":179744,
+"government":"Constitutional monarchy",
+"area":616,
+"languages":[
+"English"
+],
+"currency":"Eastern Caribbean dollar",
+"demonym":"Saint Lucian",
+"landlocked":false,
+"subregion":"Caribbean"
+},
+"VCT":{
+"population":100616,
+"government":"Constitutional monarchy",
+"area":389,
+"languages":[
+"English"
+],
+"currency":"Eastern Caribbean dollar",
+"demonym":"Saint Vincentian",
+"landlocked":false,
+"subregion":"Caribbean"
+},
+"WSM":{
+"population":218019,
+"government":"Parliamentary republic",
+"area":2842,
+"languages":[
+"English",
+"Samoan"
+],
+"currency":"Samoan tālā",
+"demonym":"Samoan",
+"landlocked":false,
+"subregion":"Polynesia"
+},
+"SMR":{
+"population":33977,
+"government":"Parliamentary republic (with two captains regent)",
+"area":61,
+"languages":[
+"Italian"
+],
+"currency":"Euro",
+"demonym":"Sammarinese",
+"landlocked":true,
+"subregion":"Southern Europe"
+},
+"STP":{
+"population":235536,
+"government":"Semi-presidential republic",
+"area":964,
+"languages":[
+"Portuguese"
+],
+"currency":"São Tomé and Príncipe dobra",
+"demonym":"Sao Tomean",
+"landlocked":false,
+"subregion":"Middle Africa"
+},
+"SAU":{
+"population":35300280,
+"government":"Absolute monarchy",
+"area":2149690,
+"languages":[
+"Arabic"
+],
+"currency":"Saudi riyal",
+"demonym":"Saudi Arabian",
+"landlocked":false,
+"subregion":"Western Asia"
+},
+"SEN":{
+"population":18501984,
+"government":"Presidential republic",
+"area":196722,
+"languages":[
+"French"
+],
+"currency":"West African CFA franc",
+"demonym":"Senegalese",
+"landlocked":false,
+"subregion":"Western Africa"
+},
+"SRB":{
+"population":6586476,
+"government":"Parliamentary republic",
+"area":88361,
+"languages":[
+"Serbian"
+],
+"currency":"Serbian dinar",
+"demonym":"Serbian",
+"landlocked":true,
+"subregion":"Southeast Europe"
+},
+"SYC":{
+"population":121354,
+"government":"Presidential republic",
+"area":452,
+"languages":[
+"Seychellois Creole",
+"English",
+"French"
+],
+"currency":"Seychellois rupee",
+"demonym":"Seychellois",
+"landlocked":false,
+"subregion":"Eastern Africa"
+},
+"SLE":{
+"population":8642022,
+"government":"Presidential republic",
+"area":71740,
+"languages":[
+"English"
+],
+"currency":"Sierra Leonean leone",
+"demonym":"Sierra Leonean",
+"landlocked":false,
+"subregion":"Western Africa"
+},
+"SGP":{
+"population":6036860,
+"government":"Parliamentary republic",
+"area":710,
+"languages":[
+"English",
+"Malay",
+"Mandarin Chinese",
+"Tamil"
+],
+"currency":"Singapore dollar",
+"demonym":"Singaporean",
+"landlocked":false,
+"subregion":"South-Eastern Asia"
+},
+"SVK":{
+"population":5422069,
+"government":"Parliamentary republic",
+"area":49037,
+"languages":[
+"Slovak"
+],
+"currency":"Euro",
+"demonym":"Slovak",
+"landlocked":true,
+"subregion":"Central Europe"
+},
+"SVN":{
+"population":2127400,
+"government":"Parliamentary republic",
+"area":20273,
+"languages":[
+"Slovene"
+],
+"currency":"Euro",
+"demonym":"Slovene",
+"landlocked":false,
+"subregion":"Central Europe"
+},
+"SLB":{
+"population":819198,
+"government":"Constitutional monarchy",
+"area":28896,
+"languages":[
+"English"
+],
+"currency":"Solomon Islands dollar",
+"demonym":"Solomon Islander",
+"landlocked":false,
+"subregion":"Melanesia"
+},
+"SOM":{
+"population":19009151,
+"government":"Federal parliamentary republic",
+"area":637657,
+"languages":[
+"Arabic",
+"Somali"
+],
+"currency":"Somali shilling",
+"demonym":"Somali",
+"landlocked":false,
+"subregion":"Eastern Africa"
+},
+"ZAF":{
+"population":64007187,
+"government":"Parliamentary republic with an executive president",
+"area":1221037,
+"languages":[
+"Afrikaans",
+"English",
+"Southern Ndebele",
+"Northern Sotho",
+"Southern Sotho",
+"Swazi",
+"Tswana",
+"Tsonga",
+"Venda",
+"Xhosa",
+"Zulu"
+],
+"currency":"South African rand",
+"demonym":"South African",
+"landlocked":false,
+"subregion":"Southern Africa"
+},
+"SSD":{
+"population":11943408,
+"government":"Presidential republic (transitional)",
+"area":619745,
+"languages":[
+"English"
+],
+"currency":"South Sudanese pound",
+"demonym":"South Sudanese",
+"landlocked":true,
+"subregion":"Middle Africa"
+},
+"ESP":{
+"population":48848840,
+"government":"Constitutional monarchy",
+"area":505992,
+"languages":[
+"Spanish"
+],
+"currency":"Euro",
+"demonym":"Spanish",
+"landlocked":false,
+"subregion":"Southern Europe"
+},
+"LKA":{
+"population":21916000,
+"government":"Semi-presidential republic",
+"area":65610,
+"languages":[
+"Sinhala",
+"Tamil"
+],
+"currency":"Sri Lankan rupee",
+"demonym":"Sri Lankan",
+"landlocked":false,
+"subregion":"Southern Asia"
+},
+"SDN":{
+"population":50448963,
+"government":"Military-led transitional government",
+"area":1886068,
+"languages":[
+"Arabic",
+"English"
+],
+"currency":"Sudanese pound",
+"demonym":"Sudanese",
+"landlocked":false,
+"subregion":"Northern Africa"
+},
+"SUR":{
+"population":634431,
+"government":"Parliamentary republic with an executive president",
+"area":163820,
+"languages":[
+"Dutch"
+],
+"currency":"Surinamese dollar",
+"demonym":"Surinamer",
+"landlocked":false,
+"subregion":"South America"
+},
+"SWE":{
+"population":10569709,
+"government":"Constitutional monarchy",
+"area":450295,
+"languages":[
+"Swedish"
+],
+"currency":"Swedish krona",
+"demonym":"Swedish",
+"landlocked":false,
+"subregion":"Northern Europe"
+},
+"CHE":{
+"population":9005582,
+"government":"Federal directorial republic",
+"area":41284,
+"languages":[
+"German",
+"French",
+"Italian",
+"Romansh"
+],
+"currency":"Swiss franc",
+"demonym":"Swiss",
+"landlocked":true,
+"subregion":"Western Europe"
+},
+"SYR":{
+"population":24672760,
+"government":"Transitional government",
+"area":185180,
+"languages":[
+"Arabic"
+],
+"currency":"Syrian pound",
+"demonym":"Syrian",
+"landlocked":false,
+"subregion":"Western Asia"
+},
+"TWN":{
+"population":23400000,
+"government":"Semi-presidential republic",
+"area":36193,
+"languages":[
+"Mandarin Chinese"
+],
+"currency":"New Taiwan dollar",
+"demonym":"Taiwanese",
+"landlocked":false,
+"subregion":"Eastern Asia"
+},
+"TJK":{
+"population":10590927,
+"government":"Presidential republic (authoritarian)",
+"area":143100,
+"languages":[
+"Tajik",
+"Russian"
+],
+"currency":"Tajikistani somoni",
+"demonym":"Tadzhik",
+"landlocked":true,
+"subregion":"Central Asia"
+},
+"TZA":{
+"population":68560157,
+"government":"Presidential republic",
+"area":945087,
+"languages":[
+"English",
+"Swahili"
+],
+"currency":"Tanzanian shilling",
+"demonym":"Tanzanian",
+"landlocked":false,
+"subregion":"Eastern Africa"
+},
+"THA":{
+"population":71668011,
+"government":"Constitutional monarchy",
+"area":513120,
+"languages":[
+"Thai"
+],
+"currency":"Thai baht",
+"demonym":"Thai",
+"landlocked":false,
+"subregion":"South-Eastern Asia"
+},
+"TLS":{
+"population":1400638,
+"government":"Semi-presidential republic",
+"area":14874,
+"languages":[
+"Portuguese",
+"Tetum"
+],
+"currency":"United States dollar",
+"demonym":"East Timorese",
+"landlocked":false,
+"subregion":"South-Eastern Asia"
+},
+"TGO":{
+"population":8406558,
+"government":"Parliamentary republic",
+"area":56785,
+"languages":[
+"French"
+],
+"currency":"West African CFA franc",
+"demonym":"Togolese",
+"landlocked":false,
+"subregion":"Western Africa"
+},
+"TON":{
+"population":104175,
+"government":"Constitutional monarchy",
+"area":747,
+"languages":[
+"English",
+"Tongan"
+],
+"currency":"Tongan paʻanga",
+"demonym":"Tongan",
+"landlocked":false,
+"subregion":"Polynesia"
+},
+"TTO":{
+"population":1368333,
+"government":"Parliamentary republic",
+"area":5130,
+"languages":[
+"English"
+],
+"currency":"Trinidad and Tobago dollar",
+"demonym":"Trinidadian",
+"landlocked":false,
+"subregion":"Caribbean"
+},
+"TUN":{
+"population":12277109,
+"government":"Presidential republic",
+"area":163610,
+"languages":[
+"Arabic"
+],
+"currency":"Tunisian dinar",
+"demonym":"Tunisian",
+"landlocked":false,
+"subregion":"Northern Africa"
+},
+"TUR":{
+"population":85518661,
+"government":"Presidential republic",
+"area":783562,
+"languages":[
+"Turkish"
+],
+"currency":"Turkish lira",
+"demonym":"Turkish",
+"landlocked":false,
+"subregion":"Western Asia"
+},
+"TKM":{
+"population":7494498,
+"government":"Presidential republic (authoritarian)",
+"area":488100,
+"languages":[
+"Turkmen"
+],
+"currency":"Turkmenistan manat",
+"demonym":"Turkmen",
+"landlocked":true,
+"subregion":"Central Asia"
+},
+"TUV":{
+"population":9646,
+"government":"Constitutional monarchy",
+"area":26,
+"languages":[
+"English",
+"Tuvaluan"
+],
+"currency":"Australian dollar",
+"demonym":"Tuvaluan",
+"landlocked":false,
+"subregion":"Polynesia"
+},
+"UGA":{
+"population":50015092,
+"government":"Presidential republic",
+"area":241550,
+"languages":[
+"English",
+"Swahili"
+],
+"currency":"Ugandan shilling",
+"demonym":"Ugandan",
+"landlocked":true,
+"subregion":"Eastern Africa"
+},
+"UKR":{
+"population":37860221,
+"government":"Semi-presidential republic",
+"area":603500,
+"languages":[
+"Ukrainian"
+],
+"currency":"Ukrainian hryvnia",
+"demonym":"Ukrainian",
+"landlocked":false,
+"subregion":"Eastern Europe"
+},
+"ARE":{
+"population":10986400,
+"government":"Federal absolute monarchy",
+"area":83600,
+"languages":[
+"Arabic"
+],
+"currency":"United Arab Emirates dirham",
+"demonym":"Emirati",
+"landlocked":false,
+"subregion":"Western Asia"
+},
+"GBR":{
+"population":69281000,
+"government":"Constitutional monarchy",
+"area":242900,
+"languages":[
+"English"
+],
+"currency":"British pound",
+"demonym":"British",
+"landlocked":false,
+"subregion":"Northern Europe"
+},
+"USA":{
+"population":340003797,
+"government":"Federal presidential republic",
+"area":9372610,
+"languages":[
+"English"
+],
+"currency":"United States dollar",
+"demonym":"American",
+"landlocked":false,
+"subregion":"North America"
+},
+"URY":{
+"population":3386588,
+"government":"Presidential republic",
+"area":181034,
+"languages":[
+"Spanish"
+],
+"currency":"Uruguayan peso",
+"demonym":"Uruguayan",
+"landlocked":false,
+"subregion":"South America"
+},
+"UZB":{
+"population":36361859,
+"government":"Presidential republic",
+"area":447400,
+"languages":[
+"Uzbek"
+],
+"currency":"Uzbekistani soʻm",
+"demonym":"Uzbekistani",
+"landlocked":true,
+"subregion":"Central Asia"
+},
+"VUT":{
+"population":327777,
+"government":"Parliamentary republic",
+"area":12189,
+"languages":[
+"Bislama",
+"English",
+"French"
+],
+"currency":"Vanuatu vatu",
+"demonym":"Ni-Vanuatu",
+"landlocked":false,
+"subregion":"Melanesia"
+},
+"VAT":{
+"population":882,
+"government":"Absolute elective theocratic monarchy",
+"area":0.49,
+"languages":[
+"Italian",
+"Latin"
+],
+"currency":"Euro",
+"demonym":"Vatican",
+"landlocked":true,
+"subregion":"Southern Europe"
+},
+"VEN":{
+"population":28405543,
+"government":"Presidential republic (authoritarian)",
+"area":916445,
+"languages":[
+"Spanish"
+],
+"currency":"Venezuelan bolívar soberano",
+"demonym":"Venezuelan",
+"landlocked":false,
+"subregion":"South America"
+},
+"VNM":{
+"population":100987686,
+"government":"One-party communist state",
+"area":331212,
+"languages":[
+"Vietnamese"
+],
+"currency":"Vietnamese đồng",
+"demonym":"Vietnamese",
+"landlocked":false,
+"subregion":"South-Eastern Asia"
+},
+"YEM":{
+"population":40583164,
+"government":"Disputed (civil war)",
+"area":527968,
+"languages":[
+"Arabic"
+],
+"currency":"Yemeni rial",
+"demonym":"Yemeni",
+"landlocked":false,
+"subregion":"Western Asia"
+},
+"ZMB":{
+"population":21314956,
+"government":"Presidential republic",
+"area":752612,
+"languages":[
+"English"
+],
+"currency":"Zambian kwacha",
+"demonym":"Zambian",
+"landlocked":true,
+"subregion":"Eastern Africa"
+},
+"ZWE":{
+"population":16634373,
+"government":"Presidential republic",
+"area":390757,
+"languages":[
+"Chibarwe",
+"English",
+"Kalanga",
+"Khoisan",
+"Ndau",
+"Northern Ndebele",
+"Chewa",
+"Shona",
+"Sotho",
+"Tonga",
+"Tswana",
+"Tsonga",
+"Venda",
+"Xhosa",
+"Zimbabwean Sign Language"
+],
+"currency":"Zimbabwe Gold (ZiG)",
+"demonym":"Zimbabwean",
+"landlocked":true,
+"subregion":"Eastern Africa"
+}
+}
